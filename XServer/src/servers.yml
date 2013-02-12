@@ -1,0 +1,7 @@
+servers:
+  'lobby':
+    address: localhost:19001
+    pw: test
+  'arena 1':
+    address: localhost:19002
+    pw: test
