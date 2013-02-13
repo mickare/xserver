@@ -1,5 +1,6 @@
 package com.mickare.xserver;
 
+import java.io.File;
 import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Set;
@@ -41,7 +42,17 @@ public class ConfigServers {
 
 	private ConfigServers(JavaPlugin plugin)
 			throws InvalidConfigurationException {
-		this.ca = new ConfigAccessor(plugin, CONFIGFILE);
+		
+		boolean useGlobalConfig = plugin.getConfig().getBoolean("server.useGlobalServerConfig");
+		String globalConfigFileName = plugin.getConfig().getString("server.globalServerConfig");
+		File globalConfigFile = new File(globalConfigFileName);
+		
+		
+		if(useGlobalConfig && globalConfigFile.exists()) {
+			this.ca = new ConfigAccessor(plugin, globalConfigFile);
+		} else {	
+			this.ca = new ConfigAccessor(plugin, CONFIGFILE);
+		}
 		ca.saveDefaultConfig();
 		reload();
 		
@@ -65,6 +76,8 @@ public class ConfigServers {
 		}
 		
 	}
+	
+	
 
 	public synchronized void reload() throws InvalidConfigurationException {
 		ca.reloadConfig();

@@ -83,6 +83,24 @@ public class ConfigAccessor {
 		this.configFile = new File(plugin.getDataFolder(), fileName);
 
 	}
+	
+	public ConfigAccessor(JavaPlugin plugin, File file) {
+
+		if (plugin == null)
+
+			throw new IllegalArgumentException("plugin cannot be null");
+
+		if (!plugin.isInitialized())
+
+			throw new IllegalArgumentException("plugin must be initiaized");
+
+		this.plugin = plugin;
+
+		this.fileName = file.getName();
+
+		this.configFile = file;
+
+	}
 
 	public void reloadConfig() {
 
