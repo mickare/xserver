@@ -1,5 +1,5 @@
 server: 
   name: 'servername'
   useMotd: true
-  useGlobalConfig: true
-  globalConfig: 'D:\Dropbox\bungee-test\xservers.yml'
+  useGlobalServerConfig: true
+  globalServerConfig: 'D:\Dropbox\bungee-test\xservers.yml'

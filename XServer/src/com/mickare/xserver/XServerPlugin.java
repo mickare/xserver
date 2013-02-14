@@ -35,6 +35,8 @@ public class XServerPlugin extends JavaPlugin {
 		log.info("------------ XServer ------------");
 		log.info("----------  enabling   ----------");
 		
+		this.saveDefaultConfig();
+		
 		try {
 			ConfigServers.initialize(this); 
 		} catch (InvalidConfigurationException e) {

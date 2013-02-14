@@ -49,8 +49,10 @@ public class ConfigServers {
 		
 		
 		if(useGlobalConfig && globalConfigFile.exists()) {
+			plugin.getLogger().info("Using global server configurations in: \"" + globalConfigFileName + "\"");
 			this.ca = new ConfigAccessor(plugin, globalConfigFile);
 		} else {	
+			plugin.getLogger().info("Using local server configurations in plugin folder: \"" + CONFIGFILE + "\"");
 			this.ca = new ConfigAccessor(plugin, CONFIGFILE);
 		}
 		ca.saveDefaultConfig();
