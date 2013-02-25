@@ -120,7 +120,7 @@ public class ConfigServers {
 
 	public synchronized XServer getServer(String host, int port) {
 		for (XServer s : servers) {
-			if (s.getHost().equals(host) && s.getPort() == port) {
+			if (s.getHost().equalsIgnoreCase(host) && s.getPort() == port) {
 				return s;
 			}
 		}
