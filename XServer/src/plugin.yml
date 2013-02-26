@@ -3,3 +3,9 @@ main: com.mickare.xserver.XServerPlugin
 version: 1.0
 author: mickare
 description: XServer Communication Interface, that plugins can use to send messages to other servers.
+commands:
+  xserverreload:
+    description: Broadcast a Message.
+    usage: /<command>
+    permission: rennschnitzel.xserver
+    permission-message: You don't have <permission>

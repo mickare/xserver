@@ -3,6 +3,8 @@ package com.mickare.xserver;
 import java.io.IOException;
 import java.util.logging.Logger;
 
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -65,5 +67,21 @@ public class XServerPlugin extends JavaPlugin {
 		log.info(getDescription().getName() + " enabled!");
 	}
 	
+	
+    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
+    	if(cmd.getName().equalsIgnoreCase("xserverreload")){
+			try {
+				ConfigServers.getInstance().reload();
+			} catch (InvalidConfigurationException e) {
+				sender.sendMessage(e.getMessage());
+			} catch (NotInitializedException e) {
+				sender.sendMessage(e.getMessage());
+			}
+    		return true;
+    	}
+    	return false; 
+    }
+
+
 	
 }
