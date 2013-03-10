@@ -42,6 +42,7 @@ public class XServerPlugin extends JavaPlugin {
 		try {
 			ConfigServers.initialize(this); 
 		} catch (InvalidConfigurationException e) {
+			log.info(e.getMessage());
 			this.getPluginLoader().disablePlugin(this);
 			return;
 		}
@@ -50,17 +51,20 @@ public class XServerPlugin extends JavaPlugin {
 		try {
 			MessageFactory.initialize(ConfigServers.getInstance());
 		} catch (NotInitializedException e1) {
+			log.info(e1.getMessage());
 			this.getPluginLoader().disablePlugin(this);
 		}
 		
 		try {
 			ServerMain.initialize(ConfigServers.getInstance().getHomeServer());
 		} catch (NotInitializedException e) {
+			log.info(e.getMessage());
 		}
 		
 		try {
 			ServerMain.getInstance().start();
 		} catch (IOException | NotInitializedException e) {
+			log.info(e.getMessage());
 			this.getPluginLoader().disablePlugin(this);
 		}
 		
