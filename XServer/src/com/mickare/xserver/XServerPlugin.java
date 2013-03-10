@@ -42,7 +42,7 @@ public class XServerPlugin extends JavaPlugin {
 		try {
 			ConfigServers.initialize(this); 
 		} catch (InvalidConfigurationException e) {
-			this.onDisable();
+			this.getPluginLoader().disablePlugin(this);
 			return;
 		}
 		
@@ -50,7 +50,7 @@ public class XServerPlugin extends JavaPlugin {
 		try {
 			MessageFactory.initialize(ConfigServers.getInstance());
 		} catch (NotInitializedException e1) {
-			this.onDisable();
+			this.getPluginLoader().disablePlugin(this);
 		}
 		
 		try {
@@ -61,7 +61,7 @@ public class XServerPlugin extends JavaPlugin {
 		try {
 			ServerMain.getInstance().start();
 		} catch (IOException | NotInitializedException e) {
-			this.onDisable();
+			this.getPluginLoader().disablePlugin(this);
 		}
 		
 		log.info(getDescription().getName() + " enabled!");
