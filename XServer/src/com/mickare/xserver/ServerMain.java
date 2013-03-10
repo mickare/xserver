@@ -42,7 +42,7 @@ public class ServerMain implements Runnable {
 		ssf = ServerSocketFactory.getDefault();
 	}
 	
-	public synchronized boolean start() throws IOException {
+	protected synchronized boolean start() throws IOException {
 			if (serverThread == null) {
 				server = ssf.createServerSocket(meServer.getPort(), BACKLOG);
 				serverThread = new Thread(this);
@@ -53,7 +53,7 @@ public class ServerMain implements Runnable {
 			return false;
 	}
 
-	public synchronized boolean stop() throws IOException {
+	protected synchronized boolean stop() throws IOException {
 			if (serverThread != null) {			
 				serverThread.interrupt();
 				serverThread = null;
@@ -81,8 +81,8 @@ public class ServerMain implements Runnable {
 		}
 	}
 	
-	public void sendMessage(XServer sender, Message m) throws IOException {
-		stpool.runTask(new XServerSending(sender, m));
+	protected void sendMessage(XServer target, Message m) throws IOException {
+		stpool.runTask(new XServerSending(target, m));
 	}
 	
 	

@@ -15,6 +15,11 @@ public class MessageFactory {
 	
 	private static MessageFactory instance = null;
 	
+	/**
+	 * Get instance of MessageFactory
+	 * @return
+	 * @throws NotInitializedException
+	 */
 	public static MessageFactory getInstance() throws NotInitializedException {
 		if(instance == null) {
 			throw new NotInitializedException("MessageFactory not initialized!");
@@ -35,10 +40,25 @@ public class MessageFactory {
 	}
 	
 
+	/**
+	 * Create a new Message that will be send to another server...
+	 * @param server target name
+	 * @param subChannel name
+	 * @param data message content
+	 * @return Message
+	 */
 	public Message createMessage(XServer server, String subChannel, byte[] data) {
 		return new Message(cs, "DATA", server, subChannel, data);
 	}
 	
+	/**
+	 * Read a message byte array...
+	 * @param data
+	 * @return message from data
+	 * @throws IOException
+	 * @throws NotPluginMessage
+	 * @throws Message_SenderUnknownException
+	 */
 	public Message recreateMessage(byte[] data) throws IOException, NotPluginMessage, Message_SenderUnknownException {
 		DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));
 		String plugin_message_code = in.readUTF();

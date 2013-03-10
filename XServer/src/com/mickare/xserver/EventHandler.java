@@ -36,23 +36,43 @@ public class EventHandler {
 		this.plugin = plugin;
 	}
 
+	/**
+	 * Get all Listeners...
+	 * @return new Map
+	 */
 	public Map<XServerListener, JavaPlugin> getListeners() {
 		return new HashMap<XServerListener, JavaPlugin>(listeners);
 	}
 
+	/**
+	 * Register a new listener...
+	 * @param plugin
+	 * @param lis
+	 */
 	public synchronized void registerListener(JavaPlugin plugin,
 			XServerListener lis) {
 		listeners.put(lis, plugin);
 	}
 
+	/**
+	 * Unregister a old listener...
+	 * @param lis
+	 */
 	public synchronized void unregisterListener(XServerListener lis) {
 		listeners.remove(lis);
 	}
 
+	/**
+	 * Unregister all listeners...
+	 */
 	public synchronized void unregisterAll() {
 		listeners.clear();
 	}
 
+	/**
+	 * Unregister all listeners of a plugin...
+	 * @param plugin
+	 */
 	public synchronized void unregisterAll(JavaPlugin plugin) {
 		for (XServerListener lis : getListeners().keySet()) {
 			if (listeners.get(lis).equals(plugin)) {
@@ -61,6 +81,10 @@ public class EventHandler {
 		}
 	}
 
+	/**
+	 * Call an Event...
+	 * @param event
+	 */
 	public synchronized void callEvent(final XServerEvent event) {
 		for (XServerListener lis : listeners.keySet()) {
 			for (Method m : lis.getClass().getMethods()) {

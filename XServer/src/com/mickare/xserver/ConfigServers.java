@@ -20,6 +20,11 @@ public class ConfigServers {
 	private static ConfigServers instance = null;
 	private static final String CONFIGFILE = "servers.yml";
 	
+	/**
+	 * Get the instance of the configuration server manager
+	 * @return instance
+	 * @throws NotInitializedException
+	 */
 	public static ConfigServers getInstance() throws NotInitializedException {
 		if(instance == null) {
 			throw new NotInitializedException("ConfigServers not initialized!");
@@ -80,7 +85,10 @@ public class ConfigServers {
 	}
 	
 	
-
+	/**
+	 * Reload configuration
+	 * @throws InvalidConfigurationException
+	 */
 	public synchronized void reload() throws InvalidConfigurationException {
 		ca.reloadConfig();
 		servers.clear();
@@ -101,14 +109,27 @@ public class ConfigServers {
 		}
 	}
 
+	/**
+	 * Get the list of all available servers
+	 * @return servers
+	 */
 	public synchronized Set<XServer> getServers() {
 		return new HashSet<XServer>(servers);
 	}
 
+	/**
+	 * Get a string list of all servernames
+	 * @return
+	 */
 	public synchronized String[] getServernames() {
 		return servers.toArray(new String[servers.size()]);
 	}
 
+	/**
+	 * Get the XServer Object with the servername name
+	 * @param name servername
+	 * @return XServer with that name
+	 */
 	public synchronized XServer getServer(String name) {
 		for (XServer s : servers) {
 			if (s.getName().equalsIgnoreCase(name)) {
@@ -118,6 +139,12 @@ public class ConfigServers {
 		return null;
 	}
 
+	/**
+	 * Get the XServer Object via host and port
+	 * @param host
+	 * @param port
+	 * @return XServer
+	 */
 	public synchronized XServer getServer(String host, int port) {
 		for (XServer s : servers) {
 			if (s.getHost().equalsIgnoreCase(host) && s.getPort() == port) {
@@ -127,6 +154,11 @@ public class ConfigServers {
 		return null;
 	}
 
+	/**
+	 * Get the XServer Object via remote Socket Address
+	 * @param remoteSocketAddress
+	 * @return XServer
+	 */
 	public XServer getServer(SocketAddress remoteSocketAddress) {
 		String tmp = remoteSocketAddress.toString();
 		String host = remoteSocketAddress.toString();
@@ -146,6 +178,11 @@ public class ConfigServers {
 		return getServer(host, port);
 	}
 
+	/**
+	 * Is the adress host:port a server from config?
+	 * @param address
+	 * @return true if it is
+	 */
 	public boolean isServer(String address) {
 		String[] tmp = address.split(":");
 		if (tmp.length == 2) {
@@ -154,10 +191,21 @@ public class ConfigServers {
 		return false;
 	}
 
+	/**
+	 * Is this a server from config?
+	 * @param servername
+	 * @return true if true ^^
+	 */
 	public synchronized boolean isServerByName(String servername) {
 		return getServer(servername) != null;
 	}
 
+	/**
+	 * Is this host:port a server from config?
+	 * @param host
+	 * @param port
+	 * @return true if true
+	 */
 	public boolean isServer(String host, int port) {
 		return getServer(host, port) != null;
 	}
@@ -172,6 +220,11 @@ public class ConfigServers {
 		return false;
 	}
 
+	/**
+	 * Has some xserver from config the same host?
+	 * @param host
+	 * @return true if true
+	 */
 	public boolean isHost(String host) {
 		for (XServer xs : servers) {
 			if (xs.getHost().equals(host)) {
@@ -181,6 +234,11 @@ public class ConfigServers {
 		return false;
 	}
 
+	/**
+	 * Has some xserver from config the same host, like the remote socket address?
+	 * @param remoteSocketAddress
+	 * @return true if true
+	 */
 	public boolean isHost(SocketAddress remoteSocketAddress) {
 		String tmp = remoteSocketAddress.toString();
 		String host = remoteSocketAddress.toString();
@@ -196,6 +254,10 @@ public class ConfigServers {
 		return isHost(host);
 	}
 	
+	/**
+	 * This local Server adress... who am i?
+	 * @return me
+	 */
 	public XServer getHomeServer() {
 		return homeServer;
 	}

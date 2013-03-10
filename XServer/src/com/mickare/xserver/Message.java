@@ -77,30 +77,59 @@ public class Message {
 		inC.close();
 	}
 
+	/**
+	 * Get Sender Server Name
+	 * @return sender name
+	 */
 	public String getSender_Name() {
 		return senderName;
 	}
 
+	/**
+	 * Get Receiver Server Name
+	 * @return receiver name
+	 */
 	public String getReceiver_Name() {
 		return receiverName;
 	}
 
+	/**
+	 * Get Receiver Server password
+	 * @return password
+	 */
 	public String getReceiver_Password() {
 		return receiverPassword;
 	}
 
+	/**
+	 * SubChannel
+	 * @return subchannel name
+	 */
 	public String getSubChannel() {
 		return subChannel;
 	}
 
+	/**
+	 * Get the content of this message...
+	 * @return byte array
+	 */
 	public byte[] getContent() {
 		return content;
 	}
 
+	/**
+	 * Get the Messagetype
+	 * @return type name
+	 */
 	protected String getTypeName() {
 		return typename;
 	}
 	
+	/**
+	 * Get the compiled byte array of this message...
+	 * @return byte array
+	 * @throws IOException
+	 */
 	public byte[] getData() throws IOException {
 
 		// Content Encyption
