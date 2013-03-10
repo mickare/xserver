@@ -7,6 +7,6 @@
 
 server: 
   name: 'Server1'
-  useMotd: true
-  useGlobalServerConfig: true
+  useMotd: false
+  useGlobalServerConfig: false
   globalServerConfig: '/home/bungee-test/xservers.yml'
