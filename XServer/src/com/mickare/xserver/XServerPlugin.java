@@ -24,7 +24,7 @@ public class XServerPlugin extends JavaPlugin {
 		try {
 			ServerMain.getInstance().stop();
 		} catch (IOException | NotInitializedException e) {
-			this.onDisable();
+			log.severe("Cause: " + e.getMessage());
 		}
 		
 		log.info(getDescription().getName() + " disabled!");
@@ -42,7 +42,7 @@ public class XServerPlugin extends JavaPlugin {
 		try {
 			ConfigServers.initialize(this); 
 		} catch (InvalidConfigurationException e) {
-			log.info(e.getMessage());
+			log.severe("[ERROR]" + e.getMessage());
 			this.getPluginLoader().disablePlugin(this);
 			return;
 		}
@@ -51,21 +51,24 @@ public class XServerPlugin extends JavaPlugin {
 		try {
 			MessageFactory.initialize(ConfigServers.getInstance());
 		} catch (NotInitializedException e1) {
-			log.info(e1.getMessage());
+			log.severe("[ERROR]" + e1.getMessage());
 			this.getPluginLoader().disablePlugin(this);
+			return;
 		}
 		
 		try {
 			ServerMain.initialize(ConfigServers.getInstance().getHomeServer());
 		} catch (NotInitializedException e) {
-			log.info(e.getMessage());
+			log.severe("[ERROR]" + e.getMessage());
+			return;
 		}
 		
 		try {
 			ServerMain.getInstance().start();
 		} catch (IOException | NotInitializedException e) {
-			log.info(e.getMessage());
+			log.severe("[ERROR]" + e.getMessage());
 			this.getPluginLoader().disablePlugin(this);
+			return;
 		}
 		
 		log.info(getDescription().getName() + " enabled!");
