@@ -24,7 +24,7 @@ public class XServerPlugin extends JavaPlugin {
 		try {
 			ServerMain.getInstance().stop();
 		} catch (IOException | NotInitializedException e) {
-			log.severe("Cause: " + e.getMessage());
+			log.severe("[ERROR] A Error occured when disabling plugin!\n[ERROR] " + e.getMessage());
 		}
 		
 		log.info(getDescription().getName() + " disabled!");
@@ -60,6 +60,7 @@ public class XServerPlugin extends JavaPlugin {
 			ServerMain.initialize(ConfigServers.getInstance().getHomeServer());
 		} catch (NotInitializedException e) {
 			log.severe("[ERROR]" + e.getMessage());
+			this.getPluginLoader().disablePlugin(this);
 			return;
 		}
 		
