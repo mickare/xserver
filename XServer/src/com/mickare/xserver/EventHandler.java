@@ -3,6 +3,7 @@ package com.mickare.xserver;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.bukkit.plugin.java.JavaPlugin;
@@ -81,42 +82,59 @@ public class EventHandler {
 		}
 	}
 
+	private boolean isInStringHashSet(HashSet<String> list, String search) {
+		for(String text : list) {
+			if(text.equals(search)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	/**
 	 * Call an Event...
 	 * @param event
 	 */
 	public synchronized void callEvent(final XServerEvent event) {
 		for (XServerListener lis : listeners.keySet()) {
+			
+			HashSet<String> usedMethods = new HashSet<String>();
+
 			for (Method m : lis.getClass().getMethods()) {
 
-				Method sm = null;
-				try {
-					sm = lis.getClass()
-							.getMethod(m.getName(), event.getClass());
-				} catch (NoSuchMethodException nsme) {
-					sm = null;
-				} catch (SecurityException se) {
-					sm = null;
-				}
-
-				if (sm != null) {
-
-					boolean sync = true;
-
-					XEventHandler a = sm.getAnnotation(XEventHandler.class);
-
-					if (a != null) {
-						sync = a.sync();
+				if(!isInStringHashSet(usedMethods, m.getName())) {
+					
+				
+					Method sm = null;
+					try {
+						sm = lis.getClass()
+								.getMethod(m.getName(), event.getClass());
+						usedMethods.add(m.getName());
+					} catch (NoSuchMethodException nsme) {
+						sm = null;
+					} catch (SecurityException se) {
+						sm = null;
 					}
-
-					runEventWrapper rew = new runEventWrapper(lis, event, sm);
-
-					if (sync) {
-						plugin.getServer().getScheduler()
-								.runTask(listeners.get(lis), rew);
-					} else {
-						plugin.getServer().getScheduler()
-								.runTaskAsynchronously(listeners.get(lis), rew);
+	
+					if (sm != null) {
+	
+						boolean sync = true;
+	
+						XEventHandler a = sm.getAnnotation(XEventHandler.class);
+	
+						if (a != null) {
+							sync = a.sync();
+						}
+	
+						runEventWrapper rew = new runEventWrapper(lis, event, sm);
+	
+						if (sync) {
+							plugin.getServer().getScheduler()
+									.runTask(listeners.get(lis), rew);
+						} else {
+							plugin.getServer().getScheduler()
+									.runTaskAsynchronously(listeners.get(lis), rew);
+						}
 					}
 				}
 			}

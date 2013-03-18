@@ -1,6 +1,6 @@
 name: XServer
 main: com.mickare.xserver.XServerPlugin
-version: 1.0
+version: 1.0.1
 author: mickare
 description: XServer Communication Interface, that plugins can use to send messages to other servers.
 commands:
