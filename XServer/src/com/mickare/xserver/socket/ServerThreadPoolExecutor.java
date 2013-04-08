@@ -17,7 +17,7 @@ public class ServerThreadPoolExecutor {
     ThreadPoolExecutor threadPool = null;
  
     //Working queue for jobs (Runnable). We add them finally here
-	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(24);
+	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(50);
 
     public ServerThreadPoolExecutor() {
         threadPool = new ThreadPoolExecutor(corePoolSize, maxPoolSize,
