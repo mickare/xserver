@@ -5,6 +5,7 @@ import java.util.concurrent.*;
 public class ServerThreadPoolExecutor {
 
 	//Parallel running Threads(Executor) on System
+
 	private int corePoolSize = 8;
  
     //Maximum Threads allowed in Pool
@@ -17,7 +18,7 @@ public class ServerThreadPoolExecutor {
     ThreadPoolExecutor threadPool = null;
  
     //Working queue for jobs (Runnable). We add them finally here
-	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(9);
+	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(50);
 
     public ServerThreadPoolExecutor() {
         threadPool = new ThreadPoolExecutor(corePoolSize, maxPoolSize,

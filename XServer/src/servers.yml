@@ -1,7 +1,7 @@
 servers:
-  'Lobby':
+  'Server1':
     address: localhost:19000
-    pw: test
-  'Arena1':
+    pw: testb
+  'Server2':
     address: localhost:19001
-    pw: test
+    pw: testa

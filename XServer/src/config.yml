@@ -1,5 +1,12 @@
+# Local Server Config
+# name - this servername - needs to be in servers.yml too.
+# useMotd - if true, the motd text of the server will be used as servername.
+# useGlobalServerConfig - if true the config file from path in globalServerConfig is used as servers.yml
+#                         if false, then the local servers.yml config file is used.
+# globalServerConfig - path to global servers.yml config file.
+
 server: 
-  name: 'servername'
-  useMotd: true
-  useGlobalServerConfig: true
+  name: 'Server1'
+  useMotd: false
+  useGlobalServerConfig: false
   globalServerConfig: '/home/bungee-test/xservers.yml'
