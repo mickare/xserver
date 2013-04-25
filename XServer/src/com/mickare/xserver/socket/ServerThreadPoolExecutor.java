@@ -5,10 +5,10 @@ import java.util.concurrent.*;
 public class ServerThreadPoolExecutor {
 
 	//Parallel running Threads(Executor) on System
-	private int corePoolSize = 4;
+	private int corePoolSize = 8;
  
     //Maximum Threads allowed in Pool
-    private int maxPoolSize = 8;
+    private int maxPoolSize = 96;
  
     //Keep alive time for waiting threads for jobs(Runnable)
     private long keepAliveTime = 10;
