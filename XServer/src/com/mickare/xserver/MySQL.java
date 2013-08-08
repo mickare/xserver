@@ -41,7 +41,7 @@ public class MySQL {
 	public void connect() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver").newInstance();
-			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":3306/" + db, user, pass);
+			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":3306/" + db + "?autoReconnect=true", user, pass);
 		} catch (Exception ex) {
 			plugin.getLogger().log(Level.SEVERE, ex.getMessage());
 			// Bukkit.getLogger().severe(java.util.Arrays.toString(ex.getStackTrace()));
