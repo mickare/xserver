@@ -1,7 +1,7 @@
 package com.mickare.xserver.events;
 
 import com.mickare.xserver.Message;
-import com.mickare.xserver.XServer;
+import com.mickare.xserver.net.XServer;
 
 public class XServerMessageOutgoingEvent extends XServerMessageEvent {
 

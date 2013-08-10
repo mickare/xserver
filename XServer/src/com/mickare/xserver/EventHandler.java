@@ -8,32 +8,17 @@ import java.util.Map;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.mickare.xserver.Exception.NotInitializedException;
 import com.mickare.xserver.annotations.XEventHandler;
 
 import com.mickare.xserver.events.XServerEvent;
 
 public class EventHandler {
-
-	private static EventHandler instance = null;
-	
-	public static EventHandler getInstance() throws NotInitializedException {
-		if(instance == null) {
-			throw new NotInitializedException("EventHandler not initialized!");
-		}
-		return instance;
-	}
-	
-	protected static void initialize(JavaPlugin plugin) {
-		instance = new EventHandler(plugin);		
-	}
-	
 	
 	private final HashMap<XServerListener, JavaPlugin> listeners = new HashMap<XServerListener, JavaPlugin>();
 
 	private final JavaPlugin plugin;
 	
-	private EventHandler(JavaPlugin plugin) {
+	protected EventHandler(JavaPlugin plugin) {
 		this.plugin = plugin;
 	}
 

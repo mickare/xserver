@@ -1,4 +1,4 @@
-package com.mickare.xserver.socket;
+package com.mickare.xserver;
 
 import java.util.concurrent.*;
 

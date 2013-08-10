@@ -3,16 +3,20 @@ package com.mickare.xserver;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.mickare.xserver.Exception.NotInitializedException;
+import com.mickare.xserver.exceptions.NotInitializedException;
+import com.mickare.xserver.util.MySQL;
 
 public class XServerPlugin extends JavaPlugin {
 	
 	private Logger log;
+	
+	private String servername;
+	
+	private MySQL statsconnection = null;
+	private XServerManager xmanager;
 	
 	@Override
 	public void onDisable() {
@@ -22,10 +26,14 @@ public class XServerPlugin extends JavaPlugin {
 		log.info("----------  disabling  ----------");
 		
 		try {
-			ServerMain.getInstance().stop();
-		} catch (IOException | NotInitializedException e) {
+			if(xmanager != null) {
+				xmanager.stop();
+			}
+		} catch (IOException e) {
 			log.severe("[ERROR] A Error occured when disabling plugin!\n[ERROR] " + e.getMessage());
 		}
+		
+		statsconnection.disconnect();
 		
 		log.info(getDescription().getName() + " disabled!");
 	}
@@ -37,59 +45,33 @@ public class XServerPlugin extends JavaPlugin {
 		log.info("------------ XServer ------------");
 		log.info("----------  enabling   ----------");
 		
+		servername = this.getServer().getMotd();
+		if (servername == null) {
+			servername = this.getServer().getServerName();
+		}
+		
 		this.saveDefaultConfig();
 		
+		MySQL statsconnection = new MySQL(log , this.getConfig().getString("mysql.User", ""), this.getConfig().getString("mysql.Pass", ""), this.getConfig().getString("mysql.Data", ""), this.getConfig().getString("mysql.Host", ""), "stats");
+		statsconnection.connect();
+		
 		try {
-			ConfigServers.initialize(this); 
+			xmanager = new XServerManager(servername, this, log, statsconnection);
 		} catch (InvalidConfigurationException e) {
-			log.severe("[ERROR]" + e.getMessage());
-			this.getPluginLoader().disablePlugin(this);
-			return;
-		}
-		
-		EventHandler.initialize(this);
-		try {
-			MessageFactory.initialize(ConfigServers.getInstance());
-		} catch (NotInitializedException e1) {
-			log.severe("[ERROR]" + e1.getMessage());
-			this.getPluginLoader().disablePlugin(this);
-			return;
+			log.severe("XServerManager not initialized correctly!");
+			log.severe(e.getMessage());
+			this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");
 		}
 		
 		try {
-			ServerMain.initialize(ConfigServers.getInstance().getHomeServer());
-		} catch (NotInitializedException e) {
-			log.severe("[ERROR]" + e.getMessage());
-			this.getPluginLoader().disablePlugin(this);
-			return;
-		}
-		
-		try {
-			ServerMain.getInstance().start();
-		} catch (IOException | NotInitializedException e) {
-			log.severe("[ERROR]" + e.getMessage());
-			this.getPluginLoader().disablePlugin(this);
-			return;
+			xmanager.start();
+		} catch (IOException | InterruptedException | NotInitializedException e) {
+			log.severe("XServer not started correctly!");
+			log.severe(e.getMessage());
+			this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");;
 		}
 		
 		log.info(getDescription().getName() + " enabled!");
 	}
-	
-	
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
-    	if(cmd.getName().equalsIgnoreCase("xserverreload")){
-			try {
-				ConfigServers.getInstance().reload();
-			} catch (InvalidConfigurationException e) {
-				sender.sendMessage(e.getMessage());
-			} catch (NotInitializedException e) {
-				sender.sendMessage(e.getMessage());
-			}
-    		return true;
-    	}
-    	return false; 
-    }
-
-
 	
 }

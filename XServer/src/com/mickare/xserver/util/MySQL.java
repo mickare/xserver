@@ -1,4 +1,4 @@
-package com.mickare.xserver;
+package com.mickare.xserver.util;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -7,16 +7,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MySQL {
 
-	private final XServerPlugin plugin;
+	private final Logger logger;
 
 	private final String user, pass, db, host, name;
 	private Connection connection;
 
-	public MySQL(XServerPlugin plugin, String user, String pass, String db, String host, String name) {
-		this.plugin = plugin;
+	public MySQL(Logger logger, String user, String pass, String db, String host, String name) {
+		this.logger = logger;
 		this.user = user;
 		this.pass = pass;
 		this.db = db;
@@ -34,7 +35,7 @@ public class MySQL {
 				connect();
 			}
 		} catch (SQLException ex) {
-			plugin.getLogger().log(Level.SEVERE, ex.getMessage());
+			logger.log(Level.SEVERE, ex.getMessage());
 		}
 	}
 
@@ -43,7 +44,7 @@ public class MySQL {
 			Class.forName("com.mysql.jdbc.Driver").newInstance();
 			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":3306/" + db + "?autoReconnect=true", user, pass);
 		} catch (Exception ex) {
-			plugin.getLogger().log(Level.SEVERE, ex.getMessage());
+			logger.log(Level.SEVERE, ex.getMessage());
 			// Bukkit.getLogger().severe(java.util.Arrays.toString(ex.getStackTrace()));
 		}
 	}
@@ -53,7 +54,7 @@ public class MySQL {
 			try {
 				connection.close();
 			} catch (Exception ex) {
-				plugin.getLogger().log(Level.SEVERE, ex.getMessage());
+				logger.log(Level.SEVERE, ex.getMessage());
 				// Bukkit.getLogger().severe(java.util.Arrays.toString(ex.getStackTrace()));
 			}
 		}
@@ -74,7 +75,7 @@ public class MySQL {
 			stmt.executeUpdate(qry);
 			stmt.close();
 		} catch (Exception ex) {
-			plugin.getLogger().log(Level.SEVERE, ex.getMessage());
+			logger.log(Level.SEVERE, ex.getMessage());
 			// Bukkit.getLogger().severe(qry);
 			// Bukkit.getLogger().severe(java.util.Arrays.toString(ex.getStackTrace()));
 		}
@@ -89,7 +90,7 @@ public class MySQL {
 			stmt.executeUpdate();
 			stmt.close();
 		} catch (Exception ex) {
-			plugin.getLogger().log(Level.SEVERE, ex.getMessage());
+			logger.log(Level.SEVERE, ex.getMessage());
 			// Bukkit.getLogger().severe(stmtqry);
 			// Bukkit.getLogger().severe(java.util.Arrays.toString(ex.getStackTrace()));
 		}
@@ -101,7 +102,7 @@ public class MySQL {
 			PreparedStatement pstmt = connection.prepareStatement(qry);
 			rs = pstmt.executeQuery(qry);
 		} catch (Exception ex) {
-			plugin.getLogger().log(Level.SEVERE, ex.getMessage());
+			logger.log(Level.SEVERE, ex.getMessage());
 			// Bukkit.getLogger().severe(qry);
 			// Bukkit.getLogger().severe(java.util.Arrays.toString(ex.getStackTrace()));
 		}
@@ -117,7 +118,7 @@ public class MySQL {
 			}
 			rs = pstmt.executeQuery(qry);
 		} catch (Exception ex) {
-			plugin.getLogger().log(Level.SEVERE, ex.getMessage());
+			logger.log(Level.SEVERE, ex.getMessage());
 			// Bukkit.getLogger().severe(qry);
 			// Bukkit.getLogger().severe(java.util.Arrays.toString(ex.getStackTrace()));
 		}

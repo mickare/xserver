@@ -1,4 +1,4 @@
-package com.mickare.xserver.Exception;
+package com.mickare.xserver.exceptions;
 
 @SuppressWarnings("serial")
 public class Message_Exception extends Exception {

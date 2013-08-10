@@ -1,7 +1,0 @@
-servers:
-  'Server1':
-    address: localhost:19000
-    pw: testb
-  'Server2':
-    address: localhost:19001
-    pw: testa
