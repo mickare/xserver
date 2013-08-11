@@ -6,7 +6,6 @@ import java.util.logging.Logger;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.util.MySQL;
 
 public class XServerPlugin extends JavaPlugin {
@@ -65,7 +64,7 @@ public class XServerPlugin extends JavaPlugin {
 		
 		try {
 			xmanager.start();
-		} catch (IOException | InterruptedException | NotInitializedException e) {
+		} catch (IOException e) {
 			log.severe("XServer not started correctly!");
 			log.severe(e.getMessage());
 			this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");;

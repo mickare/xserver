@@ -4,10 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.SocketFactory;
 
@@ -63,7 +63,7 @@ public class Connection {
 		sending = new Sending(this);
 		XServerManager.getInstance().getThreadPool().runTask(receiving);
 		XServerManager.getInstance().getThreadPool().runTask(sending);
-		sendLoginRequest();
+		sendFirstLoginRequest();
 	}
 	
 	/**
@@ -73,8 +73,10 @@ public class Connection {
 	 * @throws NotInitializedException 
 	 */
 	public Connection(Socket socket) throws IOException, NotInitializedException {
-		this.host = ((InetSocketAddress)socket.getRemoteSocketAddress()).getHostName();
-		this.port = ((InetSocketAddress)socket.getRemoteSocketAddress()).getPort();
+		
+		
+		this.host = socket.getInetAddress().getHostName();
+		this.port = socket.getPort();
 		this.socket = socket;
 		input = new DataInputStream(socket.getInputStream());
 		output = new DataOutputStream(socket.getOutputStream());
@@ -84,14 +86,21 @@ public class Connection {
 		XServerManager.getInstance().getThreadPool().runTask(sending);
 	}
 
-	private void sendLoginRequest() throws IOException, InterruptedException, NotInitializedException {
+	private void sendFirstLoginRequest() throws IOException, InterruptedException, NotInitializedException {
+		sendLoginRequest(Packet.Types.LoginRequest);
+	}
+	
+	protected void sendAcceptedLoginRequest() throws IOException, InterruptedException, NotInitializedException {
+		sendLoginRequest(Packet.Types.LoginAccepted);
+	}
+	
+	private void sendLoginRequest(Packet.Types type) throws IOException, InterruptedException, NotInitializedException {
 		ByteArrayOutputStream b = new ByteArrayOutputStream();
 		DataOutputStream out = new DataOutputStream(b);
 		out.writeUTF(XServerManager.getInstance().getHomeServer().getName());
 		out.writeUTF(XServerManager.getInstance().getHomeServer().getPassword());
 		out.close();
-		sendingMessages.put(new Packet(Packet.Types.LoginRequest, b.toByteArray()));
-		sendingMessages.notifyAll();
+		sendingMessages.put(new Packet(type, b.toByteArray()));
 	}
 	
 	public boolean isConnected() {
@@ -134,7 +143,6 @@ public class Connection {
 	
 	public void send(Packet packet) throws InterruptedException {
 		sendingMessages.put(packet);
-		sendingMessages.notifyAll();
 	}
 	
 	private static class Sending implements Runnable {
@@ -152,16 +160,15 @@ public class Connection {
 		
 		@Override
 		public void run() {
+			Packet p = null;
 			while(running && con.isConnected()) {
 				try {
-					con.sendingMessages.wait(1000);
-					
-					if(con.sendingMessages.isEmpty()) {
+					p = con.sendingMessages.poll(1000, TimeUnit.MILLISECONDS);
+
+					if(p == null) {
 						new Packet(Packet.Types.KeepAlive, new byte[0]).writeToStream(con.output);
 					} else {
-						for(Packet p : con.sendingMessages) {
-							p.writeToStream(con.output);
-						}
+						p.writeToStream(con.output);
 					}
 					
 				} catch (IOException | InterruptedException e) {

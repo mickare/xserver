@@ -2,6 +2,8 @@ package com.mickare.xserver.net;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.mickare.xserver.Message;
 import com.mickare.xserver.XServerManager;
@@ -15,9 +17,9 @@ public class XServer {
 	private final String host;
 	private final int port;
 	private final String password;
-	
+
 	private Connection connection = null;
-	
+	private Lock conLock = new ReentrantLock();
 
 	public XServer(String name, String host, int port, String password) {
 		this.name = name;
@@ -25,40 +27,51 @@ public class XServer {
 		this.port = port;
 		this.password = Encryption.MD5(password);
 	}
-	
-	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
-		synchronized(connection) {
-			if(isConnected()) {
-				connection.disconnect();
+
+	public void connect() throws UnknownHostException, IOException,
+			InterruptedException, NotInitializedException {
+		conLock.lock();
+		try {
+			if (isConnected()) {
+				this.disconnect();
 			}
-			connection = new Connection(XServerManager.getInstance().getSocketFactory(), host, port);	
+			connection = new Connection(XServerManager.getInstance()
+					.getSocketFactory(), host, port);
+		} finally {
+			conLock.unlock();
 		}
 	}
-	
+
 	protected void setConnection(Connection con) {
-		synchronized(connection) {
-			if(this.connection != con && isConnected()) {
-				this.connection.disconnect();
-			} 
-			
+		conLock.lock();
+		try {
+			if (this.connection != con && isConnected()) {
+				this.disconnect();
+			}
 			this.connection = con;
+		} finally {
+			conLock.unlock();
 		}
 	}
-	
+
 	public boolean isConnected() {
-		synchronized(connection) {
-			return connection != null ? !connection.isConnected() : false;
+		conLock.lock();
+		try {
+			return connection != null ? connection.isConnected() : false;
+		} finally {
+			conLock.unlock();
 		}
 	}
-	
+
 	public void disconnect() {
-		synchronized(connection) {
+		conLock.lock();
+		try {
 			connection.disconnect();
+		} finally {
+			conLock.unlock();
 		}
 	}
-	
-	
-	
+
 	public String getName() {
 		return name;
 	}
@@ -74,12 +87,19 @@ public class XServer {
 	public String getPassword() {
 		return password;
 	}
-	
-	public void sendMessage(Message message) throws NotConnectedException, InterruptedException, IOException {
-		if(!isConnected()) {
-			throw new NotConnectedException();
-		} 
-		connection.send(new Packet(Packet.Types.Message, message.getData()));
+
+	public void sendMessage(Message message) throws NotConnectedException,
+			InterruptedException, IOException {
+		conLock.lock();
+		try {
+			if (!isConnected()) {
+				throw new NotConnectedException("Not Connected to this server!");
+			}
+			connection
+					.send(new Packet(Packet.Types.Message, message.getData()));
+		} finally {
+			conLock.unlock();
+		}
 	}
-	
+
 }

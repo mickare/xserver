@@ -55,11 +55,15 @@ public class XServerManager {
 		mainserver = new MainServer(this);
 	}
 	
-	public void start() throws IOException, InterruptedException, NotInitializedException {
+	public void start() throws IOException {
 		mainserver.start();
 		for (XServer s : servers.values()) {
 			if(!s.isConnected()) {
-				s.connect();
+				try {
+					s.connect();
+				} catch (IOException | InterruptedException | NotInitializedException e) {
+					logger.info("Connection to " +  s.getName() + " failed!\n" + e.getMessage());
+				}
 			}
 		}
 	}

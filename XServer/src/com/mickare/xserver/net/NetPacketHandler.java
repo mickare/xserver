@@ -19,6 +19,7 @@ public class NetPacketHandler {
 		
 		DataInputStream is = null;
 		try {
+		try {
 			switch (packetID) {
 			case 100: // Keep Alive
 
@@ -35,7 +36,7 @@ public class NetPacketHandler {
 				break;
 			case 401: // LoginDenied
 				XServerManager.getInstance().getLogger()
-						.info("Login Denied from " + con.getHost() + ":" + con.getPort());
+						.info("Login denied from " + con.getHost() + ":" + con.getPort());
 				con.errorDisconnect();
 				break;
 			case 500: // LoginRequest
@@ -45,12 +46,24 @@ public class NetPacketHandler {
 					String name = is.readUTF();
 					String password = is.readUTF();
 					XServer s = XServerManager.getInstance().getServer(name);
-					if(s != null && s.getPassword() == password) {
+					
+					// Debugging...
+					/*
+					XServerManager.getInstance().getLogger().info("Debugging!\n" + 
+					name + " - " + password + "\n" +
+					"Serverfound:" + String.valueOf(s != null) + "\n" +
+					((s != null) ? s.getName() + " - " + s.getPassword() : ""));
+					*/
+					if(s != null && s.getPassword().equals(password)) {
 						con.setXserver(s);
 						con.setStatus(Connection.stats.connected);
-						con.send(new Packet(Packet.Types.LoginAccepted, new byte[0]));
+						con.sendAcceptedLoginRequest();
+						XServerManager.getInstance().getLogger()
+						.info("Login Request from " + name + " accepted!");
 					} else {
 						con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
+						XServerManager.getInstance().getLogger()
+						.info("Login Request from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
 						con.errorDisconnect();
 					}
 				} finally {
@@ -60,14 +73,36 @@ public class NetPacketHandler {
 				}
 				break;
 			case 501: // LoginAccepted
-				XServer s = XServerManager.getInstance().getServer(con.getHost(), con.getPort());
-				if(s != null) {
-					con.setXserver(s);
-					con.setStatus(Connection.stats.connected);
-				} else {
-					con.errorDisconnect();
-				}
 				
+				try {
+					is = new DataInputStream(new ByteArrayInputStream(data));
+					String name = is.readUTF();
+					String password = is.readUTF();
+					XServer s = XServerManager.getInstance().getServer(name);
+					
+					// Debugging...
+					/*
+					XServerManager.getInstance().getLogger().info("Debugging!\n" + 
+					name + " - " + password + "\n" +
+					"Serverfound:" + String.valueOf(s != null) + "\n" +
+					((s != null) ? s.getName() + " - " + s.getPassword() : ""));
+					*/					
+					if(s != null && s.getPassword().equals(password)) {
+						con.setXserver(s);
+						con.setStatus(Connection.stats.connected);
+						XServerManager.getInstance().getLogger()
+						.info("Login Reply accepted from " + s.getName());
+					} else {
+						con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
+						XServerManager.getInstance().getLogger()
+						.info("Login Reply from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
+						con.errorDisconnect();
+					}
+				} finally {
+					if(is != null) {
+						is.close();
+					}
+				}
 				break;
 			case 600: // PingRequest
 				con.send(new Packet(Packet.Types.PingAnswer, data));
@@ -83,7 +118,9 @@ public class NetPacketHandler {
 				}
 				break;
 			case 800: // Message
+				XServerManager.getInstance().getLogger().info("A");
 				if(con.getXserver() != null && con.isConnected() && con.getStatus().equals(Connection.stats.connected)) {
+					XServerManager.getInstance().getLogger().info("B");
 					XServerManager.getInstance().getEventHandler().callEvent(new XServerMessageIncomingEvent(con.getXserver(), Message.read(con.getXserver(), data)));
 				}
 				break;
@@ -91,7 +128,11 @@ public class NetPacketHandler {
 				con.disconnect();
 				break;
 			}
-		} catch (InterruptedException | NotInitializedException e) {
+		} catch (InterruptedException e) {
+			XServerManager.getInstance().getLogger().severe(e.getMessage());
+			con.errorDisconnect();
+		}
+		}catch (NotInitializedException e) {
 			con.errorDisconnect();
 		}
 	}
