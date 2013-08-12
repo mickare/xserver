@@ -29,7 +29,7 @@ public class Connection {
 	private final DataOutputStream output;
 	
 	private final int capacity = 256;
-	private final ArrayBlockingQueue<Packet> pendingPackets = new ArrayBlockingQueue<Packet>(256, true);
+	private final ArrayBlockingQueue<Packet> pendingPackets = new ArrayBlockingQueue<Packet>(256);
 	
 	private Receiving receiving;
 	private Sending sending;
@@ -254,7 +254,7 @@ public class Connection {
 	}
 		
 	public ArrayBlockingQueue<Packet> getPendingPackets() {
-		return new ArrayBlockingQueue<Packet>(capacity, true, pendingPackets);
+		return new ArrayBlockingQueue<Packet>(capacity, false, pendingPackets);
 	}
 	
 }

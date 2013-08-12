@@ -28,12 +28,12 @@ public class PingCommand extends SubCommand {
 					sender.sendMessage(ChatColor.RED + "Server \"" + args[0] + "\" not found!");
 					return true;
 				}
-				Ping p = new Ping(sender);
+				Ping p = new Ping(sender, XServerManager.getInstance().homeServer.getName());
 				p.add(s);
 				p.start();
 			} else {
 				
-				Ping p = new Ping(sender);
+				Ping p = new Ping(sender, XServerManager.getInstance().homeServer.getName());
 				p.addAll(XServerManager.getInstance().getServers());
 				p.start();
 				

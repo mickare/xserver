@@ -2,9 +2,12 @@ package com.mickare.xserver.net;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -17,8 +20,17 @@ import com.mickare.xserver.util.Encryption;
 public class Ping {
 	
 	
-	private static CacheMap<String, Ping> pending = new CacheMap<String, Ping>(20);
+	private static CacheMap<String, Ping> pending = new CacheMap<String, Ping>(40);
 
+	private static int rollingnumber = 0;
+	
+	private static int getNextRollingNumber() {
+		if(rollingnumber == Integer.MAX_VALUE) {
+			rollingnumber = Integer.MIN_VALUE;
+		}
+		return rollingnumber++;
+	}
+	
 	public static void addPendingPing(Ping ping) {
 		synchronized(pending) {
 			if(ping.started == -1) {
@@ -28,11 +40,12 @@ public class Ping {
 	}
 	
 	public static void receive(String key, XServer server) {
+		Ping p = null;
 		synchronized(pending) {
-			Ping p = pending.get(key);
-			if(p != null) {
-				p.receive(server);
-			}
+			p = pending.get(key);
+		}
+		if(p != null) {
+			p.receive(server);
 		}
 	}
 
@@ -44,8 +57,8 @@ public class Ping {
 	
 	private long started = -1;
 	private final long timeout = 2000;
-	private final HashMap<XServer, Long> responses = new HashMap<XServer, Long>();
-	private final HashSet<XServer> waiting = new HashSet<XServer>();
+	private final Map<XServer, Long> responses = Collections.synchronizedMap(new HashMap<XServer, Long>());
+	private final Set<XServer> waiting = Collections.synchronizedSet(new HashSet<XServer>());
 	
 	public Ping(CommandSender sender) {
 		this(sender, "Ping");
@@ -53,21 +66,19 @@ public class Ping {
 	
 	public Ping(CommandSender sender, String salt) {
 		this.sender = sender;
-		this.key = Encryption.MD5(String.valueOf(Math.random()) + salt);
+		this.key = Encryption.MD5(String.valueOf(Math.random()) + salt + getNextRollingNumber());
 		
 	}
 	
 	public boolean start() throws NotInitializedException {
 		if(started == -1) {
 			addPendingPing(this);
-			synchronized(waiting) {
 				for(XServer s : waiting.toArray(new XServer[waiting.size()])) {
 					if(!s.isConnected()) {
 						waiting.remove(s);
 						responses.put(s, (long) -1);
 					}
 				}
-			}
 			started = System.currentTimeMillis();
 			for(XServer s : waiting.toArray(new XServer[waiting.size()])) {
 				try {
@@ -104,7 +115,6 @@ public class Ping {
 	
 	public void receive(XServer server) {
 		long t = System.currentTimeMillis();
-		synchronized(waiting) {
 			if(waiting.contains(server)) {
 				waiting.remove(server);
 				synchronized(responses) {
@@ -112,15 +122,12 @@ public class Ping {
 				}
 				check();
 			}
-		}
 	}
 	
 	private boolean check() {
 		if(!isPending() && !resultprinted) {
 			resultprinted = true;
-			synchronized(waiting) {
-				waiting.clear();
-			}
+			waiting.clear();
 			sender.sendMessage(getFormatedString());
 			return true;
 		}
@@ -128,13 +135,10 @@ public class Ping {
 	}
 	
 	public boolean isPending() {
-		synchronized(waiting) {
-			return ((waiting.size() > 0) ? (System.currentTimeMillis() - started < timeout) : false); 
-		}
+		return ((waiting.size() > 0) ? (System.currentTimeMillis() - started < timeout) : false); 
 	}
 	
 	public String getFormatedString() {
-		synchronized(waiting) {
 			if(waiting.size() > 0) {
 				return "Still Pending...";
 			} else {
@@ -165,7 +169,6 @@ public class Ping {
 				}
 				return sb.toString();
 			}
-		}
 
 	}
 
