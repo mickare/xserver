@@ -146,12 +146,12 @@ public class Ping {
 				for(Entry<XServer, Long> es : responses.entrySet()) {
 					sb.append("\n").append(ChatColor.GOLD).append(es.getKey().getName()).append(ChatColor.GRAY).append(" - ");
 					if(es.getValue() < 0) {
-						sb.append(ChatColor.RED).append("Not connected!\n");
+						sb.append(ChatColor.RED).append("Not connected!");
 					} else if(es.getValue() == Long.MAX_VALUE) {
 						if(es.getKey().isConnected()) {
-							sb.append(ChatColor.RED).append("Timeout!\n");
+							sb.append(ChatColor.RED).append("Timeout!");
 						} else {
-							sb.append(ChatColor.RED).append("Timeout! Connection lost!\n");
+							sb.append(ChatColor.RED).append("Timeout! Connection lost!");
 						}
 					} else {
 						long diff = es.getValue() - started;
