@@ -105,12 +105,10 @@ public class NetPacketHandler {
 				Ping.receive(is.readUTF(), con.getXserver());
 				break;
 			case 800: // Message
-				// XServerManager.getInstance().getLogger().info("A");
-				XServerManager.getInstance().getThreadPool().runTask(new Runnable() {
-					public void run() {
+				//XServerManager.getInstance().getThreadPool().runTask(new Runnable() {
+				//	public void run() {
 						try {
 							if (con.getXserver() != null && con.isConnected() && con.getStatus().equals(Connection.stats.connected)) {
-								// XServerManager.getInstance().getLogger().info("B");
 								XServerManager.getInstance().getEventHandler()
 										.callEvent(new XServerMessageIncomingEvent(con.getXserver(), Message.read(con.getXserver(), data)));
 							}
@@ -119,8 +117,8 @@ public class NetPacketHandler {
 						} catch (IOException e) {
 
 						}
-					}
-				});
+				//	}
+				//});
 				break;
 			default:
 				con.disconnect();

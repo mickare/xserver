@@ -6,13 +6,13 @@ public class ServerThreadPoolExecutor {
 
 	//Parallel running Threads(Executor) on System
 
-	private int corePoolSize = 16;
+	private int corePoolSize = 64;
  
     //Maximum Threads allowed in Pool
     private int maxPoolSize = 256;
  
     //Keep alive time for waiting threads for jobs(Runnable)
-    private long keepAliveTime = 10000;
+    private long keepAliveTime = 60000;
  
     //This is the one who manages and start the work
     ThreadPoolExecutor threadPool = null;
