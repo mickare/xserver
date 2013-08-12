@@ -4,8 +4,8 @@ version: 2.0.0
 author: mickare
 description: XServer Communication Interface, that plugins can use to send messages to other servers.
 commands:
-  xserverreload:
-    description: Broadcast a Message.
+  xserver:
+    description: Main Command, has various subcommands (/xserver help for more).
     usage: /<command>
     permission: xserver
     permission-message: You don't have <permission>

@@ -19,6 +19,7 @@ public class XServer {
 	private final String password;
 
 	private Connection connection = null;
+	private Connection connection2 = null;	// Fix for HomeServer that is not connectable.
 	private Lock conLock = new ReentrantLock();
 
 	public XServer(String name, String host, int port, String password) {
@@ -54,6 +55,22 @@ public class XServer {
 		}
 	}
 
+	public void setReloginConnection(Connection con) throws NotInitializedException {
+		conLock.lock();
+		try {
+			if(XServerManager.getInstance().getHomeServer() == this) {
+				if (this.connection2 != con && ( connection2 != null ? connection2.isConnected() : false )) {
+					this.disconnect();
+				}
+				this.connection2 = con;
+			} else {
+				setConnection(con);
+			}
+		} finally {
+			conLock.unlock();
+		}
+	}
+	
 	public boolean isConnected() {
 		conLock.lock();
 		try {
@@ -88,8 +105,7 @@ public class XServer {
 		return password;
 	}
 
-	public void sendMessage(Message message) throws NotConnectedException,
-			InterruptedException, IOException {
+	public void sendMessage(Message message) throws NotConnectedException, IOException {
 		conLock.lock();
 		try {
 			if (!isConnected()) {
@@ -100,6 +116,14 @@ public class XServer {
 		} finally {
 			conLock.unlock();
 		}
+	}
+	
+	public void ping(Ping ping) throws InterruptedException, IOException {
+		conLock.lock();
+		if(isConnected()) {
+			connection.ping(ping);
+		}
+		conLock.unlock();
 	}
 
 }

@@ -1,7 +1,6 @@
 package com.mickare.xserver;
 
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -11,6 +10,7 @@ import java.util.logging.Logger;
 
 import javax.net.SocketFactory;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -45,7 +45,7 @@ public class XServerManager {
 		stpool = new ServerThreadPoolExecutor();
 		sf = SocketFactory.getDefault();
 		this.connection = connection;
-		reload();
+		this.reload();
 		homeServer = getServer(servername);
 		if (homeServer == null) {
 			throw new InvalidConfigurationException("Server information for \"" + servername + "\" was not found!");
@@ -57,6 +57,23 @@ public class XServerManager {
 	
 	public void start() throws IOException {
 		mainserver.start();
+		reconnectAll_soft();
+	}
+	
+	public void start_async() {
+		stpool.runTask(new Runnable() {
+			public void run() {
+				try {
+					start();
+				} catch (Exception e) {
+					logger.severe("XServer not started correctly!");
+					logger.severe(e.getMessage());
+					Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "stop");;
+				}
+			}});
+	}
+	
+	public void reconnectAll_soft() {
 		for (XServer s : servers.values()) {
 			if(!s.isConnected()) {
 				try {
@@ -68,9 +85,13 @@ public class XServerManager {
 		}
 	}
 	
-	public void reconnectAll() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
+	public void reconnectAll_forced() {
 		for (XServer s : servers.values()) {
-			s.connect();
+			try {
+				s.connect();
+			} catch (IOException | InterruptedException | NotInitializedException e) {
+				logger.info("Connection to " +  s.getName() + " failed!\n" + e.getMessage());
+			}
 		}
 	}
 	
@@ -84,26 +105,36 @@ public class XServerManager {
 	 * 
 	 * @throws InvalidConfigurationException
 	 */
-	public synchronized void reload() throws InvalidConfigurationException {
+	public void reload() {
 		synchronized(servers) {
+			for(XServer s : servers.values()) {
+				s.disconnect();
+			}
 			servers.clear();
 	
-			ResultSet rs = connection.query("SELECT * FROM xserver");
-
-			try {
-				while (rs.next()) {
-					String servername = rs.getString("NAME");
-					String[] hostip = rs.getString("ADRESS").split(":");
-					String pw = rs.getString("PW");
-					servers.put(servername, new XServer(servername, hostip[0], Integer.valueOf(hostip[1]), pw));
-					//System.out.println(servername + " " + hostip[0] + " " + Integer.valueOf(hostip[1]) + " " +  pw);
+			ResultSet rs = null;
+			synchronized(connection) {
+				rs = connection.query("SELECT * FROM xserver");
+			}
+			
+			if(rs != null) {
+				try {
+					while (rs.next()) {
+						String servername = rs.getString("NAME");
+						String[] hostip = rs.getString("ADRESS").split(":");
+						String pw = rs.getString("PW");
+						servers.put(servername, new XServer(servername, hostip[0], Integer.valueOf(hostip[1]), pw));
+						//System.out.println(servername + " " + hostip[0] + " " + Integer.valueOf(hostip[1]) + " " +  pw);
+					}
+				} catch (NumberFormatException | SQLException e) {
+					logger.severe(e.getMessage());
 				}
-			} catch (NumberFormatException | SQLException e) {
-				logger.severe(e.getMessage());
+			} else {
+				logger.severe("Couldn't load XServer List form Database!");
 			}
 		}
 	}
-	
+			
 	public XServer getHomeServer() {
 		return homeServer;
 	}

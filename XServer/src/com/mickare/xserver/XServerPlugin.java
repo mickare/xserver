@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.mickare.xserver.commands.XServerCommands;
 import com.mickare.xserver.util.MySQL;
 
 public class XServerPlugin extends JavaPlugin {
@@ -64,13 +65,11 @@ public class XServerPlugin extends JavaPlugin {
 			this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");
 		}
 		
-		try {
-			xmanager.start();
-		} catch (IOException e) {
-			log.severe("XServer not started correctly!");
-			log.severe(e.getMessage());
-			this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");;
-		}
+		log.info("Starting XServer async.");
+		xmanager.start_async();
+
+		//Register Commands
+		new XServerCommands(this);
 		
 		log.info(getDescription().getName() + " enabled!");
 	}

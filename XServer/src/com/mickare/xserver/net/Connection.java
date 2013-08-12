@@ -6,6 +6,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -13,8 +14,6 @@ import javax.net.SocketFactory;
 
 import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.exceptions.NotInitializedException;
-import com.mickare.xserver.util.CacheMap;
-import com.mickare.xserver.util.Encryption;
 
 public class Connection {
 
@@ -29,15 +28,11 @@ public class Connection {
 	private final DataInputStream input;
 	private final DataOutputStream output;
 	
-	private final ArrayBlockingQueue<Packet> sendingMessages = new ArrayBlockingQueue<Packet>(256);
+	private final int capacity = 256;
+	private final ArrayBlockingQueue<Packet> pendingPackets = new ArrayBlockingQueue<Packet>(256, true);
 	
 	private Receiving receiving;
 	private Sending sending;
-	
-	// Response Time in miliseconds.
-	private int lastping = Integer.MAX_VALUE;
-	
-	private final CacheMap<String, Long> pings = new CacheMap<String, Long>(10);
 	
 	public enum stats {
 		disconnected, connecting, connected, error
@@ -95,12 +90,34 @@ public class Connection {
 	}
 	
 	private void sendLoginRequest(Packet.Types type) throws IOException, InterruptedException, NotInitializedException {
-		ByteArrayOutputStream b = new ByteArrayOutputStream();
-		DataOutputStream out = new DataOutputStream(b);
-		out.writeUTF(XServerManager.getInstance().getHomeServer().getName());
-		out.writeUTF(XServerManager.getInstance().getHomeServer().getPassword());
-		out.close();
-		sendingMessages.put(new Packet(type, b.toByteArray()));
+		ByteArrayOutputStream b = null; 
+		DataOutputStream out = null;
+		try {
+			b = new ByteArrayOutputStream();
+			out = new DataOutputStream(b);
+			out.writeUTF(XServerManager.getInstance().getHomeServer().getName());
+			out.writeUTF(XServerManager.getInstance().getHomeServer().getPassword());
+		pendingPackets.put(new Packet(type, b.toByteArray()));
+		} finally {
+			if(out != null) {
+				out.close();
+			}
+		}
+	}
+	
+	public void ping(Ping ping) throws InterruptedException, IOException {
+		ByteArrayOutputStream b = null; 
+		DataOutputStream out = null;
+		try {
+			b = new ByteArrayOutputStream();
+			out = new DataOutputStream(b);
+			out.writeUTF(ping.getKey());
+			pendingPackets.put(new Packet(Packet.Types.PingRequest, b.toByteArray()));
+		} finally {
+			if(out != null) {
+				out.close();
+			}
+		}
 	}
 	
 	public boolean isConnected() {
@@ -141,8 +158,12 @@ public class Connection {
 		return port;
 	}
 	
-	public void send(Packet packet) throws InterruptedException {
-		sendingMessages.put(packet);
+	public boolean send(Packet packet) {
+		return pendingPackets.add(packet);
+	}
+	
+	public boolean sendAll(Collection<Packet> packets) {
+		return pendingPackets.addAll(packets);
 	}
 	
 	private static class Sending implements Runnable {
@@ -163,8 +184,12 @@ public class Connection {
 			Packet p = null;
 			while(running && con.isConnected()) {
 				try {
-					p = con.sendingMessages.poll(1000, TimeUnit.MILLISECONDS);
+					p = con.pendingPackets.poll(1000, TimeUnit.MILLISECONDS);
 
+					if(!running) {
+						return;
+					}
+					
 					if(p == null) {
 						new Packet(Packet.Types.KeepAlive, new byte[0]).writeToStream(con.output);
 					} else {
@@ -205,34 +230,6 @@ public class Connection {
 			}
 		}
 	}
-	
-	/**
-	 * Creates a new Ping Timestamp
-	 * @return HashKey for Ping
-	 */
-	public String createPing() {
-		synchronized(pings) {
-			String key = Encryption.MD5(String.valueOf(Math.random()));
-			pings.put(key, System.currentTimeMillis());
-			return key;
-		}
-	} 
-	
-	public void returningPing(String key) {
-		synchronized(pings) {
-			if(pings.containsKey(key)) {
-				setLastping((int) (System.currentTimeMillis() - pings.get(key)));
-			}
-		}
-	}
-
-	public synchronized int getLastping() {
-		return lastping;
-	}
-
-	private synchronized void setLastping(int lastping) {
-		this.lastping = lastping;
-	}
 
 	public stats getStatus() {
 		return status;
@@ -249,6 +246,15 @@ public class Connection {
 	protected void setXserver(XServer xserver) {
 		this.xserver = xserver;
 		xserver.setConnection(this);
+	}
+	
+	protected void setReloginXserver(XServer xserver) throws NotInitializedException {
+		this.xserver = xserver;
+		xserver.setReloginConnection(this);
+	}
+		
+	public ArrayBlockingQueue<Packet> getPendingPackets() {
+		return new ArrayBlockingQueue<Packet>(capacity, true, pendingPackets);
 	}
 	
 }
