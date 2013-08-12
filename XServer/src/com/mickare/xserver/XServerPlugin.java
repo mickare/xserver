@@ -32,7 +32,9 @@ public class XServerPlugin extends JavaPlugin {
 			log.severe("[ERROR] A Error occured when disabling plugin!\n[ERROR] " + e.getMessage());
 		}
 		
-		statsconnection.disconnect();
+		if(statsconnection != null) {
+			statsconnection.disconnect();
+		}
 		
 		log.info(getDescription().getName() + " disabled!");
 	}
@@ -51,7 +53,7 @@ public class XServerPlugin extends JavaPlugin {
 		
 		this.saveDefaultConfig();
 		
-		MySQL statsconnection = new MySQL(log , this.getConfig().getString("mysql.User", ""), this.getConfig().getString("mysql.Pass", ""), this.getConfig().getString("mysql.Data", ""), this.getConfig().getString("mysql.Host", ""), "stats");
+		statsconnection = new MySQL(log , this.getConfig().getString("mysql.User", ""), this.getConfig().getString("mysql.Pass", ""), this.getConfig().getString("mysql.Data", ""), this.getConfig().getString("mysql.Host", ""), "stats");
 		statsconnection.connect();
 		
 		try {
