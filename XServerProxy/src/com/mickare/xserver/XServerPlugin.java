@@ -12,7 +12,7 @@ import com.mickare.xserver.exceptions.InvalidConfigurationException;
 
 public class XServerPlugin extends Plugin {
 	
-	private Logger log;
+	private Logger log = null;
 	
 	private String servername;
 	
@@ -22,7 +22,7 @@ public class XServerPlugin extends Plugin {
 	
 	@Override
 	public void onDisable() {
-		log = this.getLogger();
+		log = Logger.getLogger("BungeeCord");
 		log.info("---------------------------------");
 		log.info("--------- Proxy XServer ---------");
 		log.info("----------  disabling  ----------");
@@ -44,14 +44,14 @@ public class XServerPlugin extends Plugin {
 	
 	@Override
 	public void onEnable() {		
-		log = this.getLogger();
+		log = Logger.getLogger("BungeeCord");
 		log.info("---------------------------------");
 		log.info("--------- Proxy XServer ---------");
 		log.info("----------  enabling   ----------");
 		
 		servername = this.getConfig().getString("servername");
 			
-		getLogger().info(this.getConfig().getString("mysql.User") + " " + this.getConfig().getString("mysql.Pass") + " " + this.getConfig().getString("mysql.Data") + " " + this.getConfig().getString("mysql.Host"));
+		log.info(this.getConfig().getString("mysql.User") + " " + this.getConfig().getString("mysql.Pass") + " " + this.getConfig().getString("mysql.Data") + " " + this.getConfig().getString("mysql.Host"));
 		
 		statsconnection = new MySQL(log , this.getConfig().getString("mysql.User"), this.getConfig().getString("mysql.Pass"), this.getConfig().getString("mysql.Data"), this.getConfig().getString("mysql.Host"), "config");
 		statsconnection.connect();
@@ -79,6 +79,10 @@ public class XServerPlugin extends Plugin {
 			config.saveDefaultConfig();
 		}
 		return config;
+	}
+	
+	public Logger getLogger() {
+		return log;
 	}
 	
 }

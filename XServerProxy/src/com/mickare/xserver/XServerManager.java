@@ -113,7 +113,7 @@ public class XServerManager {
 	
 			ResultSet rs = null;
 			synchronized(connection) {
-				rs = connection.query("SELECT * FROM xserverproxy");
+				rs = connection.query("SELECT * FROM xserver");
 			}
 			
 			if(rs != null) {
