@@ -161,17 +161,17 @@ public class ConfigAccessor {
         }
     }
 	
-	public int getInt(String path, int def) {
-		return get( path, def );
+	public int getInt(String path) {
+		return get( path, null );
 	}
 
-	public String getString(String path, String def) {
-		return get( path, def );
+	public String getString(String path) {
+		return get( path, null );
 	}
 
-	public boolean getBoolean(String path, boolean def)
+	public boolean getBoolean(String path)
     {
-        return get( path, def );
+        return get( path, null );
     }
 	
 	public void saveDefaultConfig() {

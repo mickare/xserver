@@ -49,9 +49,11 @@ public class XServerPlugin extends Plugin {
 		log.info("--------- Proxy XServer ---------");
 		log.info("----------  enabling   ----------");
 		
-		servername = this.getConfig().getString("servername", "");
+		servername = this.getConfig().getString("servername");
 			
-		statsconnection = new MySQL(log , this.getConfig().getString("mysql.User", ""), this.getConfig().getString("mysql.Pass", ""), this.getConfig().getString("mysql.Data", ""), this.getConfig().getString("mysql.Host", ""), "stats");
+		getLogger().info(this.getConfig().getString("mysql.User") + " " + this.getConfig().getString("mysql.Pass") + " " + this.getConfig().getString("mysql.Data") + " " + this.getConfig().getString("mysql.Host"));
+		
+		statsconnection = new MySQL(log , this.getConfig().getString("mysql.User"), this.getConfig().getString("mysql.Pass"), this.getConfig().getString("mysql.Data"), this.getConfig().getString("mysql.Host"), "config");
 		statsconnection.connect();
 		
 		try {
