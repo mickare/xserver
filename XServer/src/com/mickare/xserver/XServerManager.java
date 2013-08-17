@@ -74,24 +74,36 @@ public class XServerManager {
 	}
 	
 	public void reconnectAll_soft() {
-		for (XServer s : servers.values()) {
-			if(!s.isConnected()) {
-				try {
-					s.connect();
-				} catch (IOException | InterruptedException | NotInitializedException e) {
-					logger.info("Connection to " +  s.getName() + " failed!\n" + e.getMessage());
+		for (final XServer s : servers.values()) {
+			stpool.runTask(new Runnable() {
+				public void run() {
+					if (!s.isConnected()) {
+						try {
+							s.connect();
+						} catch (IOException | InterruptedException
+								| NotInitializedException e) {
+							logger.info("Connection to " + s.getName()
+									+ " failed!\n" + e.getMessage());
+						}
+					}
 				}
-			}
+			});
 		}
 	}
-	
+
 	public void reconnectAll_forced() {
-		for (XServer s : servers.values()) {
-			try {
-				s.connect();
-			} catch (IOException | InterruptedException | NotInitializedException e) {
-				logger.info("Connection to " +  s.getName() + " failed!\n" + e.getMessage());
-			}
+		for (final XServer s : servers.values()) {
+			stpool.runTask(new Runnable() {
+				public void run() {
+					try {
+						s.connect();
+					} catch (IOException | InterruptedException
+							| NotInitializedException e) {
+						logger.info("Connection to " + s.getName()
+								+ " failed!\n" + e.getMessage());
+					}
+				}
+			});
 		}
 	}
 	
