@@ -15,14 +15,16 @@ public class Message {
 	private final String subChannel;
 	private final byte[] content;
 
-	public static Message create(String subChannel, byte[] content) throws NotInitializedException {
-		return new Message(XServerManager.getInstance().getHomeServer(), subChannel, content);
+	public static Message create(String subChannel, byte[] content)
+			throws NotInitializedException {
+		return new Message(XServerManager.getInstance().getHomeServer(),
+				subChannel, content);
 	}
-	
+
 	public static Message read(XServer sender, byte[] data) throws IOException {
 		return new Message(sender, data);
 	}
-	
+
 	private Message(XServer sender, String subChannel, byte[] content) {
 		this.sender = sender;
 		this.subChannel = subChannel;
@@ -40,15 +42,16 @@ public class Message {
 			in.readFully(contentData);
 			content = contentData;
 		} finally {
-			if(in != null) {
+			if (in != null) {
 				in.close();
 			}
 		}
-		
+
 	}
 
 	/**
 	 * Get Sender Server Name
+	 * 
 	 * @return sender name
 	 */
 	public XServer getSender() {
@@ -57,6 +60,7 @@ public class Message {
 
 	/**
 	 * SubChannel
+	 * 
 	 * @return subchannel name
 	 */
 	public String getSubChannel() {
@@ -65,14 +69,16 @@ public class Message {
 
 	/**
 	 * Get the content of this message...
+	 * 
 	 * @return byte array
 	 */
 	public byte[] getContent() {
 		return content;
 	}
-	
+
 	/**
 	 * Get the compiled byte array of this message...
+	 * 
 	 * @return byte array
 	 * @throws IOException
 	 */
@@ -86,11 +92,11 @@ public class Message {
 			out.writeInt(content.length);
 			out.write(content);
 		} finally {
-			if(out != null) {
+			if (out != null) {
 				out.close();
 			}
 		}
-		
+
 		return b.toByteArray();
 	}
 

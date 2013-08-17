@@ -20,25 +20,26 @@ import com.mickare.xserver.util.MySQL;
 public class XServerManager {
 
 	private static XServerManager instance = null;
-	
+
 	public static XServerManager getInstance() throws NotInitializedException {
-		if(instance == null) {
+		if (instance == null) {
 			throw new NotInitializedException();
 		}
 		return instance;
 	}
-	
+
 	private Logger logger;
 	private EventHandler eventhandler;
 	private ServerThreadPoolExecutor stpool;
 	private SocketFactory sf;
 	private MainServer mainserver;
-	
+
 	private final MySQL connection;
 	public final XServer homeServer;
 	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
-	
-	protected XServerManager(String servername, Plugin plugin, Logger logger, MySQL connection) throws InvalidConfigurationException {
+
+	protected XServerManager(String servername, Plugin plugin, Logger logger,
+			MySQL connection) throws InvalidConfigurationException {
 		instance = this;
 		this.logger = logger;
 		stpool = new ServerThreadPoolExecutor();
@@ -47,18 +48,19 @@ public class XServerManager {
 		this.reload();
 		homeServer = getServer(servername);
 		if (homeServer == null) {
-			throw new InvalidConfigurationException("Server information for \"" + servername + "\" was not found!");
+			throw new InvalidConfigurationException("Server information for \""
+					+ servername + "\" was not found!");
 		}
-		
-		this.eventhandler = new EventHandler();		
+
+		this.eventhandler = new EventHandler();
 		mainserver = new MainServer(this);
 	}
-	
+
 	public void start() throws IOException {
 		mainserver.start();
 		reconnectAll_soft();
 	}
-	
+
 	public void start_async() {
 		stpool.runTask(new Runnable() {
 			public void run() {
@@ -67,63 +69,79 @@ public class XServerManager {
 				} catch (Exception e) {
 					logger.severe("XServer not started correctly!");
 					logger.severe(e.getMessage());
-					//Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "stop");;
+					// Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(),
+					// "stop");;
 				}
-			}});
+			}
+		});
 	}
-	
+
 	public void reconnectAll_soft() {
-		for (XServer s : servers.values()) {
-			if(!s.isConnected()) {
-				try {
-					s.connect();
-				} catch (IOException | InterruptedException | NotInitializedException e) {
-					logger.info("Connection to " +  s.getName() + " failed!\n" + e.getMessage());
+		for (final XServer s : servers.values()) {
+			stpool.runTask(new Runnable() {
+				public void run() {
+					if (!s.isConnected()) {
+						try {
+							s.connect();
+						} catch (IOException | InterruptedException
+								| NotInitializedException e) {
+							logger.info("Connection to " + s.getName()
+									+ " failed!\n" + e.getMessage());
+						}
+					}
 				}
-			}
+			});
 		}
 	}
-	
+
 	public void reconnectAll_forced() {
-		for (XServer s : servers.values()) {
-			try {
-				s.connect();
-			} catch (IOException | InterruptedException | NotInitializedException e) {
-				logger.info("Connection to " +  s.getName() + " failed!\n" + e.getMessage());
-			}
+		for (final XServer s : servers.values()) {
+			stpool.runTask(new Runnable() {
+				public void run() {
+					try {
+						s.connect();
+					} catch (IOException | InterruptedException
+							| NotInitializedException e) {
+						logger.info("Connection to " + s.getName()
+								+ " failed!\n" + e.getMessage());
+					}
+				}
+			});
 		}
 	}
-	
+
 	public void stop() throws IOException {
 		mainserver.stop();
 		stpool.shutDown();
 	}
-	
+
 	/**
 	 * Reload configuration
 	 * 
 	 * @throws InvalidConfigurationException
 	 */
 	public void reload() {
-		synchronized(servers) {
-			for(XServer s : servers.values()) {
+		synchronized (servers) {
+			for (XServer s : servers.values()) {
 				s.disconnect();
 			}
 			servers.clear();
-	
+
 			ResultSet rs = null;
-			synchronized(connection) {
+			synchronized (connection) {
 				rs = connection.query("SELECT * FROM xserver");
 			}
-			
-			if(rs != null) {
+
+			if (rs != null) {
 				try {
 					while (rs.next()) {
 						String servername = rs.getString("NAME");
 						String[] hostip = rs.getString("ADRESS").split(":");
 						String pw = rs.getString("PW");
-						servers.put(servername, new XServer(servername, hostip[0], Integer.valueOf(hostip[1]), pw));
-						//System.out.println(servername + " " + hostip[0] + " " + Integer.valueOf(hostip[1]) + " " +  pw);
+						servers.put(servername, new XServer(servername,
+								hostip[0], Integer.valueOf(hostip[1]), pw));
+						// System.out.println(servername + " " + hostip[0] + " "
+						// + Integer.valueOf(hostip[1]) + " " + pw);
 					}
 				} catch (NumberFormatException | SQLException e) {
 					logger.severe(e.getMessage());
@@ -133,14 +151,14 @@ public class XServerManager {
 			}
 		}
 	}
-			
+
 	public XServer getHomeServer() {
 		return homeServer;
 	}
 
 	public XServer getServer(String servername) {
-		synchronized(servers) {
-		return servers.get(servername);
+		synchronized (servers) {
+			return servers.get(servername);
 		}
 	}
 
@@ -155,19 +173,19 @@ public class XServerManager {
 	public SocketFactory getSocketFactory() {
 		return sf;
 	}
-	
+
 	public XServer getXServer(String name) {
 		return servers.get(name);
 	}
-	
+
 	/**
 	 * Get the list of all available servers
 	 * 
 	 * @return servers
 	 */
 	public synchronized Set<XServer> getServers() {
-		synchronized(servers) {
-		return new HashSet<XServer>(servers.values());
+		synchronized (servers) {
+			return new HashSet<XServer>(servers.values());
 		}
 	}
 
@@ -177,8 +195,8 @@ public class XServerManager {
 	 * @return
 	 */
 	public synchronized String[] getServernames() {
-		synchronized(servers) {
-		return servers.values().toArray(new String[servers.size()]);
+		synchronized (servers) {
+			return servers.values().toArray(new String[servers.size()]);
 		}
 	}
 
@@ -190,16 +208,16 @@ public class XServerManager {
 	 * @return XServer with that name
 	 */
 	public synchronized XServer getServerIgnoreCase(String name) {
-		synchronized(servers) {
-		for (XServer s : servers.values()) {
-			if (s.getName().equalsIgnoreCase(name)) {
-				return s;
+		synchronized (servers) {
+			for (XServer s : servers.values()) {
+				if (s.getName().equalsIgnoreCase(name)) {
+					return s;
+				}
 			}
-		}
-		return null;
+			return null;
 		}
 	}
-	
+
 	/**
 	 * Get the XServer Object via host and port
 	 * 
@@ -208,18 +226,18 @@ public class XServerManager {
 	 * @return XServer
 	 */
 	public synchronized XServer getServer(String host, int port) {
-		synchronized(servers) {
-		for (XServer s : servers.values()) {
-			if (s.getHost().equalsIgnoreCase(host) && s.getPort() == port) {
-				return s;
+		synchronized (servers) {
+			for (XServer s : servers.values()) {
+				if (s.getHost().equalsIgnoreCase(host) && s.getPort() == port) {
+					return s;
+				}
 			}
-		}
-		return null;
+			return null;
 		}
 	}
 
 	public EventHandler getEventHandler() {
 		return eventhandler;
 	}
-	
+
 }

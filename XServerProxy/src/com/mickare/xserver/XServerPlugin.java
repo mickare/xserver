@@ -11,78 +11,87 @@ import com.mickare.xserver.config.ConfigAccessor;
 import com.mickare.xserver.exceptions.InvalidConfigurationException;
 
 public class XServerPlugin extends Plugin {
-	
+
 	private Logger log = null;
-	
+
 	private String servername;
-	
+
 	private MySQL statsconnection = null;
 	private XServerManager xmanager;
 	private ConfigAccessor config;
-	
+
 	@Override
 	public void onDisable() {
 		log = Logger.getLogger("BungeeCord");
 		log.info("---------------------------------");
 		log.info("--------- Proxy XServer ---------");
 		log.info("----------  disabling  ----------");
-		
+
 		try {
-			if(xmanager != null) {
+			if (xmanager != null) {
 				xmanager.stop();
 			}
 		} catch (IOException e) {
-			log.severe("[ERROR] A Error occured when disabling plugin!\n[ERROR] " + e.getMessage());
+			log.severe("[ERROR] A Error occured when disabling plugin!\n[ERROR] "
+					+ e.getMessage());
 		}
-		
-		if(statsconnection != null) {
+
+		if (statsconnection != null) {
 			statsconnection.disconnect();
 		}
-		
+
 		log.info(getDescription().getName() + " disabled!");
 	}
-	
+
 	@Override
-	public void onEnable() {		
+	public void onEnable() {
 		log = Logger.getLogger("BungeeCord");
 		log.info("---------------------------------");
 		log.info("--------- Proxy XServer ---------");
 		log.info("----------  enabling   ----------");
-		
+
 		servername = this.getConfig().getString("servername");
-			
-		log.info(this.getConfig().getString("mysql.User") + " " + this.getConfig().getString("mysql.Pass") + " " + this.getConfig().getString("mysql.Data") + " " + this.getConfig().getString("mysql.Host"));
-		
-		statsconnection = new MySQL(log , this.getConfig().getString("mysql.User"), this.getConfig().getString("mysql.Pass"), this.getConfig().getString("mysql.Data"), this.getConfig().getString("mysql.Host"), "config");
+
+		log.info(this.getConfig().getString("mysql.User") + " "
+				+ this.getConfig().getString("mysql.Pass") + " "
+				+ this.getConfig().getString("mysql.Data") + " "
+				+ this.getConfig().getString("mysql.Host"));
+
+		statsconnection = new MySQL(log, this.getConfig().getString(
+				"mysql.User"), this.getConfig().getString("mysql.Pass"), this
+				.getConfig().getString("mysql.Data"), this.getConfig()
+				.getString("mysql.Host"), "config");
 		statsconnection.connect();
-		
+
 		try {
-			xmanager = new XServerManager(servername, this, log, statsconnection);
+			xmanager = new XServerManager(servername, this, log,
+					statsconnection);
 		} catch (InvalidConfigurationException e) {
 			log.severe("XServerManager not initialized correctly!");
 			log.severe(e.getMessage());
-			//this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");
+			// this.getServer().dispatchCommand(this.getServer().getConsoleSender(),
+			// "stop");
 		}
-		
+
 		log.info("Starting XServer async.");
 		xmanager.start_async();
 
-		//Register Commands
+		// Register Commands
 		new XServerCommands(this);
-		
+
 		log.info(getDescription().getName() + " enabled!");
 	}
-	
+
 	public ConfigAccessor getConfig() {
-		if(config == null) {
+		if (config == null) {
 			config = new ConfigAccessor(this, "config.yml");
 			config.saveDefaultConfig();
 		}
 		return config;
 	}
-	
+
 	public Logger getLogger() {
 		return log;
 	}
-	
+
 }
