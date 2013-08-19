@@ -50,7 +50,7 @@ public class XServerManager {
 					+ servername + "\" was not found!");
 		}
 
-		this.eventhandler = new EventHandler();
+		this.eventhandler = new EventHandler(this);
 		mainserver = new MainServer(this);
 	}
 

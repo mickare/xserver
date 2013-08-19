@@ -15,5 +15,10 @@ public class XServerEvent {
 	public String getText() {
 		return text;
 	}
+
+	public void postCall() {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }
