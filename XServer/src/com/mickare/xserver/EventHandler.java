@@ -1,7 +1,9 @@
 package com.mickare.xserver;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -48,6 +50,18 @@ public class EventHandler {
 		listeners.remove(lis);
 	}
 
+	/**
+	 * Unregister all for a plugin listeners...
+	 */
+	public synchronized void unregisterAll(JavaPlugin plugin) {
+		for(Entry<XServerListener, JavaPlugin> e : new HashSet<Entry<XServerListener, JavaPlugin>>(listeners.entrySet())) {
+			if(e.getValue() == plugin) {
+				bus.unregister(e.getKey());
+				listeners.remove(e.getKey());
+			}
+		}
+	}
+	
 	/**
 	 * Unregister all listeners...
 	 */

@@ -1,7 +1,9 @@
 package com.mickare.xserver;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 
 import net.md_5.bungee.api.plugin.Plugin;
@@ -45,6 +47,19 @@ public class EventHandler {
 	public synchronized void unregisterListener(XServerListener lis) {
 		bus.unregister(lis);
 		listeners.remove(lis);
+	}
+	
+	
+	/**
+	 * Unregister all for a plugin listeners...
+	 */
+	public synchronized void unregisterAll(Plugin plugin) {
+		for(Entry<XServerListener, Plugin> e : new HashSet<Entry<XServerListener, Plugin>>(listeners.entrySet())) {
+			if(e.getValue() == plugin) {
+				bus.unregister(e.getKey());
+				listeners.remove(e.getKey());
+			}
+		}
 	}
 
 	/**
