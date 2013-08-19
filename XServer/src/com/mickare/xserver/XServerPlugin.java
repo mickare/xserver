@@ -58,7 +58,7 @@ public class XServerPlugin extends JavaPlugin {
 		statsconnection.connect();
 		
 		try {
-			xmanager = new XServerManager(servername, this, log, statsconnection);
+			xmanager = new XServerManager(servername, log, statsconnection);
 		} catch (InvalidConfigurationException e) {
 			log.severe("XServerManager not initialized correctly!");
 			log.severe(e.getMessage());

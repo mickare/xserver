@@ -18,4 +18,10 @@ public class XServerDataEvent extends XServerEvent {
 		return data;
 	}
 
+	@Override
+	public void postCall() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

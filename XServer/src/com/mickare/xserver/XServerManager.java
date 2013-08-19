@@ -12,7 +12,6 @@ import javax.net.SocketFactory;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.XServer;
@@ -39,7 +38,7 @@ public class XServerManager {
 	public final XServer homeServer;
 	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
 	
-	protected XServerManager(String servername, JavaPlugin plugin, Logger logger, MySQL connection) throws InvalidConfigurationException {
+	protected XServerManager(String servername, Logger logger, MySQL connection) throws InvalidConfigurationException {
 		instance = this;
 		this.logger = logger;
 		stpool = new ServerThreadPoolExecutor();
@@ -51,7 +50,7 @@ public class XServerManager {
 			throw new InvalidConfigurationException("Server information for \"" + servername + "\" was not found!");
 		}
 		
-		this.eventhandler = new EventHandler(plugin);		
+		this.eventhandler = new EventHandler(this);		
 		mainserver = new MainServer(this);
 	}
 	

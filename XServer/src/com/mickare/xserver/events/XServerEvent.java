@@ -15,5 +15,9 @@ public class XServerEvent {
 	public String getText() {
 		return text;
 	}
+
+	public void postCall() {
+		
+	}
 	
 }

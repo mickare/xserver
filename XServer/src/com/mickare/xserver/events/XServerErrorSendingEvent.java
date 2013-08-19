@@ -18,5 +18,11 @@ public class XServerErrorSendingEvent extends XServerEvent {
 	public Message getMessage() {
 		return m;
 	}
+
+	@Override
+	public void postCall() {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }

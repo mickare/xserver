@@ -1,14 +1,11 @@
 package com.mickare.xserver;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.logging.Level;
 
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import com.mickare.xserver.annotations.XEventHandler;
 
 import com.mickare.xserver.events.XServerEvent;
 
@@ -16,10 +13,12 @@ public class EventHandler {
 	
 	private final HashMap<XServerListener, JavaPlugin> listeners = new HashMap<XServerListener, JavaPlugin>();
 
-	private final JavaPlugin plugin;
+	private final XServerManager manager;
+	private final EventBus bus;
 	
-	protected EventHandler(JavaPlugin plugin) {
-		this.plugin = plugin;
+	protected EventHandler(XServerManager manager) {
+		this.manager = manager;
+		bus = new EventBus(this, manager.getLogger());
 	}
 
 	/**
@@ -35,9 +34,9 @@ public class EventHandler {
 	 * @param plugin
 	 * @param lis
 	 */
-	public synchronized void registerListener(JavaPlugin plugin,
-			XServerListener lis) {
+	public synchronized void registerListener(XServerListener lis, JavaPlugin plugin) {
 		listeners.put(lis, plugin);
+		bus.register(lis, plugin);
 	}
 
 	/**
@@ -45,6 +44,7 @@ public class EventHandler {
 	 * @param lis
 	 */
 	public synchronized void unregisterListener(XServerListener lis) {
+		bus.unregister(lis);
 		listeners.remove(lis);
 	}
 
@@ -52,103 +52,48 @@ public class EventHandler {
 	 * Unregister all listeners...
 	 */
 	public synchronized void unregisterAll() {
+		for(XServerListener lis : listeners.keySet()) {
+			bus.unregister(lis);
+		}
 		listeners.clear();
-	}
-
-	/**
-	 * Unregister all listeners of a plugin...
-	 * @param plugin
-	 */
-	public synchronized void unregisterAll(JavaPlugin plugin) {
-		for (XServerListener lis : getListeners().keySet()) {
-			if (listeners.get(lis).equals(plugin)) {
-				listeners.remove(lis);
-			}
-		}
-	}
-
-	private boolean isInStringHashSet(HashSet<String> list, String search) {
-		for(String text : list) {
-			if(text.equals(search)) {
-				return true;
-			}
-		}
-		return false;
 	}
 	
 	/**
 	 * Call an Event...
 	 * @param event
 	 */
-	public synchronized void callEvent(final XServerEvent event) {
-		for (XServerListener lis : listeners.keySet()) {
-			
-			HashSet<String> usedMethods = new HashSet<String>();
-
-			for (Method m : lis.getClass().getMethods()) {
-
-				if(!isInStringHashSet(usedMethods, m.getName())) {
-					
-				
-					Method sm = null;
-					try {
-						sm = lis.getClass()
-								.getMethod(m.getName(), event.getClass());
-						usedMethods.add(m.getName());
-					} catch (NoSuchMethodException nsme) {
-						sm = null;
-					} catch (SecurityException se) {
-						sm = null;
-					}
-	
-					if (sm != null) {
-	
-						boolean sync = true;
-	
-						XEventHandler a = sm.getAnnotation(XEventHandler.class);
-	
-						if (a != null) {
-							sync = a.sync();
-						}
-	
-						runEventWrapper rew = new runEventWrapper(lis, event, sm);
-	
-						if (sync) {
-							plugin.getServer().getScheduler()
-									.runTask(listeners.get(lis), rew);
-						} else {
-							plugin.getServer().getScheduler()
-									.runTaskAsynchronously(listeners.get(lis), rew);
-						}
-					}
-				}
-			}
+	public synchronized XServerEvent callEvent(final XServerEvent event) {
+		
+		if(event == null) {
+			throw new IllegalArgumentException("event can't be null" );
 		}
+
+        long start = System.nanoTime();
+        bus.post( event );
+        event.postCall();
+
+        long elapsed = start - System.nanoTime();
+        if ( elapsed > 250000 )
+        {
+        	manager.getLogger().log( Level.WARNING, "Event {0} took more {1}ns to process!", new Object[]
+            {
+                event, elapsed
+            } );
+        }
+        return event;
 	}
-
-	private static class runEventWrapper implements Runnable {
-
-		private final XServerEvent event;
-		private final XServerListener lis;
-		private final Method m;
-
-		public runEventWrapper(final XServerListener lis,
-				final XServerEvent event, final Method m) {
-			this.lis = lis;
-			this.event = event;
-			this.m = m;
+	
+	
+	protected void runTask(Boolean sync, JavaPlugin plugin, Runnable run) {
+		boolean s = true;
+		if(sync != null) {
+			s = sync.booleanValue();
 		}
-
-		@Override
-		public void run() {
-			try {
-				m.invoke(lis, event);
-			} catch (IllegalAccessException | IllegalArgumentException
-					| InvocationTargetException e) {
-				e.getCause().printStackTrace();
-			}
-		}
-
+		if (s) {
+            Bukkit.getScheduler().runTask(plugin, run);
+	    } else {
+	    	Bukkit.getScheduler().runTaskAsynchronously(plugin, run);
+	    }
 	}
-
+	
 }

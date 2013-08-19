@@ -12,5 +12,11 @@ public class XServerConnectionDenied extends XServerEvent {
 		this.t_name = t_name;
 		this.t_password = t_password;	
 	}
+
+	@Override
+	public void postCall() {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }
