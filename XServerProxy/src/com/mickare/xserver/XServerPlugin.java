@@ -64,8 +64,11 @@ public class XServerPlugin extends Plugin {
 		statsconnection.connect();
 
 		try {
-			xmanager = new XServerManager(servername, this, log,
+			xmanager = new XServerManager(servername, log,
 					statsconnection);
+			
+			log.info("Starting XServer async.");
+			xmanager.start_async();
 		} catch (InvalidConfigurationException e) {
 			log.severe("XServerManager not initialized correctly!");
 			log.severe(e.getMessage());
@@ -73,8 +76,7 @@ public class XServerPlugin extends Plugin {
 			// "stop");
 		}
 
-		log.info("Starting XServer async.");
-		xmanager.start_async();
+		
 
 		// Register Commands
 		new XServerCommands(this);

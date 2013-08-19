@@ -10,8 +10,6 @@ import java.util.logging.Logger;
 
 import javax.net.SocketFactory;
 
-import net.md_5.bungee.api.plugin.Plugin;
-
 import com.mickare.xserver.exceptions.InvalidConfigurationException;
 import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.XServer;
@@ -38,7 +36,7 @@ public class XServerManager {
 	public final XServer homeServer;
 	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
 
-	protected XServerManager(String servername, Plugin plugin, Logger logger,
+	protected XServerManager(String servername, Logger logger,
 			MySQL connection) throws InvalidConfigurationException {
 		instance = this;
 		this.logger = logger;
