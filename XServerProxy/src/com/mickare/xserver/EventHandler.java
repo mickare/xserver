@@ -33,7 +33,7 @@ public class EventHandler {
 	 * @param plugin
 	 * @param lis
 	 */
-	public synchronized void registerListener(XServerListener lis, Plugin plugin) {
+	public synchronized void registerListener(Plugin plugin, XServerListener lis) {
 		listeners.put(lis, plugin);
 		bus.register(lis, plugin);
 	}
