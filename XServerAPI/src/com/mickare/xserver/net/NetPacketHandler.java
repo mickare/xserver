@@ -4,7 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 
-import com.mickare.xserver.AbstractXServerManager;
+import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.Message;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
@@ -25,15 +25,15 @@ public class NetPacketHandler {
 
 				break;
 			case 200: // Disconnect
-				AbstractXServerManager.getInstance().getLogger().info("Disconnecting from " + con.getHost() + ":" + con.getPort());
+				XServerManager.getInstance().getLogger().info("Disconnecting from " + con.getHost() + ":" + con.getPort());
 				con.disconnect();
 				break;
 			case 400: // Error
-				AbstractXServerManager.getInstance().getLogger().info("Connection Error with " + con.getHost() + ":" + con.getPort());
+				XServerManager.getInstance().getLogger().info("Connection Error with " + con.getHost() + ":" + con.getPort());
 				con.errorDisconnect();
 				break;
 			case 401: // LoginDenied
-				AbstractXServerManager.getInstance().getLogger().info("Login denied from " + con.getHost() + ":" + con.getPort());
+				XServerManager.getInstance().getLogger().info("Login denied from " + con.getHost() + ":" + con.getPort());
 				con.errorDisconnect();
 				break;
 			case 500: // LoginRequest
@@ -41,7 +41,7 @@ public class NetPacketHandler {
 					is = new DataInputStream(new ByteArrayInputStream(data));
 					String name = is.readUTF();
 					String password = is.readUTF();
-					XServer s = AbstractXServerManager.getInstance().getServer(name);
+					XServer s = XServerManager.getInstance().getServer(name);
 
 					// Debugging...
 					/*
@@ -54,10 +54,10 @@ public class NetPacketHandler {
 						con.setReloginXserver(s);
 						con.setStatus(Connection.stats.connected);
 						con.sendAcceptedLoginRequest();
-						AbstractXServerManager.getInstance().getLogger().info("Login Request from " + name + " accepted!");
+						XServerManager.getInstance().getLogger().info("Login Request from " + name + " accepted!");
 					} else {
 						con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
-						AbstractXServerManager.getInstance().getLogger()
+						XServerManager.getInstance().getLogger()
 								.info("Login Request from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
 						con.errorDisconnect();
 					}
@@ -72,7 +72,7 @@ public class NetPacketHandler {
 					is = new DataInputStream(new ByteArrayInputStream(data));
 					String name = is.readUTF();
 					String password = is.readUTF();
-					XServer s = AbstractXServerManager.getInstance().getServer(name);
+					XServer s = XServerManager.getInstance().getServer(name);
 
 					// Debugging...
 					/*
@@ -84,10 +84,10 @@ public class NetPacketHandler {
 					if (s != null && s.getPassword().equals(password)) {
 						con.setXserver(s);
 						con.setStatus(Connection.stats.connected);
-						AbstractXServerManager.getInstance().getLogger().info("Login Reply accepted from " + s.getName());
+						XServerManager.getInstance().getLogger().info("Login Reply accepted from " + s.getName());
 					} else {
 						con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
-						AbstractXServerManager.getInstance().getLogger()
+						XServerManager.getInstance().getLogger()
 								.info("Login Reply from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
 						con.errorDisconnect();
 					}
@@ -102,14 +102,14 @@ public class NetPacketHandler {
 				break;
 			case 601: // PingAnswer
 				is = new DataInputStream(new ByteArrayInputStream(data));
-				AbstractPing.receive(is.readUTF(), con.getXserver());
+				Ping.receive(is.readUTF(), con.getXserver());
 				break;
 			case 800: // Message
 				//XServerManager.getInstance().getThreadPool().runTask(new Runnable() {
 				//	public void run() {
 						try {
 							if (con.getXserver() != null && con.isConnected() && con.getStatus().equals(Connection.stats.connected)) {
-								AbstractXServerManager.getInstance().getEventHandler()
+								XServerManager.getInstance().getEventHandler()
 										.callEvent(new XServerMessageIncomingEvent(con.getXserver(), Message.read(con.getXserver(), data)));
 							}
 						} catch (NotInitializedException e) {
@@ -126,7 +126,7 @@ public class NetPacketHandler {
 			}
 		} catch (InterruptedException | IOException | NotInitializedException e) {
 			try {
-				AbstractXServerManager.getInstance().getLogger().severe(e.getMessage());
+				XServerManager.getInstance().getLogger().severe(e.getMessage());
 			} catch (NotInitializedException e1) {
 			}
 			con.errorDisconnect();

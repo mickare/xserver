@@ -16,7 +16,7 @@ public class Message {
 	private final byte[] content;
 
 	public static Message create(String subChannel, byte[] content) throws NotInitializedException {
-		return new Message(AbstractXServerManager.getInstance().getHomeServer(), subChannel, content);
+		return new Message(XServerManager.getInstance().getHomeServer(), subChannel, content);
 	}
 	
 	public static Message read(XServer sender, byte[] data) throws IOException {

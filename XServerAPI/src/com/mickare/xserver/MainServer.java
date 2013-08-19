@@ -19,7 +19,7 @@ public class MainServer implements Runnable {
 	private ServerSocket server;
 	private Thread serverThread;
 	
-	protected MainServer(AbstractXServerManager manager) {	
+	protected MainServer(XServerManager manager) {	
 		this.home = manager.getHomeServer();
 		ssf = ServerSocketFactory.getDefault();
 	}

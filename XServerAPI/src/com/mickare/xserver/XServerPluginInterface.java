@@ -1,6 +1,6 @@
 package com.mickare.xserver;
 
-public interface XServerPlugin {
+public interface XServerPluginInterface {
 	
 	public void onDisable();
 	

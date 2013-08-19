@@ -6,19 +6,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.CommandSender;
-
 
 import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.util.CacheMap;
 import com.mickare.xserver.util.Encryption;
 
-public class Ping {
+public abstract class Ping {
 	
 	
 	private static CacheMap<String, Ping> pending = new CacheMap<String, Ping>(40);
@@ -34,7 +29,7 @@ public class Ping {
 	
 	public static void addPendingPing(Ping ping) {
 		synchronized(pending) {
-			if(ping.started == -1) {
+			if(ping.getStarted() == -1) {
 				pending.put(ping.key, ping);
 			}
 		}
@@ -51,7 +46,6 @@ public class Ping {
 	}
 
 	
-	private final CommandSender sender;
 	private final String key;
 	
 	private boolean resultprinted = false;
@@ -61,32 +55,30 @@ public class Ping {
 	private final Map<XServer, Long> responses = Collections.synchronizedMap(new HashMap<XServer, Long>());
 	private final Set<XServer> waiting = Collections.synchronizedSet(new HashSet<XServer>());
 	
-	public Ping(CommandSender sender) {
-		this(sender, "Ping");
+	public Ping() {
+		this("Ping");
 	}
 	
-	public Ping(CommandSender sender, String salt) {
-		this.sender = sender;
+	public Ping(String salt) {
 		this.key = Encryption.MD5(String.valueOf(Math.random()) + salt + getNextRollingNumber());
-		
 	}
 	
 	public boolean start() throws NotInitializedException {
-		if(started == -1) {
+		if(getStarted() == -1) {
 			addPendingPing(this);
-				for(XServer s : waiting.toArray(new XServer[waiting.size()])) {
+				for(XServer s : getWaiting().toArray(new XServer[getWaiting().size()])) {
 					if(!s.isConnected()) {
-						waiting.remove(s);
-						responses.put(s, (long) -1);
+						getWaiting().remove(s);
+						getResponses().put(s, (long) -1);
 					}
 				}
-			started = System.currentTimeMillis();
-			for(XServer s : waiting.toArray(new XServer[waiting.size()])) {
+			setStarted(System.currentTimeMillis());
+			for(XServer s : getWaiting().toArray(new XServer[getWaiting().size()])) {
 				try {
 					s.ping(this);
 				} catch (InterruptedException | IOException e) {
-					waiting.remove(s);
-					responses.put(s, Long.MAX_VALUE);
+					getWaiting().remove(s);
+					getResponses().put(s, Long.MAX_VALUE);
 				}
 			}
 			check();
@@ -104,8 +96,8 @@ public class Ping {
 	}
 		
 	public void add(XServer server) {
-		responses.put(server, Long.MAX_VALUE);
-		waiting.add(server);
+		getResponses().put(server, Long.MAX_VALUE);
+		getWaiting().add(server);
 	}
 	
 	public void addAll(Collection<XServer> servers) {
@@ -116,10 +108,10 @@ public class Ping {
 	
 	public void receive(XServer server) {
 		long t = System.currentTimeMillis();
-			if(waiting.contains(server)) {
-				waiting.remove(server);
-				synchronized(responses) {
-					responses.put(server, t);
+			if(getWaiting().contains(server)) {
+				getWaiting().remove(server);
+				synchronized(getResponses()) {
+					getResponses().put(server, t);
 				}
 				check();
 			}
@@ -128,57 +120,39 @@ public class Ping {
 	private boolean check() {
 		if(!isPending() && !resultprinted) {
 			resultprinted = true;
-			waiting.clear();
-			sender.sendMessage(getFormatedString());
+			getWaiting().clear();
+			sendMessageToCommandSender(getFormatedString());
 			return true;
 		}
 		return false;
 	}
 	
 	public boolean isPending() {
-		return ((waiting.size() > 0) ? (System.currentTimeMillis() - started < timeout) : false); 
+		return ((getWaiting().size() > 0) ? (System.currentTimeMillis() - getStarted() < timeout) : false); 
 	}
 	
-	public String getFormatedString() {
-			if(waiting.size() > 0) {
-				return "Still Pending...";
-			} else {
-				StringBuilder sb = new StringBuilder();
-				for(Entry<XServer, Long> es : responses.entrySet()) {
-					sb.append("\n").append(ChatColor.GOLD).append(es.getKey().getName()).append(ChatColor.GRAY).append(" - ");
-					if(es.getValue() < 0) {
-						sb.append(ChatColor.RED).append("Not connected!");
-					} else if(es.getValue() == Long.MAX_VALUE) {
-						if(es.getKey().isConnected()) {
-							sb.append(ChatColor.RED).append("Timeout!");
-						} else {
-							sb.append(ChatColor.RED).append("Timeout! Connection lost!");
-						}
-					} else {
-						long diff = es.getValue() - started;
-						if(diff < 10) {
-							sb.append(ChatColor.GREEN);
-						} else if (diff < 30) {
-							sb.append(ChatColor.YELLOW);
-						} else if (diff < 100) {
-							sb.append(ChatColor.GOLD);
-						} else {
-							sb.append(ChatColor.RED);
-						}
-						sb.append(diff).append("ms");
-					}
-				}
-				return sb.toString();
-			}
-
-	}
-
-	public CommandSender getSender() {
-		return sender;
-	}
+	protected abstract void sendMessageToCommandSender(String message);
+	
+	public abstract String getFormatedString();
 
 	public String getKey() {
 		return key;
+	}
+
+	public Set<XServer> getWaiting() {
+		return waiting;
+	}
+
+	public Map<XServer, Long> getResponses() {
+		return responses;
+	}
+
+	public long getStarted() {
+		return started;
+	}
+
+	public void setStarted(long started) {
+		this.started = started;
 	}
 
 	

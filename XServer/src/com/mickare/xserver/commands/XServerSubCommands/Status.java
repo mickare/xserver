@@ -4,7 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import com.mickare.xserver.XServerManager;
+import com.mickare.xserver.BukkitXServerManager;
 import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.exceptions.NotInitializedException;
@@ -23,7 +23,7 @@ public class Status extends SubCommand {
 		StringBuilder sb = new StringBuilder();
 		
 		try {
-			for(XServer s : XServerManager.getInstance().getServers()) {
+			for(XServer s : BukkitXServerManager.getInstance().getServers()) {
 				sb.append("\n").append(ChatColor.RESET).append(s.getName()).append(ChatColor.GRAY).append(" : ");
 				if(s.isConnected()) {
 					sb.append(ChatColor.GREEN).append("connected");

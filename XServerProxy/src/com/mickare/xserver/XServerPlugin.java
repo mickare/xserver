@@ -10,7 +10,7 @@ import com.mickare.xserver.util.MySQL;
 import com.mickare.xserver.config.ConfigAccessor;
 import com.mickare.xserver.exceptions.InvalidConfigurationException;
 
-public class XServerPlugin extends Plugin {
+public class XServerPlugin extends Plugin implements XServerPluginInterface {
 
 	private Logger log = null;
 
@@ -64,7 +64,7 @@ public class XServerPlugin extends Plugin {
 		statsconnection.connect();
 
 		try {
-			xmanager = new XServerManager(servername, log,
+			xmanager = new ProxyXServerManager(servername, log,
 					statsconnection);
 			
 			log.info("Starting XServer async.");

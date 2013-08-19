@@ -4,11 +4,11 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import com.mickare.xserver.XServerManager;
+import com.mickare.xserver.BukkitXServerManager;
 import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.exceptions.NotInitializedException;
-import com.mickare.xserver.net.Ping;
+import com.mickare.xserver.net.BukkitPing;
 import com.mickare.xserver.net.XServer;
 
 public class PingCommand extends SubCommand {
@@ -23,18 +23,18 @@ public class PingCommand extends SubCommand {
 			String[] args) {
 		try {
 			if(args.length > 0) {
-				XServer s = XServerManager.getInstance().getServer(args[0]);
+				XServer s = BukkitXServerManager.getInstance().getServer(args[0]);
 				if(s == null) {
 					sender.sendMessage(ChatColor.RED + "Server \"" + args[0] + "\" not found!");
 					return true;
 				}
-				Ping p = new Ping(sender, XServerManager.getInstance().homeServer.getName());
+				BukkitPing p = new BukkitPing(sender, BukkitXServerManager.getInstance().homeServer.getName());
 				p.add(s);
 				p.start();
 			} else {
 				
-				Ping p = new Ping(sender, XServerManager.getInstance().homeServer.getName());
-				p.addAll(XServerManager.getInstance().getServers());
+				BukkitPing p = new BukkitPing(sender, BukkitXServerManager.getInstance().homeServer.getName());
+				p.addAll(BukkitXServerManager.getInstance().getServers());
 				p.start();
 				
 			}

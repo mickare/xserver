@@ -4,7 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import com.mickare.xserver.XServerManager;
+import com.mickare.xserver.BukkitXServerManager;
 import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.exceptions.NotInitializedException;
@@ -20,12 +20,12 @@ public class Reload extends SubCommand {
 	public boolean onCommand(CommandSender sender, Command cmd, String label,
 			String[] args) {
 		try {
-			XServerManager.getInstance().reload();
+			BukkitXServerManager.getInstance().reload();
 			sender.sendMessage("Reload done and now connecting to servers...");
-			XServerManager.getInstance().getThreadPool().runTask(new Runnable() {
+			BukkitXServerManager.getInstance().getThreadPool().runTask(new Runnable() {
 				public void run() {
 					try {
-						XServerManager.getInstance().reconnectAll_forced();
+						BukkitXServerManager.getInstance().reconnectAll_forced();
 					} catch (NotInitializedException e) {
 						getPlugin().getLogger().severe(e.getMessage());
 					}

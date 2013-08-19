@@ -15,11 +15,11 @@ import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.XServer;
 import com.mickare.xserver.util.MySQL;
 
-public abstract class AbstractXServerManager {
+public abstract class XServerManager {
 
-	private static AbstractXServerManager instance = null;
+	private static XServerManager instance = null;
 	
-	public static AbstractXServerManager getInstance() throws NotInitializedException {
+	public static XServerManager getInstance() throws NotInitializedException {
 		if(instance == null) {
 			throw new NotInitializedException();
 		}
@@ -27,7 +27,7 @@ public abstract class AbstractXServerManager {
 	}
 	
 	private Logger logger;
-	private AbstractEventHandler eventhandler;
+	private IEventHandler eventhandler;
 	private ServerThreadPoolExecutor stpool;
 	private SocketFactory sf;
 	private MainServer mainserver;
@@ -36,7 +36,7 @@ public abstract class AbstractXServerManager {
 	public final XServer homeServer;
 	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
 	
-	protected AbstractXServerManager(String servername, AbstractEventHandler eventhandler, Logger logger, MySQL connection) throws InvalidConfigurationException {
+	protected XServerManager(String servername, Logger logger, MySQL connection, IEventHandler eventhandler) throws InvalidConfigurationException {
 		instance = this;
 		this.logger = logger;
 		stpool = new ServerThreadPoolExecutor();
@@ -231,7 +231,7 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
-	public AbstractEventHandler getEventHandler() {
+	public IEventHandler getEventHandler() {
 		return eventhandler;
 	}
 	

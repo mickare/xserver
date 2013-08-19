@@ -12,7 +12,7 @@ import com.mickare.xserver.annotations.XEventHandler;
 
 import com.mickare.xserver.events.XServerEvent;
 
-public class EventHandler {
+public class EventHandler implements IEventHandler {
 	
 	private final HashMap<XServerListener, JavaPlugin> listeners = new HashMap<XServerListener, JavaPlugin>();
 

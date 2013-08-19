@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.SocketFactory;
 
-import com.mickare.xserver.AbstractXServerManager;
+import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
 public class Connection {
@@ -56,8 +56,8 @@ public class Connection {
 		output = new DataOutputStream(socket.getOutputStream());
 		receiving = new Receiving(this);
 		sending = new Sending(this);
-		AbstractXServerManager.getInstance().getThreadPool().runTask(receiving);
-		AbstractXServerManager.getInstance().getThreadPool().runTask(sending);
+		XServerManager.getInstance().getThreadPool().runTask(receiving);
+		XServerManager.getInstance().getThreadPool().runTask(sending);
 		sendFirstLoginRequest();
 	}
 	
@@ -77,8 +77,8 @@ public class Connection {
 		output = new DataOutputStream(socket.getOutputStream());
 		receiving = new Receiving(this);
 		sending = new Sending(this);
-		AbstractXServerManager.getInstance().getThreadPool().runTask(receiving);
-		AbstractXServerManager.getInstance().getThreadPool().runTask(sending);
+		XServerManager.getInstance().getThreadPool().runTask(receiving);
+		XServerManager.getInstance().getThreadPool().runTask(sending);
 	}
 
 	private void sendFirstLoginRequest() throws IOException, InterruptedException, NotInitializedException {
@@ -95,8 +95,8 @@ public class Connection {
 		try {
 			b = new ByteArrayOutputStream();
 			out = new DataOutputStream(b);
-			out.writeUTF(AbstractXServerManager.getInstance().getHomeServer().getName());
-			out.writeUTF(AbstractXServerManager.getInstance().getHomeServer().getPassword());
+			out.writeUTF(XServerManager.getInstance().getHomeServer().getName());
+			out.writeUTF(XServerManager.getInstance().getHomeServer().getPassword());
 		pendingPackets.put(new Packet(type, b.toByteArray()));
 		} finally {
 			if(out != null) {
@@ -105,7 +105,7 @@ public class Connection {
 		}
 	}
 	
-	public void ping(AbstractPing ping) throws InterruptedException, IOException {
+	public void ping(Ping ping) throws InterruptedException, IOException {
 		ByteArrayOutputStream b = null; 
 		DataOutputStream out = null;
 		try {

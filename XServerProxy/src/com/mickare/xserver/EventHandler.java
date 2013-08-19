@@ -11,11 +11,12 @@ import net.md_5.bungee.api.plugin.Plugin;
 import com.mickare.xserver.events.XServerEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
-public class EventHandler {
+public class EventHandler implements IEventHandler {
 
 	private final HashMap<XServerListener, Plugin> listeners = new HashMap<XServerListener, Plugin>();
 
 	protected EventHandler() {
+		super();
 	}
 
 	/**

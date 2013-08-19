@@ -3,20 +3,20 @@ package com.mickare.xserver;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.mickare.xserver.commands.XServerCommands;
+import com.mickare.xserver.exceptions.InvalidConfigurationException;
 import com.mickare.xserver.util.MySQL;
 
-public class XServerPlugin extends JavaPlugin {
+public class XServerPlugin extends JavaPlugin implements XServerPluginInterface {
 	
 	private Logger log;
 	
 	private String servername;
 	
 	private MySQL statsconnection = null;
-	private XServerManager xmanager;
+	private BukkitXServerManager xmanager;
 	
 	@Override
 	public void onDisable() {
@@ -58,7 +58,7 @@ public class XServerPlugin extends JavaPlugin {
 		statsconnection.connect();
 		
 		try {
-			xmanager = new XServerManager(servername, this, log, statsconnection);
+			xmanager = new BukkitXServerManager(servername, this, log, statsconnection);
 		} catch (InvalidConfigurationException e) {
 			log.severe("XServerManager not initialized correctly!");
 			log.severe(e.getMessage());

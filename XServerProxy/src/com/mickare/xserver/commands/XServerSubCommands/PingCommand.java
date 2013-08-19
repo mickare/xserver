@@ -8,7 +8,7 @@ import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.exceptions.NotInitializedException;
-import com.mickare.xserver.net.Ping;
+import com.mickare.xserver.net.ProxyPing;
 import com.mickare.xserver.net.XServer;
 
 public class PingCommand extends SubCommand {
@@ -27,12 +27,12 @@ public class PingCommand extends SubCommand {
 					sender.sendMessage(ChatColor.RED + "Server \"" + args[0] + "\" not found!");
 					return;
 				}
-				Ping p = new Ping(sender, XServerManager.getInstance().homeServer.getName());
+				ProxyPing p = new ProxyPing(sender, XServerManager.getInstance().homeServer.getName());
 				p.add(s);
 				p.start();
 			} else {
 				
-				Ping p = new Ping(sender, XServerManager.getInstance().homeServer.getName());
+				ProxyPing p = new ProxyPing(sender, XServerManager.getInstance().homeServer.getName());
 				p.addAll(XServerManager.getInstance().getServers());
 				p.start();
 				

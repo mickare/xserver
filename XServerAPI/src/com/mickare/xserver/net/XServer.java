@@ -5,7 +5,7 @@ import java.net.UnknownHostException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.mickare.xserver.AbstractXServerManager;
+import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.Message;
 import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.exceptions.NotInitializedException;
@@ -36,7 +36,7 @@ public class XServer {
 			if (isConnected()) {
 				this.disconnect();
 			}
-			connection = new Connection(AbstractXServerManager.getInstance()
+			connection = new Connection(XServerManager.getInstance()
 					.getSocketFactory(), host, port);
 		} finally {
 			conLock.unlock();
@@ -58,7 +58,7 @@ public class XServer {
 	public void setReloginConnection(Connection con) throws NotInitializedException {
 		conLock.lock();
 		try {
-			if(AbstractXServerManager.getInstance().getHomeServer() == this) {
+			if(XServerManager.getInstance().getHomeServer() == this) {
 				if (this.connection2 != con && ( connection2 != null ? connection2.isConnected() : false )) {
 					this.disconnect();
 				}
@@ -118,7 +118,7 @@ public class XServer {
 		}
 	}
 	
-	public void ping(AbstractPing ping) throws InterruptedException, IOException {
+	public void ping(Ping ping) throws InterruptedException, IOException {
 		conLock.lock();
 		if(isConnected()) {
 			connection.ping(ping);
