@@ -16,7 +16,7 @@ public class XServerPlugin extends Plugin {
 
 	private String servername;
 
-	private MySQL statsconnection = null;
+	private MySQL cfgconnection = null;
 	private XServerManager xmanager;
 	private ConfigAccessor config;
 
@@ -36,8 +36,8 @@ public class XServerPlugin extends Plugin {
 					+ e.getMessage());
 		}
 
-		if (statsconnection != null) {
-			statsconnection.disconnect();
+		if (cfgconnection != null) {
+			cfgconnection.disconnect();
 		}
 
 		log.info(getDescription().getName() + " disabled!");
@@ -59,12 +59,12 @@ public class XServerPlugin extends Plugin {
 
 		log.info("Connecting to Database " + host + "/" + data + " with user: " + user);
 		
-		statsconnection = new MySQL(log, user, pass, data, host, "config");
-		statsconnection.connect();
+		cfgconnection = new MySQL(log, user, pass, data, host, "config");
+		cfgconnection.connect();
 
 		try {
 			xmanager = new XServerManager(servername, log,
-					statsconnection);
+					cfgconnection);
 			
 			log.info("Starting XServer async.");
 			xmanager.start_async();
