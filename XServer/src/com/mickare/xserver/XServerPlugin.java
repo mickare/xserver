@@ -15,7 +15,7 @@ public class XServerPlugin extends JavaPlugin {
 	
 	private String servername;
 	
-	private MySQL statsconnection = null;
+	private MySQL cfgconnection = null;
 	private XServerManager xmanager;
 	
 	@Override
@@ -33,8 +33,8 @@ public class XServerPlugin extends JavaPlugin {
 			log.severe("[ERROR] A Error occured when disabling plugin!\n[ERROR] " + e.getMessage());
 		}
 		
-		if(statsconnection != null) {
-			statsconnection.disconnect();
+		if(cfgconnection != null) {
+			cfgconnection.disconnect();
 		}
 		
 		log.info(getDescription().getName() + " disabled!");
@@ -54,11 +54,19 @@ public class XServerPlugin extends JavaPlugin {
 		
 		this.saveDefaultConfig();
 		
-		statsconnection = new MySQL(log , this.getConfig().getString("mysql.User", ""), this.getConfig().getString("mysql.Pass", ""), this.getConfig().getString("mysql.Data", ""), this.getConfig().getString("mysql.Host", ""), "stats");
-		statsconnection.connect();
+		String user = this.getConfig().getString("mysql.User");
+		String pass = this.getConfig().getString("mysql.Pass");
+		String data = this.getConfig().getString("mysql.Data");
+		String host = this.getConfig().getString("mysql.Host");
+
+		log.info("Connecting to Database " + host + "/" + data + " with user: " + user);
+		
+		cfgconnection = new MySQL(log, user, pass, data, host, "config");
+		
+		cfgconnection.connect();
 		
 		try {
-			xmanager = new XServerManager(servername, log, statsconnection);
+			xmanager = new XServerManager(servername, log, cfgconnection);
 		} catch (InvalidConfigurationException e) {
 			log.severe("XServerManager not initialized correctly!");
 			log.severe(e.getMessage());
