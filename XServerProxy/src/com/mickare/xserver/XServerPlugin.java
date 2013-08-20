@@ -52,15 +52,14 @@ public class XServerPlugin extends Plugin {
 
 		servername = this.getConfig().getString("servername");
 
-		log.info(this.getConfig().getString("mysql.User") + " "
-				+ this.getConfig().getString("mysql.Pass") + " "
-				+ this.getConfig().getString("mysql.Data") + " "
-				+ this.getConfig().getString("mysql.Host"));
+		String user = this.getConfig().getString("mysql.User");
+		String pass = this.getConfig().getString("mysql.Pass");
+		String data = this.getConfig().getString("mysql.Data");
+		String host = this.getConfig().getString("mysql.Host");
 
-		statsconnection = new MySQL(log, this.getConfig().getString(
-				"mysql.User"), this.getConfig().getString("mysql.Pass"), this
-				.getConfig().getString("mysql.Data"), this.getConfig()
-				.getString("mysql.Host"), "config");
+		log.info("Connecting to Database " + host + "/" + data + " with user: " + user);
+		
+		statsconnection = new MySQL(log, user, pass, data, host, "config");
 		statsconnection.connect();
 
 		try {
