@@ -19,6 +19,9 @@ import com.mickare.xserver.util.MySQL;
 
 public class XServerManager {
 
+	// In Milliseconds
+	private static final long AUTORECONNECT = 10000;
+	
 	private static XServerManager instance = null;
 	
 	public static XServerManager getInstance() throws NotInitializedException {
@@ -38,6 +41,8 @@ public class XServerManager {
 	public final XServer homeServer;
 	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
 	
+	private boolean reconnectClockRunning = false;
+	
 	protected XServerManager(String servername, Logger logger, MySQL connection) throws InvalidConfigurationException {
 		instance = this;
 		this.logger = logger;
@@ -54,9 +59,28 @@ public class XServerManager {
 		mainserver = new MainServer(this);
 	}
 	
+	private synchronized boolean isReconnectClockRunning() {
+		return reconnectClockRunning;
+	}
+	
 	public void start() throws IOException {
 		mainserver.start();
 		reconnectAll_soft();
+		if (!isReconnectClockRunning()) {
+			reconnectClockRunning = true;
+			stpool.runTask(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						while (isReconnectClockRunning()) {
+							reconnectAll_soft();
+							Thread.sleep(AUTORECONNECT);
+						}
+					} catch (InterruptedException e) {
+					}
+				}
+			});
+		}
 	}
 	
 	public void start_async() {
@@ -109,6 +133,7 @@ public class XServerManager {
 	public void stop() throws IOException {
 		mainserver.stop();
 		stpool.shutDown();
+		reconnectClockRunning = false;
 	}
 	
 	/**
