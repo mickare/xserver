@@ -59,7 +59,7 @@ public class XServer {
 		conLock.lock();
 		try {
 			if(XServerManager.getInstance().getHomeServer() == this) {
-				if (this.connection2 != con && connection2.isConnected()) {
+				if (this.connection2 != con && (this.connection2 != null ? this.connection2.isConnected() : false)) {
 					this.disconnect();
 				}
 				this.connection2 = con;
