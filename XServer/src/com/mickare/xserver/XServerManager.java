@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import javax.net.SocketFactory;
@@ -38,7 +40,9 @@ public class XServerManager {
 	private MainServer mainserver;
 	
 	private final MySQL connection;
-	public final XServer homeServer;
+	private final String homeServerName;
+	private Lock homeLock = new ReentrantLock();
+	public XServer homeServer;
 	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
 	
 	private boolean reconnectClockRunning = false;
@@ -49,8 +53,8 @@ public class XServerManager {
 		stpool = new ServerThreadPoolExecutor();
 		sf = SocketFactory.getDefault();
 		this.connection = connection;
+		this.homeServerName = servername;
 		this.reload();
-		homeServer = getServer(servername);
 		if (homeServer == null) {
 			throw new InvalidConfigurationException("Server information for \"" + servername + "\" was not found!");
 		}
@@ -168,11 +172,24 @@ public class XServerManager {
 			} else {
 				logger.severe("Couldn't load XServer List form Database!");
 			}
+			homeLock.lock();
+			try {
+			homeServer = getServer(this.homeServerName);
+			} finally {
+				homeLock.unlock();
+			}
 		}
 	}
 			
 	public XServer getHomeServer() {
-		return homeServer;
+		homeLock.lock();
+		try
+		{
+			return homeServer;
+		} finally
+		{
+			homeLock.unlock();
+		}
 	}
 
 	public XServer getServer(String servername) {
@@ -257,6 +274,11 @@ public class XServerManager {
 
 	public EventHandler getEventHandler() {
 		return eventhandler;
+	}
+
+	public String getHomeServerName()
+	{
+		return homeServerName;
 	}
 	
 }
