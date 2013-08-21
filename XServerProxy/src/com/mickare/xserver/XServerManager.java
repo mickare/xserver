@@ -111,8 +111,7 @@ public class XServerManager {
 							s.connect();
 						} catch (IOException | InterruptedException
 								| NotInitializedException e) {
-							logger.info("Connection to " + s.getName()
-									+ " failed!\n" + e.getMessage());
+							//logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
 						}
 					}
 				}
@@ -128,8 +127,7 @@ public class XServerManager {
 						s.connect();
 					} catch (IOException | InterruptedException
 							| NotInitializedException e) {
-						logger.info("Connection to " + s.getName()
-								+ " failed!\n" + e.getMessage());
+						//logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
 					}
 				}
 			});
