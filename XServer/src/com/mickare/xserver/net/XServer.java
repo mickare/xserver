@@ -64,7 +64,7 @@ public class XServer {
 				}
 				this.connection2 = con;
 			} else {
-				setConnection(con);
+				this.connection = con;
 			}
 		} finally {
 			conLock.unlock();
