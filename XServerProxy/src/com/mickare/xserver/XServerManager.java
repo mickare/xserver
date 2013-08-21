@@ -3,8 +3,10 @@ package com.mickare.xserver;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -43,6 +45,8 @@ public class XServerManager {
 	public XServer homeServer;
 	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
 
+	private final Map<XServer, Integer> notConnectedServers = Collections.synchronizedMap(new HashMap<XServer, Integer>());
+	
 	private boolean reconnectClockRunning = false;
 
 	protected XServerManager(String servername, Logger logger, MySQL connection)
@@ -102,6 +106,17 @@ public class XServerManager {
 		});
 	}
 
+	private synchronized void notifyNotConnected(XServer s, Exception e) {
+		int n = 0;
+		if(notConnectedServers.containsKey(s)) {
+			n = notConnectedServers.get(s);
+		}
+		if(n % 20 == 0) {
+			logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
+		}
+		notConnectedServers.put(s, n++);
+	}
+	
 	public void reconnectAll_soft() {
 		for (final XServer s : servers.values()) {
 			stpool.runTask(new Runnable() {
@@ -109,9 +124,10 @@ public class XServerManager {
 					if (!s.isConnected()) {
 						try {
 							s.connect();
+							notConnectedServers.remove(s);
 						} catch (IOException | InterruptedException
 								| NotInitializedException e) {
-							//logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
+							notifyNotConnected(s, e);
 						}
 					}
 				}
@@ -125,9 +141,10 @@ public class XServerManager {
 				public void run() {
 					try {
 						s.connect();
+						notConnectedServers.remove(s);
 					} catch (IOException | InterruptedException
 							| NotInitializedException e) {
-						//logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
+						notifyNotConnected(s, e);
 					}
 				}
 			});
