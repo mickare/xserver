@@ -107,12 +107,12 @@ public class XServerManager {
 	private synchronized void notifyNotConnected(XServer s, Exception e) {
 		int n = 0;
 		if(notConnectedServers.containsKey(s)) {
-			n = notConnectedServers.get(s);
+			n = notConnectedServers.get(s).intValue();
 		}
-		if(n % 20 == 0) {
+		if(n % 200 == 0) {
 			logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
 		}
-		notConnectedServers.put(s, n++);
+		notConnectedServers.put(s, new Integer(n++));
 	}
 	
 	public void reconnectAll_soft() {

@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.SocketFactory;
 
+import org.bukkit.Bukkit;
+
 import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
@@ -73,9 +75,12 @@ public class Connection {
 	public Connection(Socket socket) throws IOException, NotInitializedException {
 		
 		
-		this.host = socket.getInetAddress().getHostName();
+		this.host = socket.getInetAddress().getHostAddress();
 		this.port = socket.getPort();
 		this.socket = socket;
+		
+		Bukkit.getLogger().info("*** NEW INCOMMING CONNECTION INFO ***\nhost: " + this.host + "\nport: " + this.port + "**************");
+		
 		input = new DataInputStream(socket.getInputStream());
 		output = new DataOutputStream(socket.getOutputStream());
 		receiving = new Receiving(this);

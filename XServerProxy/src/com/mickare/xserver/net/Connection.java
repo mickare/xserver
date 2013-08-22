@@ -73,7 +73,7 @@ public class Connection {
 	public Connection(Socket socket) throws IOException, NotInitializedException {
 		
 		
-		this.host = socket.getInetAddress().getHostName();
+		this.host = socket.getInetAddress().getHostAddress();
 		this.port = socket.getPort();
 		this.socket = socket;
 		input = new DataInputStream(socket.getInputStream());

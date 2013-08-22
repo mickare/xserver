@@ -51,9 +51,9 @@ public class NetPacketHandler {
 					 * != null) ? s.getName() + " - " + s.getPassword() : ""));
 					 */
 					if (s != null && s.getPassword().equals(password)) {
-						con.sendAcceptedLoginRequest();
 						con.setReloginXserver(s);
 						con.setStatus(Connection.stats.connected);
+						con.sendAcceptedLoginRequest();
 						XServerManager.getInstance().getLogger().info("Login Request from " + name + " accepted!");
 						s.flushCache();
 					} else {

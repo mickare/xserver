@@ -53,7 +53,11 @@ public class XServer {
 		try {
 			if (this.connection != con && isConnected()) {
 				this.disconnect();
-				this.pendingPackets.addAll(this.connection.getPendingPackets());
+				for(Packet p : this.connection.getPendingPackets()) {
+					if(p.getType().equals(Packet.Types.Message)) {
+						this.pendingPackets.push(p);
+					}
+				}
 			}
 			this.connection = con;
 		} finally {
