@@ -25,7 +25,7 @@ public class XServer {
 	private Connection connection2 = null;	// Fix for HomeServer that is not connectable.
 	private Lock conLock = new ReentrantLock();
 
-	private CacheList<Packet> pendingMessages = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
+	private CacheList<Packet> pendingPackets = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
 	
 	public XServer(String name, String host, int port, String password) {
 		this.name = name;
@@ -53,6 +53,7 @@ public class XServer {
 		try {
 			if (this.connection != con && isConnected()) {
 				this.disconnect();
+				this.pendingPackets.addAll(this.connection.getPendingPackets());
 			}
 			this.connection = con;
 		} finally {
@@ -116,7 +117,7 @@ public class XServer {
 		conLock.lock();
 		try {
 			if (!isConnected()) {
-				pendingMessages.push(new Packet(Packet.Types.Message, message.getData()));
+				pendingPackets.push(new Packet(Packet.Types.Message, message.getData()));
 				throw new NotConnectedException("Not Connected to this server!");
 			}
 			connection
@@ -137,10 +138,10 @@ public class XServer {
 	public void flushCache() {
 		conLock.lock();
 		try {
-			Packet p = pendingMessages.pollLast();
+			Packet p = pendingPackets.pollLast();
 			while(p != null) {
 				connection.send(p);
-				p = pendingMessages.pollLast();
+				p = pendingPackets.pollLast();
 			}
 		} finally {
 			conLock.unlock();
