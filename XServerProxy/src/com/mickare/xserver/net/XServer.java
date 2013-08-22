@@ -120,7 +120,7 @@ public class XServer {
 	public void sendMessage(Message message) throws NotConnectedException, IOException {
 		conLock.lock();
 		try {
-			if (!isConnected() || (connection != null ? connection.isLoggedIn() : false)) {
+			if (!isConnected() || (connection != null ? !connection.isLoggedIn() : false)) {
 				pendingPackets.push(new Packet(Packet.Types.Message, message.getData()));
 				throw new NotConnectedException("Not Connected to this server!");
 			}

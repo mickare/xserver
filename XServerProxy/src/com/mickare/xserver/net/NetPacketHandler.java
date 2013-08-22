@@ -52,9 +52,10 @@ public class NetPacketHandler
 					 */
 					if (s != null && s.getPassword().equals(password))
 					{
+						con.sendAcceptedLoginRequest();
 						con.setReloginXserver(s);
 						con.setStatus(Connection.stats.connected);
-						con.sendAcceptedLoginRequest();
+						
 						XServerManager.getInstance().getLogger().info("Login Request from " + name + " accepted!");
 						s.flushCache();
 					} else
@@ -121,9 +122,10 @@ public class NetPacketHandler
 				// XServerManager.getInstance().getThreadPool().runTask(new
 				// Runnable() {
 				// public void run() {
+				
 				try
 				{
-					if (con.getXserver() != null && con.isConnected() && con.getStatus().equals(Connection.stats.connected))
+					if (con.getXserver() != null && con.isConnected() && con.isLoggedIn())
 					{
 						XServerManager.getInstance().getEventHandler()
 								.callEvent(new XServerMessageIncomingEvent(con.getXserver(), Message.read(con.getXserver(), data)));
