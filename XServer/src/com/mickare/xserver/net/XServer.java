@@ -38,11 +38,13 @@ public class XServer {
 			InterruptedException, NotInitializedException {
 		conLock.lock();
 		try {
-			if (isConnected()) {
-				this.disconnect();
+			if(this.connection != null ? !this.connection.isLoggingIn() : true) {
+				if (isConnected()) {
+					this.disconnect();
+				}
+				connection = new Connection(XServerManager.getInstance()
+						.getSocketFactory(), host, port);
 			}
-			connection = new Connection(XServerManager.getInstance()
-					.getSocketFactory(), host, port);
 		} finally {
 			conLock.unlock();
 		}
