@@ -9,10 +9,13 @@ import com.mickare.xserver.Message;
 import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.exceptions.NotInitializedException;
+import com.mickare.xserver.util.CacheList;
 import com.mickare.xserver.util.Encryption;
 
 public class XServer {
 
+	private final static int MESSAGE_CACHE_SIZE = 256;
+	
 	private final String name;
 	private final String host;
 	private final int port;
@@ -22,6 +25,8 @@ public class XServer {
 	private Connection connection2 = null;	// Fix for HomeServer that is not connectable.
 	private Lock conLock = new ReentrantLock();
 
+	private CacheList<Packet> pendingMessages = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
+	
 	public XServer(String name, String host, int port, String password) {
 		this.name = name;
 		this.host = host;
@@ -109,6 +114,7 @@ public class XServer {
 		conLock.lock();
 		try {
 			if (!isConnected()) {
+				pendingMessages.push(new Packet(Packet.Types.Message, message.getData()));
 				throw new NotConnectedException("Not Connected to this server!");
 			}
 			connection
@@ -124,6 +130,19 @@ public class XServer {
 			connection.ping(ping);
 		}
 		conLock.unlock();
+	}
+	
+	public void flushCache() {
+		conLock.lock();
+		try {
+			Packet p = pendingMessages.pollLast();
+			while(p != null) {
+				connection.send(p);
+				p = pendingMessages.pollLast();
+			}
+		} finally {
+			conLock.unlock();
+		}
 	}
 
 }

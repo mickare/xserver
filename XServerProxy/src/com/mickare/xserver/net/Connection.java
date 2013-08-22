@@ -256,5 +256,5 @@ public class Connection {
 	public ArrayBlockingQueue<Packet> getPendingPackets() {
 		return new ArrayBlockingQueue<Packet>(capacity, false, pendingPackets);
 	}
-	
+		
 }

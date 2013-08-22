@@ -55,6 +55,7 @@ public class NetPacketHandler {
 						con.setStatus(Connection.stats.connected);
 						con.sendAcceptedLoginRequest();
 						XServerManager.getInstance().getLogger().info("Login Request from " + name + " accepted!");
+						s.flushCache();
 					} else {
 						con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
 						XServerManager.getInstance().getLogger()
@@ -85,6 +86,7 @@ public class NetPacketHandler {
 						con.setXserver(s);
 						con.setStatus(Connection.stats.connected);
 						XServerManager.getInstance().getLogger().info("Login Reply accepted from " + s.getName());
+						s.flushCache();
 					} else {
 						con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
 						XServerManager.getInstance().getLogger()

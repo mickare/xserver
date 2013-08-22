@@ -51,10 +51,11 @@ public class NetPacketHandler {
 					 * != null) ? s.getName() + " - " + s.getPassword() : ""));
 					 */
 					if (s != null && s.getPassword().equals(password)) {
+						con.sendAcceptedLoginRequest();
 						con.setReloginXserver(s);
 						con.setStatus(Connection.stats.connected);
-						con.sendAcceptedLoginRequest();
 						XServerManager.getInstance().getLogger().info("Login Request from " + name + " accepted!");
+						s.flushCache();
 					} else {
 						con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
 						XServerManager.getInstance().getLogger()
@@ -84,6 +85,7 @@ public class NetPacketHandler {
 					if (s != null && s.getPassword().equals(password)) {
 						con.setXserver(s);
 						con.setStatus(Connection.stats.connected);
+						s.flushCache();
 						XServerManager.getInstance().getLogger().info("Login Reply accepted from " + s.getName());
 					} else {
 						con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
