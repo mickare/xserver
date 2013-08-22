@@ -2,31 +2,32 @@ package com.mickare.xserver;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 
 import javax.net.ServerSocketFactory;
 
 import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.Connection;
-import com.mickare.xserver.net.XServer;
 
 public class MainServer implements Runnable {
 	
 	private final static int BACKLOG = 100;
 	
+	private final XServerManager manager;
+	
 	private final ServerSocketFactory ssf;
-	private final XServer home;
 	
 	private ServerSocket server;
 	private Thread serverThread;
 	
 	protected MainServer(XServerManager manager) {	
-		this.home = manager.getHomeServer();
+		this.manager = manager;
 		ssf = ServerSocketFactory.getDefault();
 	}
 	
 	protected synchronized boolean start() throws IOException {
 			if (serverThread == null) {
-				server = ssf.createServerSocket(home.getPort(), BACKLOG);
+				server = ssf.createServerSocket(manager.getHomeServer().getPort(), BACKLOG);
 				serverThread = new Thread(this);
 				serverThread.start();
 				return true;
@@ -51,8 +52,21 @@ public class MainServer implements Runnable {
 	public void run() {
 		while (serverThread != null) {
 			try {
-				new Connection(server.accept());
-			} catch (IOException | NotInitializedException e) {
+				final Socket s = server.accept();
+				manager.getThreadPool().runTask(new Runnable(){
+					@Override
+					public void run()
+					{
+						try
+						{
+							new Connection(s);
+						} catch (IOException | NotInitializedException e)
+						{
+
+						}
+					}
+				});
+			} catch (IOException e) {
 				
 			}
 		}

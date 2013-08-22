@@ -35,6 +35,9 @@ public class Connection
 
 	private final ArrayBlockingQueue<Packet> pendingPackets = new ArrayBlockingQueue<Packet>(CAPACITY);
 
+	private Thread receicingThread = null;
+	private Thread sendingThread = null;
+	
 	private Receiving receiving;
 	private Sending sending;
 
@@ -66,8 +69,10 @@ public class Connection
 		receiving = new Receiving(this);
 		sending = new Sending(this);
 		sendFirstLoginRequest();
-		XServerManager.getInstance().getThreadPool().runTask(receiving);
-		XServerManager.getInstance().getThreadPool().runTask(sending);
+		receicingThread = new Thread(receiving);
+		sendingThread = new Thread(sending);
+		receicingThread.start();
+		sendingThread.start();
 	}
 
 	/**
@@ -89,8 +94,10 @@ public class Connection
 		output = new DataOutputStream(socket.getOutputStream());
 		receiving = new Receiving(this);
 		sending = new Sending(this);
-		XServerManager.getInstance().getThreadPool().runTask(receiving);
-		XServerManager.getInstance().getThreadPool().runTask(sending);
+		receicingThread = new Thread(receiving);
+		sendingThread = new Thread(sending);
+		receicingThread.start();
+		sendingThread.start();
 	}
 
 	private void sendFirstLoginRequest() throws IOException, InterruptedException, NotInitializedException
