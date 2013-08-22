@@ -88,7 +88,9 @@ public class XServer {
 	public void disconnect() {
 		conLock.lock();
 		try {
-			connection.disconnect();
+			if(connection != null) {
+				connection.disconnect();
+			}
 		} finally {
 			conLock.unlock();
 		}

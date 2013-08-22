@@ -88,7 +88,9 @@ public class XServer {
 	public void disconnect() {
 		conLock.lock();
 		try {
-			connection.disconnect();
+			if(connection != null) {
+				connection.disconnect();
+			}
 		} finally {
 			conLock.unlock();
 		}
@@ -131,7 +133,7 @@ public class XServer {
 		}
 		conLock.unlock();
 	}
-
+	
 	public void flushCache() {
 		conLock.lock();
 		try {
@@ -144,5 +146,5 @@ public class XServer {
 			conLock.unlock();
 		}
 	}
-	
+
 }

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -17,6 +18,8 @@ import com.mickare.xserver.exceptions.NotInitializedException;
 
 public class Connection {
 
+	private final static int CAPACITY = 512;
+	
 	private stats status = stats.connecting;
 	
 	private final String host;
@@ -28,8 +31,8 @@ public class Connection {
 	private final DataInputStream input;
 	private final DataOutputStream output;
 	
-	private final int capacity = 256;
-	private final ArrayBlockingQueue<Packet> pendingPackets = new ArrayBlockingQueue<Packet>(256);
+	
+	private final ArrayBlockingQueue<Packet> pendingPackets = new ArrayBlockingQueue<Packet>(CAPACITY);
 	
 	private Receiving receiving;
 	private Sending sending;
@@ -159,11 +162,15 @@ public class Connection {
 	}
 	
 	public boolean send(Packet packet) {
-		return pendingPackets.add(packet);
+		return pendingPackets.offer(packet);
 	}
 	
 	public boolean sendAll(Collection<Packet> packets) {
-		return pendingPackets.addAll(packets);
+		boolean result = true;
+		for(Packet p : packets) {
+			result &= pendingPackets.offer(p);
+		}
+		return result;
 	}
 	
 	private static class Sending implements Runnable {
@@ -253,8 +260,8 @@ public class Connection {
 		xserver.setReloginConnection(this);
 	}
 		
-	public ArrayBlockingQueue<Packet> getPendingPackets() {
-		return new ArrayBlockingQueue<Packet>(capacity, false, pendingPackets);
+	public Queue<Packet> getPendingPackets() {
+		return new ArrayBlockingQueue<Packet>(CAPACITY, false, pendingPackets);
 	}
-	
+		
 }

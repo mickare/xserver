@@ -85,8 +85,8 @@ public class NetPacketHandler {
 					if (s != null && s.getPassword().equals(password)) {
 						con.setXserver(s);
 						con.setStatus(Connection.stats.connected);
-						s.flushCache();
 						XServerManager.getInstance().getLogger().info("Login Reply accepted from " + s.getName());
+						s.flushCache();
 					} else {
 						con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
 						XServerManager.getInstance().getLogger()
