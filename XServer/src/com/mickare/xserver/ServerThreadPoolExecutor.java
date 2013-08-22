@@ -12,7 +12,7 @@ public class ServerThreadPoolExecutor {
     private int maxPoolSize = 256;
  
     //Keep alive time for waiting threads for jobs(Runnable)
-    private long keepAliveTime = 60000;
+    private long keepAliveTime = 30000;
  
     //This is the one who manages and start the work
     ThreadPoolExecutor threadPool = null;

@@ -65,9 +65,9 @@ public class Connection
 		output = new DataOutputStream(socket.getOutputStream());
 		receiving = new Receiving(this);
 		sending = new Sending(this);
+		sendFirstLoginRequest();
 		XServerManager.getInstance().getThreadPool().runTask(receiving);
 		XServerManager.getInstance().getThreadPool().runTask(sending);
-		sendFirstLoginRequest();
 	}
 
 	/**
@@ -237,7 +237,11 @@ public class Connection
 
 					if (p == null)
 					{
-						new Packet(Packet.Types.KeepAlive, new byte[0]).writeToStream(con.output);
+						if(stats.connected.equals(con.getStatus())) {
+							new Packet(Packet.Types.KeepAlive, new byte[0]).writeToStream(con.output);
+						} else {
+							con.errorDisconnect();
+						}
 					} else
 					{
 						p.writeToStream(con.output);
