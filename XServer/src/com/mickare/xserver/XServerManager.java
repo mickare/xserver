@@ -110,7 +110,7 @@ public class XServerManager {
 			if(notConnectedServers.containsKey(s)) {
 				n = notConnectedServers.get(s).intValue();
 			}
-			if(n % 200 == 0) {
+			if(n++ % 200 == 0) {
 				logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
 			}
 			notConnectedServers.put(s, new Integer(n));
