@@ -264,4 +264,9 @@ public class Connection {
 		return new ArrayBlockingQueue<Packet>(CAPACITY, false, pendingPackets);
 	}
 		
+	
+	public boolean isLoggedIn() {
+		return this.status.equals(stats.connected);
+	}
+	
 }
