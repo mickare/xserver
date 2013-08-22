@@ -3,10 +3,11 @@ package com.mickare.xserver.net;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.bukkit.ChatColor;
@@ -143,18 +144,29 @@ public class Ping {
                                 return "Still Pending...";
                         } else {
                                 StringBuilder sb = new StringBuilder();
-                                for(Entry<XServer, Long> es : responses.entrySet()) {
-                                        sb.append("\n").append(ChatColor.GOLD).append(es.getKey().getName()).append(ChatColor.GRAY).append(" - ");
-                                        if(es.getValue() < 0) {
+                                
+                                LinkedList<XServer> servers = new LinkedList<XServer>(responses.keySet());
+
+                    			Collections.sort(servers, new Comparator<XServer>() {
+                    				@Override
+                    				public int compare(XServer o1, XServer o2) {
+                    					return o1.getName().compareTo(o2.getName());
+                    				}
+                    			});
+                                
+                                for(XServer s : servers) {
+                                	long value = responses.get(s);
+                                        sb.append("\n").append(ChatColor.GOLD).append(s.getName()).append(ChatColor.GRAY).append(" - ");
+                                        if(value < 0) {
                                                 sb.append(ChatColor.RED).append("Not connected!");
-                                        } else if(es.getValue() == Long.MAX_VALUE) {
-                                                if(es.getKey().isConnected()) {
+                                        } else if(value == Long.MAX_VALUE) {
+                                                if(s.isConnected()) {
                                                         sb.append(ChatColor.RED).append("Timeout!");
                                                 } else {
                                                         sb.append(ChatColor.RED).append("Timeout! Connection lost!");
                                                 }
                                         } else {
-                                                long diff = es.getValue() - started;
+                                                long diff = value - started;
                                                 if(diff < 10) {
                                                         sb.append(ChatColor.GREEN);
                                                 } else if (diff < 30) {
