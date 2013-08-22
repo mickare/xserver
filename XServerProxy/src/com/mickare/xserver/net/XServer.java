@@ -84,7 +84,7 @@ public class XServer {
 	public boolean isConnected() {
 		conLock.lock();
 		try {
-			return connection != null ? connection.isConnected() && connection.isLoggedIn() : false;
+			return connection != null ? connection.isConnected() && (connection.isLoggedIn() || connection.isLoggingIn()) : false;
 		} finally {
 			conLock.unlock();
 		}

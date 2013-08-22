@@ -13,8 +13,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.SocketFactory;
 
-import org.bukkit.Bukkit;
-
 import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
@@ -161,7 +159,7 @@ public class Connection
 			output.close();
 		} catch (IOException e)
 		{
-			Bukkit.getLogger().severe("disconnect");
+
 		}
 	}
 
@@ -177,7 +175,7 @@ public class Connection
 			output.close();
 		} catch (IOException e)
 		{
-			Bukkit.getLogger().severe("errorDisconnect");
+
 		}
 	}
 
@@ -328,7 +326,12 @@ public class Connection
 
 	public boolean isLoggedIn()
 	{
-		return this.status.equals(stats.connected);
+		return stats.connected.equals(this.status);
+	}
+
+	public boolean isLoggingIn()
+	{
+		return stats.connecting.equals(this.status);
 	}
 
 }
