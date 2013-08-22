@@ -103,11 +103,13 @@ public class EventHandler {
 		if(sync != null) {
 			s = sync.booleanValue();
 		}
-		if (s) {
-            Bukkit.getScheduler().runTask(plugin, run);
-	    } else {
-	    	Bukkit.getScheduler().runTaskAsynchronously(plugin, run);
-	    }
+		if(plugin.isEnabled()) {
+			if (s) {
+	            Bukkit.getScheduler().runTask(plugin, run);
+		    } else {
+		    	Bukkit.getScheduler().runTaskAsynchronously(plugin, run);
+		    }
+		}
 	}
 	
 }

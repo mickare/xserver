@@ -12,7 +12,7 @@ import com.mickare.xserver.commands.XServerSubCommands.*;
 
 public class XServerCommands extends AbstractCommand {
 
-	private HashSet<SubCommand> commands = new HashSet<SubCommand>();
+	private HashSet<SubCommand> commands = new HashSet<SubCommand>();	
 	
 	public XServerCommands(XServerPlugin plugin) {
 		super(plugin, "xserver");
