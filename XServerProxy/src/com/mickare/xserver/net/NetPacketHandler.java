@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import com.mickare.xserver.Message;
 import com.mickare.xserver.XServerManager;
+import com.mickare.xserver.events.XServerLoggedInEvent;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
@@ -64,6 +65,8 @@ public class NetPacketHandler
 
 					XServerManager.getInstance().getLogger().info("Login Request from " + name + " accepted!");
 					s.flushCache();
+					XServerManager.getInstance().getEventHandler()
+					.callEvent(new XServerLoggedInEvent(con.getXserver()));
 				} else
 				{
 					con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
@@ -95,6 +98,8 @@ public class NetPacketHandler
 					con.setStatus(Connection.stats.connected);
 					XServerManager.getInstance().getLogger().info("Login Reply accepted from " + s.getName());
 					s.flushCache();
+					XServerManager.getInstance().getEventHandler()
+					.callEvent(new XServerLoggedInEvent(con.getXserver()));
 				} else
 				{
 					con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
