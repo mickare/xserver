@@ -13,14 +13,13 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.SocketFactory;
 
-import org.bukkit.Bukkit;
-
 import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
 public class Connection {
 
 	private final static int CAPACITY = 512;
+	private final static int SOCKET_TIMEOUT = 5000;
 	
 	private stats status = stats.connecting;
 	
@@ -57,6 +56,7 @@ public class Connection {
 		this.host = host;
 		this.port = port;
 		socket = sf.createSocket(host, port);
+		socket.setSoTimeout(SOCKET_TIMEOUT);
 		input = new DataInputStream(socket.getInputStream());
 		output = new DataOutputStream(socket.getOutputStream());
 		receiving = new Receiving(this);
@@ -77,10 +77,8 @@ public class Connection {
 		
 		this.host = socket.getInetAddress().getHostAddress();
 		this.port = socket.getPort();
-		this.socket = socket;
-		
-		Bukkit.getLogger().info("*** NEW INCOMMING CONNECTION INFO ***\nhost: " + this.host + "\nport: " + this.port + "**************");
-		
+		this.socket = socket;		
+		socket.setSoTimeout(SOCKET_TIMEOUT);
 		input = new DataInputStream(socket.getInputStream());
 		output = new DataOutputStream(socket.getOutputStream());
 		receiving = new Receiving(this);
@@ -234,7 +232,13 @@ public class Connection {
 		public void run() {
 			while(running && con.isConnected()) {
 				try {
-					NetPacketHandler.handle(con, con.input);
+					
+					int packetID = con.input.readInt();
+					int length = con.input.readInt();
+					byte[] data = new byte[length];
+					con.input.readFully(data);					
+					
+					NetPacketHandler.handle(con, packetID, length, data);
 				} catch (IOException e) {
 					running = false;
 					con.errorDisconnect();

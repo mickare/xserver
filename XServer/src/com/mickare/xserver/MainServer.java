@@ -11,7 +11,7 @@ import com.mickare.xserver.net.XServer;
 
 public class MainServer implements Runnable {
 	
-	private final static int BACKLOG = 10;
+	private final static int BACKLOG = 100;
 	
 	private final ServerSocketFactory ssf;
 	private final XServer home;

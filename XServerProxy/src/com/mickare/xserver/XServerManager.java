@@ -22,7 +22,7 @@ import com.mickare.xserver.util.MySQL;
 public class XServerManager {
 
 	// In Milliseconds
-	private static final long AUTORECONNECT = 10000;
+	private static final long AUTORECONNECT = 10 * 1000;
 
 	private static XServerManager instance = null;
 
@@ -107,14 +107,16 @@ public class XServerManager {
 	}
 
 	private synchronized void notifyNotConnected(XServer s, Exception e) {
-		int n = 0;
-		if(notConnectedServers.containsKey(s)) {
-			n = notConnectedServers.get(s).intValue();
+		synchronized(notConnectedServers) {
+			int n = 0;
+			if(notConnectedServers.containsKey(s)) {
+				n = notConnectedServers.get(s).intValue();
+			}
+			if(n % 200 == 0) {
+				logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
+			}
+			notConnectedServers.put(s, new Integer(n));
 		}
-		if(n % 200 == 0) {
-			logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
-		}
-		notConnectedServers.put(s, new Integer(n++));
 	}
 	
 	public void reconnectAll_soft() {
@@ -124,7 +126,9 @@ public class XServerManager {
 					if (!s.isConnected()) {
 						try {
 							s.connect();
-							notConnectedServers.remove(s);
+							synchronized(notConnectedServers) {
+								notConnectedServers.remove(s);
+							}
 						} catch (IOException | InterruptedException
 								| NotInitializedException e) {
 							notifyNotConnected(s, e);
@@ -141,7 +145,9 @@ public class XServerManager {
 				public void run() {
 					try {
 						s.connect();
-						notConnectedServers.remove(s);
+						synchronized(notConnectedServers) {
+							notConnectedServers.remove(s);
+						}
 					} catch (IOException | InterruptedException
 							| NotInitializedException e) {
 						notifyNotConnected(s, e);
