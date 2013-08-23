@@ -23,7 +23,7 @@ public class XServerManager {
 
 	// In Milliseconds
 	private static final long AUTORECONNECT = 10 * 1000;
-	public static final XType HOMETYPE = XType.Bukkit;
+	public static final XType HOMETYPE = XType.BungeeCord;
 
 	private static XServerManager instance = null;
 
