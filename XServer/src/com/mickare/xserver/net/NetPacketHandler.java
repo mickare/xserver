@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import com.mickare.xserver.Message;
 import com.mickare.xserver.XServerManager;
+import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerLoggedInEvent;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
@@ -48,6 +49,7 @@ public class NetPacketHandler
 				is = new DataInputStream(new ByteArrayInputStream(data));
 				String name = is.readUTF();
 				String password = is.readUTF();
+				XType xtype = XType.getByNumber(is.readInt());
 				XServer s = XServerManager.getInstance().getServer(name);
 
 				// Debugging...
@@ -59,6 +61,7 @@ public class NetPacketHandler
 				 */
 				if (s != null && s.getPassword().equals(password))
 				{
+					s.setType(xtype);
 					con.sendAcceptedLoginRequest();
 					con.setReloginXserver(s);
 					con.setStatus(Connection.stats.connected);
@@ -81,6 +84,7 @@ public class NetPacketHandler
 				is = new DataInputStream(new ByteArrayInputStream(data));
 				String name = is.readUTF();
 				String password = is.readUTF();
+				XType xtype = XType.getByNumber(is.readInt());
 				XServer s = XServerManager.getInstance().getServer(name);
 
 				// Debugging...
@@ -94,6 +98,7 @@ public class NetPacketHandler
 
 				if (s != null && s.getPassword().equals(password))
 				{
+					s.setType(xtype);
 					con.setXserver(s);
 					con.setStatus(Connection.stats.connected);
 					XServerManager.getInstance().getLogger().info("Login Reply accepted from " + s.getName());

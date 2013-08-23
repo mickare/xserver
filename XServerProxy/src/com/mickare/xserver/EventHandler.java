@@ -105,6 +105,7 @@ public class EventHandler {
 			s = sync.booleanValue();
 		}
 		*/
+
 		manager.getThreadPool().runTask(run);
 		
 	}

@@ -120,6 +120,7 @@ public class Connection
 			out = new DataOutputStream(b);
 			out.writeUTF(XServerManager.getInstance().getHomeServer().getName());
 			out.writeUTF(XServerManager.getInstance().getHomeServer().getPassword());
+			out.writeInt(XServerManager.HOMETYPE.getNumber());
 			pendingPackets.put(new Packet(type, b.toByteArray()));
 		} finally
 		{
