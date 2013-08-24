@@ -2,15 +2,43 @@ package com.mickare.xserver.events;
 
 public class XServerConnectionDenied extends XServerEvent {
 
-	public final String sender;
-	public final String t_name;
-	public final String t_password;
+	private final String xserverName;
+	private final String xserverPassword;
+	private final String host;
+	private final int port;
 	
-	public XServerConnectionDenied(String sender, String t_name, String t_password) {
-		super("The login request from " + sender + " to " + t_name + " with the md5-password " + t_password + " was denied!");
-		this.sender = sender;
-		this.t_name = t_name;
-		this.t_password = t_password;	
+	public XServerConnectionDenied(String xserverName, String xserverPassword, String host, int port) {
+		super("The login request from " + xserverName + " from " + host + ":" + port + " with the password " + xserverPassword + " was denied!");
+		this.xserverName = xserverName;
+		this.xserverPassword = xserverPassword;
+		this.host = host;	
+		this.port = port;	
+	}
+
+	@Override
+	public void postCall() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public int getPort()
+	{
+		return port;
+	}
+
+	public String getXserverPassword()
+	{
+		return xserverPassword;
+	}
+
+	public String getXserverName()
+	{
+		return xserverName;
+	}
+
+	public String getHost()
+	{
+		return host;
 	}
 	
 }

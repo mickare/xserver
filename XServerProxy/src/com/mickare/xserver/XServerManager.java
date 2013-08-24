@@ -188,7 +188,7 @@ public class XServerManager {
 						String[] hostip = rs.getString("ADRESS").split(":");
 						String pw = rs.getString("PW");
 						servers.put(servername, new XServer(servername,
-								hostip[0], Integer.valueOf(hostip[1]), pw));
+								hostip[0], Integer.valueOf(hostip[1]), pw, this));
 						// System.out.println(servername + " " + hostip[0] + " "
 						// + Integer.valueOf(hostip[1]) + " " + pw);
 					}

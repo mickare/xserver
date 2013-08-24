@@ -28,4 +28,10 @@ public class XServerMessageEvent extends XServerEvent {
 		return server;
 	}
 
+	@Override
+	public void postCall() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

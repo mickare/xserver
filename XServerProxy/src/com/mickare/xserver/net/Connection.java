@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import javax.net.SocketFactory;
 
 import com.mickare.xserver.XServerManager;
+import com.mickare.xserver.events.XServerDisconnectEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
 public class Connection
@@ -168,6 +169,10 @@ public class Connection
 		} catch (IOException e)
 		{
 
+		} finally {
+			if(this.xserver != null) {
+				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
+			}
 		}
 	}
 
@@ -184,6 +189,10 @@ public class Connection
 		} catch (IOException e)
 		{
 
+		} finally {
+			if(this.xserver != null) {
+				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
+			}
 		}
 	}
 
