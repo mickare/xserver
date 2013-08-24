@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.mickare.xserver.Message;
 import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.XType;
+import com.mickare.xserver.events.XServerMessageOutgoingEvent;
 import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.util.CacheList;
@@ -31,19 +32,23 @@ public class XServer {
 
 	private CacheList<Packet> pendingPackets = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
 	
-	public XServer(String name, String host, int port, String password) {
+	private final XServerManager manager;
+	
+	public XServer(String name, String host, int port, String password, XServerManager manager) {
 		this.name = name;
 		this.host = host;
 		this.port = port;
 		this.password = Encryption.MD5(password);
+		this.manager = manager;
 	}
 	
-	public XServer(String name, String host, int port, String password, XType type) {
+	public XServer(String name, String host, int port, String password, XType type, XServerManager manager) {
 		this.name = name;
 		this.host = host;
 		this.port = port;
 		this.password = Encryption.MD5(password);
 		this.type = type;
+		this.manager = manager;
 	}
 
 	public void connect() throws UnknownHostException, IOException,
@@ -109,6 +114,8 @@ public class XServer {
 		try {
 			if(connection != null) {
 				connection.disconnect();
+				connection = null;
+				connection2 = null;
 			}
 		} finally {
 			conLock.unlock();
@@ -143,6 +150,9 @@ public class XServer {
 		} finally {
 			conLock.unlock();
 		}
+		
+		manager.getEventHandler().callEvent(new XServerMessageOutgoingEvent(this, message));
+		
 	}
 	
 	public void ping(Ping ping) throws InterruptedException, IOException {
@@ -186,4 +196,11 @@ public class XServer {
 		}
 	}
 
+	public XServerManager getManager()
+	{
+		return manager;
+	}
+
+	
+	
 }

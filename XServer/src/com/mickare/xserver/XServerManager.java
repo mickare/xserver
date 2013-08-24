@@ -185,7 +185,7 @@ public class XServerManager {
 						String servername = rs.getString("NAME");
 						String[] hostip = rs.getString("ADRESS").split(":");
 						String pw = rs.getString("PW");
-						servers.put(servername, new XServer(servername, hostip[0], Integer.valueOf(hostip[1]), pw));
+						servers.put(servername, new XServer(servername, hostip[0], Integer.valueOf(hostip[1]), pw, this));
 						//System.out.println(servername + " " + hostip[0] + " " + Integer.valueOf(hostip[1]) + " " +  pw);
 					}
 				} catch (NumberFormatException | SQLException e) {

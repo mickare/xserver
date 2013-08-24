@@ -7,6 +7,7 @@ import java.io.IOException;
 import com.mickare.xserver.Message;
 import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.XType;
+import com.mickare.xserver.events.XServerConnectionDenied;
 import com.mickare.xserver.events.XServerLoggedInEvent;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
@@ -66,9 +67,9 @@ public class NetPacketHandler
 					con.setReloginXserver(s);
 					con.setStatus(Connection.stats.connected);
 
-					XServerManager.getInstance().getLogger().info("Login Request from " + name + " accepted!");
+					s.getManager().getLogger().info("Login Request from " + name + " accepted!");
 					s.flushCache();
-					XServerManager.getInstance().getEventHandler()
+					s.getManager().getEventHandler()
 					.callEvent(new XServerLoggedInEvent(con.getXserver()));
 				} else
 				{
@@ -76,6 +77,7 @@ public class NetPacketHandler
 					XServerManager.getInstance().getLogger()
 							.info("Login Request from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
 					con.errorDisconnect();
+					XServerManager.getInstance().getEventHandler().callEvent(new XServerConnectionDenied(name, password, con.getHost(), con.getPort()));
 				}
 				break;
 			}
@@ -101,16 +103,17 @@ public class NetPacketHandler
 					s.setType(xtype);
 					con.setXserver(s);
 					con.setStatus(Connection.stats.connected);
-					XServerManager.getInstance().getLogger().info("Login Reply accepted from " + s.getName());
+					s.getManager().getLogger().info("Login Reply accepted from " + s.getName());
 					s.flushCache();
-					XServerManager.getInstance().getEventHandler()
-					.callEvent(new XServerLoggedInEvent(con.getXserver()));
+					s.getManager().getEventHandler()
+					.callEvent(new XServerLoggedInEvent(s));
 				} else
 				{
 					con.send(new Packet(Packet.Types.LoginDenied, new byte[0]));
 					XServerManager.getInstance().getLogger()
 							.info("Login Reply from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
 					con.errorDisconnect();
+					XServerManager.getInstance().getEventHandler().callEvent(new XServerConnectionDenied(name, password, con.getHost(), con.getPort()));
 				}
 				break;
 			}
