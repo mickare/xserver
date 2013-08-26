@@ -71,12 +71,12 @@ public class XServer {
 		conLock.lock();
 		try {
 			if (this.connection != con && isConnected()) {
-				this.disconnect();
 				for(Packet p : this.connection.getPendingPackets()) {
 					if(p.getType().equals(Packet.Types.Message)) {
 						this.pendingPackets.push(p);
 					}
 				}
+				this.disconnect();
 			}
 			this.connection = con;
 		} finally {
