@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.mickare.xserver.commands.XServerCommands;
 import com.mickare.xserver.util.MySQL;
+import com.mickare.xserver.util.MyStringUtils;
 
 public class XServerPlugin extends JavaPlugin {
 	
@@ -30,7 +31,7 @@ public class XServerPlugin extends JavaPlugin {
 				xmanager.stop();
 			}
 		} catch (IOException e) {
-			log.severe("[ERROR] A Error occured when disabling plugin!\n[ERROR] " + e.getMessage());
+			log.severe("[ERROR] A Error occured while disabling xserver plugin!\n[ERROR] " + e.getMessage());
 		}
 		
 		if(cfgconnection != null) {
@@ -66,15 +67,14 @@ public class XServerPlugin extends JavaPlugin {
 		cfgconnection.connect();
 		
 		try {
+			log.info("Starting XServer async.");
 			xmanager = new XServerManager(servername, log, cfgconnection);
-		} catch (InvalidConfigurationException e) {
-			log.severe("XServerManager not initialized correctly!");
-			log.severe(e.getMessage());
-			this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");
+		} catch (InvalidConfigurationException | IOException e) {
+			log.severe("XServerManager not initialized correctly!\n" + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
+			this.getServer().shutdown();
+			//this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");
 		}
 		
-		log.info("Starting XServer async.");
-		xmanager.start_async();
 
 		//Register Commands
 		new XServerCommands(this);

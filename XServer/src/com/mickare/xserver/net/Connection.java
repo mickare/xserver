@@ -10,10 +10,10 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.net.SocketFactory;
 
-import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.events.XServerDisconnectEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
@@ -23,24 +23,24 @@ public class Connection
 	private final static int CAPACITY = 512;
 	private final static int SOCKET_TIMEOUT = 5000;
 
+	private ReentrantReadWriteLock statusLock = new ReentrantReadWriteLock();
 	private stats status = stats.connecting;
 
 	private final String host;
 	private final int port;
 
+	private ReentrantReadWriteLock xserverLock = new ReentrantReadWriteLock();
 	private XServer xserver;
 
 	private final Socket socket;
 	private final DataInputStream input;
 	private final DataOutputStream output;
 
-	private final ArrayBlockingQueue<Packet> pendingPackets = new ArrayBlockingQueue<Packet>(CAPACITY);
+	private final ArrayBlockingQueue<Packet> pendingSendingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
 
-	private Thread receicingThread = null;
-	private Thread sendingThread = null;
-	
 	private Receiving receiving;
 	private Sending sending;
+	private final NetPacketHandler packetHandler;
 
 	public enum stats
 	{
@@ -63,17 +63,21 @@ public class Connection
 	{
 		this.host = host;
 		this.port = port;
-		socket = sf.createSocket(host, port);
-		socket.setSoTimeout(SOCKET_TIMEOUT);
-		input = new DataInputStream(socket.getInputStream());
-		output = new DataOutputStream(socket.getOutputStream());
-		receiving = new Receiving(this);
-		sending = new Sending(this);
-		sendFirstLoginRequest();
-		receicingThread = new Thread(receiving);
-		sendingThread = new Thread(sending);
-		receicingThread.start();
-		sendingThread.start();
+		this.socket = sf.createSocket(host, port);
+		this.socket.setSoTimeout(SOCKET_TIMEOUT);
+
+		this.input = new DataInputStream(socket.getInputStream());
+		this.output = new DataOutputStream(socket.getOutputStream());
+
+		this.packetHandler = new NetPacketHandler(this);
+		this.receiving = new Receiving();
+		this.sending = new Sending();
+
+		this.packetHandler.sendFirstLoginRequest();
+
+		this.receiving.start();
+		this.sending.start();
+		this.packetHandler.start();
 	}
 
 	/**
@@ -84,52 +88,24 @@ public class Connection
 	 * @throws IOException
 	 * @throws NotInitializedException
 	 */
-	public Connection(Socket socket) throws IOException, NotInitializedException
+	public Connection(Socket socket) throws IOException
 	{
 
 		this.host = socket.getInetAddress().getHostAddress();
 		this.port = socket.getPort();
 		this.socket = socket;
-		socket.setSoTimeout(SOCKET_TIMEOUT);
-		input = new DataInputStream(socket.getInputStream());
-		output = new DataOutputStream(socket.getOutputStream());
-		receiving = new Receiving(this);
-		sending = new Sending(this);
-		receicingThread = new Thread(receiving);
-		sendingThread = new Thread(sending);
-		receicingThread.start();
-		sendingThread.start();
-	}
+		this.socket.setSoTimeout(SOCKET_TIMEOUT);
 
-	private void sendFirstLoginRequest() throws IOException, InterruptedException, NotInitializedException
-	{
-		sendLoginRequest(Packet.Types.LoginRequest);
-	}
+		this.input = new DataInputStream(socket.getInputStream());
+		this.output = new DataOutputStream(socket.getOutputStream());
 
-	protected void sendAcceptedLoginRequest() throws IOException, InterruptedException, NotInitializedException
-	{
-		sendLoginRequest(Packet.Types.LoginAccepted);
-	}
+		this.packetHandler = new NetPacketHandler(this);
+		this.receiving = new Receiving();
+		this.sending = new Sending();
 
-	private void sendLoginRequest(Packet.Types type) throws IOException, InterruptedException, NotInitializedException
-	{
-		ByteArrayOutputStream b = null;
-		DataOutputStream out = null;
-		try
-		{
-			b = new ByteArrayOutputStream();
-			out = new DataOutputStream(b);
-			out.writeUTF(XServerManager.getInstance().getHomeServer().getName());
-			out.writeUTF(XServerManager.getInstance().getHomeServer().getPassword());
-			out.writeInt(XServerManager.HOMETYPE.getNumber());
-			pendingPackets.put(new Packet(type, b.toByteArray()));
-		} finally
-		{
-			if (out != null)
-			{
-				out.close();
-			}
-		}
+		this.receiving.start();
+		this.sending.start();
+		this.packetHandler.start();
 	}
 
 	public void ping(Ping ping) throws InterruptedException, IOException
@@ -141,7 +117,7 @@ public class Connection
 			b = new ByteArrayOutputStream();
 			out = new DataOutputStream(b);
 			out.writeUTF(ping.getKey());
-			pendingPackets.put(new Packet(Packet.Types.PingRequest, b.toByteArray()));
+			pendingSendingPackets.put(new Packet(PacketType.PingRequest, b.toByteArray()));
 		} finally
 		{
 			if (out != null)
@@ -159,8 +135,10 @@ public class Connection
 	public void disconnect()
 	{
 		setStatus(stats.disconnected);
-		receiving.stop();
-		sending.stop();
+		sending.interrupt();
+		receiving.interrupt();
+		packetHandler.interrupt();
+
 		try
 		{
 			socket.close();
@@ -169,8 +147,10 @@ public class Connection
 		} catch (IOException e)
 		{
 
-		} finally {
-			if(this.xserver != null) {
+		} finally
+		{
+			if (this.xserver != null)
+			{
 				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
 			}
 		}
@@ -179,8 +159,10 @@ public class Connection
 	public void errorDisconnect()
 	{
 		setStatus(stats.error);
-		receiving.stop();
-		sending.stop();
+		sending.interrupt();
+		receiving.interrupt();
+		packetHandler.interrupt();
+
 		try
 		{
 			socket.close();
@@ -189,8 +171,10 @@ public class Connection
 		} catch (IOException e)
 		{
 
-		} finally {
-			if(this.xserver != null) {
+		} finally
+		{
+			if (this.xserver != null)
+			{
 				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
 			}
 		}
@@ -208,7 +192,7 @@ public class Connection
 
 	public boolean send(Packet packet)
 	{
-		return pendingPackets.offer(packet);
+		return pendingSendingPackets.offer(packet);
 	}
 
 	public boolean sendAll(Collection<Packet> packets)
@@ -216,143 +200,167 @@ public class Connection
 		boolean result = true;
 		for (Packet p : packets)
 		{
-			result &= pendingPackets.offer(p);
+			result &= pendingSendingPackets.offer(p);
 		}
 		return result;
 	}
 
-	private static class Sending implements Runnable
+	private class Sending extends Thread
 	{
 
-		private final Connection con;
-		private volatile boolean running = true;
-
-		public Sending(Connection con)
+		public Sending()
 		{
-			this.con = con;
-		}
-
-		public void stop()
-		{
-			running = false;
+			super("Sending Thread to (" + host + ":" + port + ")");
 		}
 
 		@Override
 		public void run()
 		{
 			Packet p = null;
-			while (running && con.isConnected())
+			try
 			{
-				try
+				while (!isInterrupted() && isConnected())
 				{
-					p = con.pendingPackets.poll(1000, TimeUnit.MILLISECONDS);
 
-					if (!running)
+					p = pendingSendingPackets.poll(1000, TimeUnit.MILLISECONDS);
+
+					if (!isInterrupted())
 					{
 						return;
 					}
 
 					if (p == null)
 					{
-						if(stats.connected.equals(con.getStatus())) {
-							new Packet(Packet.Types.KeepAlive, new byte[0]).writeToStream(con.output);
-						} else {
-							con.errorDisconnect();
+						if (isLoggedIn())
+						{
+							new Packet(PacketType.KeepAlive, new byte[0]).writeToStream(output);
+						} else
+						{
+							errorDisconnect();
 						}
 					} else
 					{
-						p.writeToStream(con.output);
+						p.writeToStream(output);
 					}
+					p = null;
 
-				} catch (IOException | InterruptedException e)
-				{
-					running = false;
-					con.errorDisconnect();
 				}
+			} catch (IOException | InterruptedException e)
+			{
+				errorDisconnect();
 			}
+			this.interrupt();
 		}
 
 	}
 
-	private static class Receiving implements Runnable
+	private class Receiving extends Thread
 	{
 
-		private final Connection con;
-		private volatile boolean running = true;
-
-		public Receiving(Connection con)
+		public Receiving()
 		{
-			this.con = con;
-		}
-
-		public void stop()
-		{
-			running = false;
+			super("Receiving Thread to (" + host + ":" + port + ")");
 		}
 
 		@Override
 		public void run()
 		{
-			while (running && con.isConnected())
+			try
 			{
-				try
+				while (!isInterrupted() && isConnected())
 				{
 
-					int packetID = con.input.readInt();
-					int length = con.input.readInt();
+					int packetID = input.readInt();
+					int length = input.readInt();
 					byte[] data = new byte[length];
-					con.input.readFully(data);
+					input.readFully(data);
 
-					NetPacketHandler.handle(con, packetID, length, data);
-				} catch (IOException e)
-				{
-					running = false;
-					con.errorDisconnect();
+					packetHandler.handle(new Packet(packetID, data));
+					data = null;
 				}
+			} catch (IOException e)
+			{
+				errorDisconnect();
 			}
+			this.interrupt();
 		}
 	}
 
 	public stats getStatus()
 	{
-		return status;
+		statusLock.readLock().lock();
+		try
+		{
+			return status;
+		} finally
+		{
+			statusLock.readLock().unlock();
+		}
 	}
 
 	protected void setStatus(stats status)
 	{
-		this.status = status;
+		statusLock.writeLock().lock();
+		try
+		{
+			this.status = status;
+		} finally
+		{
+			statusLock.writeLock().unlock();
+		}
 	}
 
 	public XServer getXserver()
 	{
-		return xserver;
+		xserverLock.readLock().lock();
+		try
+		{
+			return xserver;
+		} finally
+		{
+			xserverLock.readLock().unlock();
+		}
 	}
 
 	protected void setXserver(XServer xserver)
 	{
-		this.xserver = xserver;
-		xserver.setConnection(this);
+		xserverLock.writeLock().lock();
+		try
+		{
+			this.xserver = xserver;
+			xserver.setConnection(this);
+		} finally
+		{
+			xserverLock.writeLock().unlock();
+		}
 	}
 
-	protected void setReloginXserver(XServer xserver) throws NotInitializedException
+	protected void setReloginXserver(XServer xserver)
 	{
-		this.xserver = xserver;
-		xserver.setReloginConnection(this);
+		xserverLock.writeLock().lock();
+		try
+		{
+			this.xserver = xserver;
+			xserver.setReloginConnection(this);
+		} finally
+		{
+			xserverLock.writeLock().unlock();
+		}
 	}
 
 	public Queue<Packet> getPendingPackets()
 	{
-		return new ArrayBlockingQueue<Packet>(CAPACITY, false, pendingPackets);
+		return new ArrayBlockingQueue<Packet>(CAPACITY, false, pendingSendingPackets);
 	}
 
 	public boolean isLoggedIn()
 	{
-		return stats.connected.equals(this.status);
+		return isConnected() ? stats.connected.equals(getStatus()) : false;
 	}
 
 	public boolean isLoggingIn()
 	{
-		return stats.connecting.equals(this.status);
+		return isConnected() ? stats.connecting.equals(getStatus()) : false;
 	}
 
 }

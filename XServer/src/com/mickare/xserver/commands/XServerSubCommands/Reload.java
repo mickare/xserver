@@ -1,5 +1,7 @@
 package com.mickare.xserver.commands.XServerSubCommands;
 
+import java.io.IOException;
+
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -32,6 +34,9 @@ public class Reload extends SubCommand {
 				}});
 		} catch (NotInitializedException e) {
 			sender.sendMessage(ChatColor.RED + "XServer isn't initialized!");
+		} catch (IOException e1)
+		{
+			sender.sendMessage(ChatColor.RED + "XServer ERROR: " + e1.getMessage());
 		}
 		return true;
 	}
