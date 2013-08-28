@@ -72,7 +72,7 @@ public class XServer {
 		try {
 			if (this.connection != con && isConnected()) {
 				for(Packet p : this.connection.getPendingPackets()) {
-					if(p.getType().equals(Packet.Types.Message)) {
+					if(p.getPacketID() == PacketType.Message.packetID) {
 						this.pendingPackets.push(p);
 					}
 				}
@@ -84,10 +84,10 @@ public class XServer {
 		}
 	}
 
-	public void setReloginConnection(Connection con) throws NotInitializedException {
+	public void setReloginConnection(Connection con) {
 		conLock.lock();
 		try {
-			if(XServerManager.getInstance().getHomeServer() == this) {
+			if(manager.getHomeServer() == this) {
 				if (this.connection2 != con && (this.connection2 != null ? this.connection2.isConnected() : false)) {
 					this.disconnect();
 				}
@@ -103,7 +103,7 @@ public class XServer {
 	public boolean isConnected() {
 		conLock.lock();
 		try {
-			return connection != null ? connection.isConnected() && (connection.isLoggedIn() || connection.isLoggingIn()) : false;
+			return connection != null ? connection.isLoggedIn() : false;
 		} finally {
 			conLock.unlock();
 		}
@@ -142,11 +142,11 @@ public class XServer {
 		conLock.lock();
 		try {
 			if (!isConnected() || (connection != null ? !connection.isLoggedIn() : false)) {
-				pendingPackets.push(new Packet(Packet.Types.Message, message.getData()));
+				pendingPackets.push(new Packet(PacketType.Message, message.getData()));
 				throw new NotConnectedException("Not Connected to this server!");
 			}
 			connection
-					.send(new Packet(Packet.Types.Message, message.getData()));
+					.send(new Packet(PacketType.Message, message.getData()));
 		} finally {
 			conLock.unlock();
 		}

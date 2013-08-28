@@ -1,6 +1,8 @@
 package com.mickare.xserver.commands.XServerSubCommands;
 
 
+import java.io.IOException;
+
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 
@@ -31,6 +33,9 @@ public class Reload extends SubCommand {
 				}});
 		} catch (NotInitializedException e) {
 			sender.sendMessage(ChatColor.RED + "XServer isn't initialized!");
+		} catch (IOException e1)
+		{
+			sender.sendMessage(ChatColor.RED + "XServer ERROR: " + e1.getMessage());
 		}
 		return;
 	}
