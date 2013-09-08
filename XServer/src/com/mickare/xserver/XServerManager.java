@@ -24,6 +24,7 @@ public class XServerManager extends AbstractXServerManager {
 	protected XServerManager(String servername, BukkitXServerPlugin plugin,
 			MySQL connection) throws InvalidConfigurationException, IOException {
 		super(servername, plugin, connection);
+		instance = this;
 		this.eventhandler = new BukkitEventHandler(plugin);
 	}
 

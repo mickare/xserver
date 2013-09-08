@@ -138,20 +138,23 @@ public class XServer {
 		return password;
 	}
 
-	public void sendMessage(Message message) throws NotConnectedException, IOException {
-		conLock.lock();
+	public boolean sendMessage(Message message) throws NotConnectedException, IOException {
+		boolean result = false;
+		conLock.lock();	
 		try {
-			if (!isConnected() || (connection != null ? !connection.isLoggedIn() : false)) {
+			if (!isConnected()) {
 				pendingPackets.push(new Packet(PacketType.Message, message.getData()));
-				throw new NotConnectedException("Not Connected to this server!");
+				
+				//throw new NotConnectedException("Not Connected to this server!");
+			} else if( connection
+					.send(new Packet(PacketType.Message, message.getData()))) {
+				result = true;								
 			}
-			connection
-					.send(new Packet(PacketType.Message, message.getData()));
 		} finally {
 			conLock.unlock();
 		}
-		
 		manager.getEventHandler().callEvent(new XServerMessageOutgoingEvent(this, message));
+		return result;
 		
 	}
 	
@@ -166,10 +169,12 @@ public class XServer {
 	public void flushCache() {
 		conLock.lock();
 		try {
-			Packet p = pendingPackets.pollLast();
-			while(p != null) {
-				connection.send(p);
-				p = pendingPackets.pollLast();
+			if (isConnected()) {
+				Packet p = pendingPackets.pollLast();
+				while(p != null) {
+					connection.send(p);
+					p = pendingPackets.pollLast();
+				}
 			}
 		} finally {
 			conLock.unlock();

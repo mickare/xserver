@@ -56,7 +56,7 @@ public class NetPacketHandler extends Thread
 		DataInputStream is = null;
 
 
-		manager.getLogger().info("Packet: " + p.getPacketID() + " - L" + p.getData().length);
+		//manager.getLogger().info("Packet: " + p.getPacketID() + " - L" + p.getData().length);
 
 
 		try

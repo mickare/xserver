@@ -22,6 +22,7 @@ public class XServerManager extends AbstractXServerManager {
 	protected XServerManager(String servername, BungeeXServerPlugin plugin,
 			MySQL connection) throws InvalidConfigurationException, IOException {
 		super(servername, plugin, connection);
+		instance = this;
 		this.eventhandler = new BungeeEventHandler(plugin);
 	}
 

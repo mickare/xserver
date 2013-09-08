@@ -1,11 +1,21 @@
 package com.mickare.xserver.net;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class Packet {
 		private int packetID;
 		private byte[] data;
+		
+		public static Packet readFromSteam(DataInputStream input) throws IOException {
+			int packetID = input.readInt();
+			int length = input.readInt();
+			byte[] data = new byte[length];
+			input.readFully(data);
+
+			return new Packet(packetID, data);
+		}
 		
 		public Packet(int packetID, byte[] data) {
 			this.packetID = packetID;

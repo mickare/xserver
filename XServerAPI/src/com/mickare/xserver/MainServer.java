@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 
 import com.mickare.xserver.net.Connection;
+import com.mickare.xserver.util.MyStringUtils;
 
 public class MainServer extends Thread
 {
@@ -37,7 +38,7 @@ public class MainServer extends Thread
 				new Connection(server.accept(), manager);
 			} catch (IOException e)
 			{
-				
+				manager.getLogger().warning("Exception while connecting: " + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
 			}
 		}
 	}

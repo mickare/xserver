@@ -93,6 +93,7 @@ public class Connection
 	public Connection(Socket socket, AbstractXServerManager manager) throws IOException
 	{
 
+
 		this.host = socket.getInetAddress().getHostAddress();
 		this.port = socket.getPort();
 		this.socket = socket;
@@ -108,6 +109,9 @@ public class Connection
 		this.receiving.start();
 		this.sending.start();
 		this.packetHandler.start();
+		
+		
+		//manager.getLogger().info("New Connection from: " + host + ":" + port);
 	}
 
 	public void ping(Ping ping) throws InterruptedException, IOException
@@ -196,7 +200,7 @@ public class Connection
 	{
 		return pendingSendingPackets.offer(packet);
 	}
-
+	
 	public boolean sendAll(Collection<Packet> packets)
 	{
 		boolean result = true;
@@ -218,15 +222,14 @@ public class Connection
 		@Override
 		public void run()
 		{
-			Packet p = null;
 			try
 			{
 				while (!isInterrupted() && isConnected())
 				{
 
-					p = pendingSendingPackets.poll(1000, TimeUnit.MILLISECONDS);
+					Packet p = pendingSendingPackets.poll(1000, TimeUnit.MILLISECONDS);
 
-					if (!isInterrupted())
+					if (isInterrupted())
 					{
 						return;
 					}
@@ -249,6 +252,8 @@ public class Connection
 				}
 			} catch (IOException | InterruptedException e)
 			{
+				//TODO
+				//manager.getLogger().warning("Error Disconnect (" + host + ":" + port + "): " + e.getMessage() + "\n" +  MyStringUtils.stackTraceToString(e));
 				errorDisconnect();
 			}
 			this.interrupt();
@@ -271,17 +276,12 @@ public class Connection
 			{
 				while (!isInterrupted() && isConnected())
 				{
-
-					int packetID = input.readInt();
-					int length = input.readInt();
-					byte[] data = new byte[length];
-					input.readFully(data);
-
-					packetHandler.handle(new Packet(packetID, data));
-					data = null;
+					packetHandler.handle(Packet.readFromSteam(input));
 				}
 			} catch (IOException e)
 			{
+				//TODO
+				//manager.getLogger().warning("Error Disconnect (" + host + ":" + port + "): " + e.getMessage() + "\n" +  MyStringUtils.stackTraceToString(e));
 				errorDisconnect();
 			}
 			this.interrupt();
@@ -365,4 +365,9 @@ public class Connection
 		return isConnected() ? stats.connecting.equals(getStatus()) : false;
 	}
 
+	@Override
+	public String toString() {
+		return host + ":" + port;
+	}
+	
 }
