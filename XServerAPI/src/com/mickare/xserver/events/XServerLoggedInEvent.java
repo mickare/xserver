@@ -5,15 +5,15 @@ import com.mickare.xserver.net.XServer;
 public class XServerLoggedInEvent extends XServerEvent
 {
 
-	private final XServer<? extends Object> server;
+	private final XServer server;
 	
-	public XServerLoggedInEvent(XServer<? extends Object> server)
+	public XServerLoggedInEvent(XServer server)
 	{
 		super("Server " + server.getName() + " logged inLogged");
 		this.server = server;
 	}
 
-	public XServer<? extends Object> getServer()
+	public XServer getServer()
 	{
 		return server;
 	}

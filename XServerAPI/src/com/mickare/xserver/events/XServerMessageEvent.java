@@ -5,16 +5,16 @@ import com.mickare.xserver.net.XServer;
 
 public class XServerMessageEvent extends XServerEvent {
 
-	private final XServer<? extends Object> server;
+	private final XServer server;
 	private final Message message;
 
-	public XServerMessageEvent(final XServer<? extends Object> server, final Message message) {
+	public XServerMessageEvent(final XServer server, final Message message) {
 		super();
 		this.server = server;
 		this.message = message;
 	}
 	
-	public XServerMessageEvent(final XServer<? extends Object> server, final Message message, String text) {
+	public XServerMessageEvent(final XServer server, final Message message, String text) {
 		super(text);
 		this.server = server;
 		this.message = message;
@@ -24,7 +24,7 @@ public class XServerMessageEvent extends XServerEvent {
 		return message;
 	}
 
-	public XServer<? extends Object> getServer() {
+	public XServer getServer() {
 		return server;
 	}
 

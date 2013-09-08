@@ -16,10 +16,10 @@ import com.mickare.xserver.util.CacheMap;
 import com.mickare.xserver.util.ChatColor;
 import com.mickare.xserver.util.Encryption;
 
-public class Ping<T> {
+public class Ping {
         
         
-        private static CacheMap<String, Ping<?>> pending = new CacheMap<String, Ping<?>>(40);
+        private static CacheMap<String, Ping> pending = new CacheMap<String, Ping>(40);
 
         private static int rollingnumber = 0;
         
@@ -30,7 +30,7 @@ public class Ping<T> {
                 return rollingnumber++;
         }
         
-        public static void addPendingPing(Ping<?> ping) {
+        public static void addPendingPing(Ping ping) {
                 synchronized(pending) {
                         if(ping.started == -1) {
                                 pending.put(ping.key, ping);
@@ -38,8 +38,8 @@ public class Ping<T> {
                 }
         }
         
-        public static void receive(String key, XServer<?> server) {
-                Ping<?> p = null;
+        public static void receive(String key, XServer server) {
+                Ping p = null;
                 synchronized(pending) {
                         p = pending.get(key);
                 }
@@ -56,16 +56,16 @@ public class Ping<T> {
         
         private long started = -1;
         private final long timeout = 2000;
-        private final Map<XServer<? extends Object>, Long> responses = Collections.synchronizedMap(new HashMap<XServer<? extends Object>, Long>());
-        private final Set<XServer<? extends Object>> waiting = Collections.synchronizedSet(new HashSet<XServer<? extends Object>>());
+        private final Map<XServer, Long> responses = Collections.synchronizedMap(new HashMap<XServer, Long>());
+        private final Set<XServer> waiting = Collections.synchronizedSet(new HashSet<XServer>());
         
-        private final AbstractXServerManager<T> manager;
+        private final AbstractXServerManager manager;
         
-        public Ping(AbstractXServerManager<T> manager, ComSender sender) {
+        public Ping(AbstractXServerManager manager, ComSender sender) {
                 this(manager, sender, "Ping");
         }
         
-        public Ping(AbstractXServerManager<T> manager, ComSender sender, String salt) {
+        public Ping(AbstractXServerManager manager, ComSender sender, String salt) {
         		this.manager = manager;
                 this.sender = sender;
                 this.key = Encryption.MD5(String.valueOf(Math.random()) + salt + getNextRollingNumber());
@@ -75,14 +75,14 @@ public class Ping<T> {
         public boolean start() {
                 if(started == -1) {
                         addPendingPing(this);
-                                for(XServer<?> s : waiting.toArray(new XServer[waiting.size()])) {
+                                for(XServer s : waiting.toArray(new XServer[waiting.size()])) {
                                         if(!s.isConnected()) {
                                                 waiting.remove(s);
                                                 responses.put(s, (long) -1);
                                         }
                                 }
                         started = System.currentTimeMillis();
-                        for(XServer<?> s : waiting.toArray(new XServer[waiting.size()])) {
+                        for(XServer s : waiting.toArray(new XServer[waiting.size()])) {
                                 try {
                                         s.ping(this);
                                 } catch (InterruptedException | IOException e) {
@@ -104,18 +104,18 @@ public class Ping<T> {
                 return false;
         }
                 
-        public void add(XServer<T> server) {
+        public void add(XServer server) {
                 responses.put(server, Long.MAX_VALUE);
                 waiting.add(server);
         }
         
-        public void addAll(Collection<XServer<T>> servers) {
-                for(XServer<T> s : servers) {
+        public void addAll(Collection<XServer> servers) {
+                for(XServer s : servers) {
                         add(s);
                 }
         }
         
-        public void receive(XServer<?> server) {
+        public void receive(XServer server) {
                 long t = System.currentTimeMillis();
                         if(waiting.contains(server)) {
                                 waiting.remove(server);
@@ -146,16 +146,16 @@ public class Ping<T> {
                         } else {
                                 StringBuilder sb = new StringBuilder();
                                 
-                                LinkedList<XServer<? extends Object>> servers = new LinkedList<XServer<? extends Object>>(responses.keySet());
+                                LinkedList<XServer> servers = new LinkedList<XServer>(responses.keySet());
 
-                    			Collections.sort(servers, new Comparator<XServer<? extends Object>>() {
+                    			Collections.sort(servers, new Comparator<XServer>() {
                     				@Override
-                    				public int compare(XServer<? extends Object> o1, XServer<? extends Object> o2) {
+                    				public int compare(XServer o1, XServer o2) {
                     					return o1.getName().compareTo(o2.getName());
                     				}
                     			});
                                 
-                                for(XServer<? extends Object> s : servers) {
+                                for(XServer s : servers) {
                                 	long value = responses.get(s);
                                         sb.append("\n").append(ChatColor.GOLD).append(s.getName()).append(ChatColor.GRAY).append(" - ");
                                         if(value < 0) {

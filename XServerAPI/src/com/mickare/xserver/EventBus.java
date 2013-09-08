@@ -22,7 +22,7 @@ public class EventBus<T>
 	
     private final Map<Class<?>, Map<Object, Method[]>> eventToHandler = new HashMap<>();
     private final Map<Method, Boolean> synced = Collections.synchronizedMap(new HashMap<Method, Boolean>());
-    private final Map<Method, T> plugins = Collections.synchronizedMap(new HashMap<Method, T>());
+    private final Map<Method, XServerListenerPlugin<T>> plugins = Collections.synchronizedMap(new HashMap<Method, XServerListenerPlugin<T>>());
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Logger logger;
 
@@ -104,7 +104,7 @@ public class EventBus<T>
         return handler;
     }
 
-    public void register(Object listener, T plugin)
+    public void register(Object listener, XServerListenerPlugin<T> plugin)
     {
         Map<Class<?>, Set<Method>> handler = findHandlers( listener );
         lock.writeLock().lock();

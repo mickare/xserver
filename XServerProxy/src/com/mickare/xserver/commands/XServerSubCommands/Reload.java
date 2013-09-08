@@ -11,9 +11,9 @@ import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
-public class Reload<T> extends SubCommand<T> {
+public class Reload extends SubCommand {
 
-        public Reload(XServerPlugin<T> plugin) {
+        public Reload(XServerPlugin plugin) {
                 super(plugin, "reload", "", "Reloads the server list and reconnects.");
                 // TODO Auto-generated constructor stub
         }

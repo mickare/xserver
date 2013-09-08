@@ -2,12 +2,15 @@ package com.mickare.xserver;
 
 import java.util.logging.Logger;
 
-public interface XServerPlugin<T> {
+public interface XServerPlugin {
 	
 	public Logger getLogger();
 	
 	public void shutdownServer();
 
-	public AbstractXServerManager<T> getManager();
+	public AbstractXServerManager getManager();
+	
+	public long getAutoReconnectTime();
+	public XType getHomeType();
 	
 }

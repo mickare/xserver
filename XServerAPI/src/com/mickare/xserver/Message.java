@@ -10,19 +10,19 @@ import com.mickare.xserver.net.XServer;
 
 public class Message {
 
-	private final XServer<? extends Object> sender;
+	private final XServer sender;
 	private final String subChannel;
 	private final byte[] content;
 
 	
 	
-	protected Message(XServer<? extends Object> sender, String subChannel, byte[] content) {
+	protected Message(XServer sender, String subChannel, byte[] content) {
 		this.sender = sender;
 		this.subChannel = subChannel;
 		this.content = content;
 	}
 
-	protected Message(XServer<? extends Object> sender, byte[] data) throws IOException {
+	protected Message(XServer sender, byte[] data) throws IOException {
 		this.sender = sender;
 		DataInputStream in = null;
 		try {
@@ -44,7 +44,7 @@ public class Message {
 	 * Get Sender Server Name
 	 * @return sender name
 	 */
-	public XServer<? extends Object> getSender() {
+	public XServer getSender() {
 		return sender;
 	}
 

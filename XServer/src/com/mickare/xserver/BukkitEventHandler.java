@@ -12,17 +12,17 @@ public class BukkitEventHandler extends EventHandler<JavaPlugin> {
 	}
 
 	@Override
-	protected void runTask(Boolean sync, JavaPlugin plugin, Runnable run) {
+	protected void runTask(Boolean sync, XServerListenerPlugin<JavaPlugin> plugin, Runnable run) {
 		boolean s = true;
 		if (sync != null) {
 			s = sync.booleanValue();
 		}
-		if (plugin.isEnabled()) {
+		if (plugin.getPlugin().isEnabled()) {
 			if (s) {
-				plugin.getServer().getScheduler().runTask(plugin, run);
+				plugin.getPlugin().getServer().getScheduler().runTask(plugin.getPlugin(), run);
 			} else {
-				plugin.getServer().getScheduler()
-						.runTaskAsynchronously(plugin, run);
+				plugin.getPlugin().getServer().getScheduler()
+						.runTaskAsynchronously(plugin.getPlugin(), run);
 			}
 		}
 	}
@@ -30,5 +30,6 @@ public class BukkitEventHandler extends EventHandler<JavaPlugin> {
 	public JavaPlugin getPlugin() {
 		return plugin;
 	}
+
 
 }

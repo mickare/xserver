@@ -11,8 +11,11 @@ import com.mickare.xserver.util.MyStringUtils;
 import com.mickare.xserver.config.ConfigAccessor;
 import com.mickare.xserver.exceptions.InvalidConfigurationException;
 
-public class BungeeXServerPlugin extends Plugin implements XServerPlugin<Plugin>{
+public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
 
+	private static final long AUTORECONNECT = 10000;
+	public static final XType HOMETYPE = XType.BungeeCord;
+	
         private Logger log = null;
 
         private String servername;
@@ -80,7 +83,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin<Plugin>
                 
 
                 // Register Commands
-                new XServerCommands<Plugin>(this);
+                new XServerCommands(this);
 
                 log.info(getDescription().getName() + " enabled!");
         }
@@ -106,6 +109,16 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin<Plugin>
 		@Override
 		public XServerManager getManager() {
 			return xmanager;
+		}
+
+		@Override
+		public long getAutoReconnectTime() {
+			return AUTORECONNECT;
+		}
+
+		@Override
+		public XType getHomeType() {
+			return HOMETYPE;
 		}
         
 

@@ -11,9 +11,9 @@ import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.net.XServer;
 
-public class Status<T> extends SubCommand<T> {
+public class Status extends SubCommand {
 
-        public Status(XServerPlugin<T> plugin) {
+        public Status(XServerPlugin plugin) {
                 super(plugin, "status", "",
                                 "Shows the connection status of the servers.");
                 // TODO Auto-generated constructor stub
@@ -23,17 +23,17 @@ public class Status<T> extends SubCommand<T> {
         public void execute(CommandSender sender, String[] args) {
                 StringBuilder sb = new StringBuilder();
 
-                        LinkedList<XServer<T>> servers = new LinkedList<XServer<T>>(
+                        LinkedList<XServer> servers = new LinkedList<XServer>(
                                         getPlugin().getManager().getServers());
 
-                        Collections.sort(servers, new Comparator<XServer<T>>() {
+                        Collections.sort(servers, new Comparator<XServer>() {
                                 @Override
-                                public int compare(XServer<T> o1, XServer<T> o2) {
+                                public int compare(XServer o1, XServer o2) {
                                         return o1.getName().compareTo(o2.getName());
                                 }
                         });
 
-                        for (XServer<T> s : servers) {
+                        for (XServer s : servers) {
                                 sb.append("\n").append(ChatColor.RESET).append(s.getName())
                                                 .append(ChatColor.GRAY).append(" : ");
                                 if (s.isConnected()) {

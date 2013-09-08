@@ -11,7 +11,7 @@ import com.mickare.xserver.events.XServerEvent;
 
 public abstract class EventHandler<T> {
 	
-	private final HashMap<XServerListener, T> listeners = new HashMap<XServerListener, T>();
+	private final HashMap<XServerListener, XServerListenerPlugin<T>> listeners = new HashMap<XServerListener, XServerListenerPlugin<T>>();
 
 	private final Logger logger;
 	private final EventBus<T> bus;
@@ -25,8 +25,8 @@ public abstract class EventHandler<T> {
 	 * Get all Listeners...
 	 * @return new Map
 	 */
-	public Map<XServerListener, T> getListeners() {
-		return new HashMap<XServerListener, T>(listeners);
+	public Map<XServerListener, XServerListenerPlugin<T>> getListeners() {
+		return new HashMap<XServerListener, XServerListenerPlugin<T>>(listeners);
 	}
 
 	/**
@@ -34,7 +34,7 @@ public abstract class EventHandler<T> {
 	 * @param plugin
 	 * @param lis
 	 */
-	public synchronized void registerListener(T plugin, XServerListener lis) {
+	public synchronized void registerListener(XServerListenerPlugin<T> plugin, XServerListener lis) {
 		listeners.put(lis, plugin);
 		bus.register(lis, plugin);
 	}
@@ -51,8 +51,8 @@ public abstract class EventHandler<T> {
 	/**
 	 * Unregister all for a plugin listeners...
 	 */
-	public synchronized void unregisterAll(T plugin) {
-		for(Entry<XServerListener, T> e : new HashSet<Entry<XServerListener, T>>(listeners.entrySet())) {
+	public synchronized void unregisterAll(XServerListenerPlugin<T> plugin) {
+		for(Entry<XServerListener, XServerListenerPlugin<T>> e : new HashSet<Entry<XServerListener, XServerListenerPlugin<T>>>(listeners.entrySet())) {
 			if(e.getValue() == plugin) {
 				bus.unregister(e.getKey());
 				listeners.remove(e.getKey());
@@ -96,6 +96,6 @@ public abstract class EventHandler<T> {
 	}
 	
 	
-	protected abstract void runTask(Boolean sync, T plugin, Runnable run);
+	protected abstract void runTask(Boolean sync, XServerListenerPlugin<T> plugin, Runnable run);
 	
 }

@@ -22,31 +22,28 @@ import com.mickare.xserver.net.XServer;
 import com.mickare.xserver.util.MySQL;
 import com.mickare.xserver.util.MyStringUtils;
 
-public abstract class AbstractXServerManager<T> {
+public abstract class AbstractXServerManager {
 
-	public abstract long getAutoReconnectTime();
-	public abstract XType getHomeType();
-	
-	private final XServerPlugin<T> plugin;
-	private EventHandler<T> eventhandler;
+	private final XServerPlugin plugin;
+	private EventHandler<?> eventhandler;
 	private ServerThreadPoolExecutor stpool;
 	private SocketFactory sf;
-	private MainServer<T> mainserver;
+	private MainServer mainserver;
 
 	private final MySQL connection;
 	private final String homeServerName;
 	private Lock homeLock = new ReentrantLock();
-	public XServer<T> homeServer;
+	public XServer homeServer;
 	private ReentrantReadWriteLock serversLock = new ReentrantReadWriteLock();
 
-	private final HashMap<String, XServer<T>> servers = new HashMap<String, XServer<T>>();
+	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
 
-	private final Map<XServer<T>, Integer> notConnectedServers = Collections
-			.synchronizedMap(new HashMap<XServer<T>, Integer>());
+	private final Map<XServer, Integer> notConnectedServers = Collections
+			.synchronizedMap(new HashMap<XServer, Integer>());
 
 	private boolean reconnectClockRunning = false;
 
-	protected AbstractXServerManager(String servername, XServerPlugin<T> plugin, MySQL connection, EventHandler<T> eventhandler)
+	protected AbstractXServerManager(String servername, XServerPlugin plugin, MySQL connection, EventHandler<?> eventhandler)
 			throws InvalidConfigurationException, IOException {
 		this.plugin = plugin;
 		stpool = new ServerThreadPoolExecutor();
@@ -78,7 +75,7 @@ public abstract class AbstractXServerManager<T> {
 						try {
 							while (isReconnectClockRunning()) {
 								reconnectAll_soft();
-								Thread.sleep(getAutoReconnectTime());
+								Thread.sleep(plugin.getAutoReconnectTime());
 							}
 						} catch (InterruptedException e) {
 						}
@@ -105,7 +102,7 @@ public abstract class AbstractXServerManager<T> {
 		});
 	}
 
-	private synchronized void notifyNotConnected(XServer<T> s, Exception e) {
+	private synchronized void notifyNotConnected(XServer s, Exception e) {
 		synchronized (notConnectedServers) {
 			int n = 0;
 			if (notConnectedServers.containsKey(s)) {
@@ -126,7 +123,7 @@ public abstract class AbstractXServerManager<T> {
 	public void reconnectAll_soft() {
 		serversLock.readLock().lock();
 		try {
-			for (final XServer<T> s : servers.values()) {
+			for (final XServer s : servers.values()) {
 				stpool.runTask(new Runnable() {
 					public void run() {
 						if (!s.isConnected()) {
@@ -151,7 +148,7 @@ public abstract class AbstractXServerManager<T> {
 	public void reconnectAll_forced() {
 		serversLock.readLock().lock();
 		try {
-			for (final XServer<T> s : servers.values()) {
+			for (final XServer s : servers.values()) {
 				stpool.runTask(new Runnable() {
 					public void run() {
 						try {
@@ -178,7 +175,7 @@ public abstract class AbstractXServerManager<T> {
 			stpool.shutDown();
 			reconnectClockRunning = false;
 
-			for (XServer<T> s : this.getServers()) {
+			for (XServer s : this.getServers()) {
 				s.disconnect();
 			}
 
@@ -206,7 +203,7 @@ public abstract class AbstractXServerManager<T> {
 
 				}
 			}
-			for (XServer<T> s : servers.values()) {
+			for (XServer s : servers.values()) {
 				s.disconnect();
 			}
 			servers.clear();
@@ -244,7 +241,7 @@ public abstract class AbstractXServerManager<T> {
 							continue;
 						}
 						String pw = rs.getString("PW");
-						servers.put(servername, new XServer<T>(servername, host,
+						servers.put(servername, new XServer(servername, host,
 								ip, pw, this));
 					}
 				} catch (SQLException e) {
@@ -259,7 +256,7 @@ public abstract class AbstractXServerManager<T> {
 				throw new IllegalArgumentException("The home server \"" + this.homeServerName + "\" wasn't found!");				
 			}
 			
-			mainserver = new MainServer<T>(ServerSocketFactory.getDefault()
+			mainserver = new MainServer(ServerSocketFactory.getDefault()
 					.createServerSocket(homeServer.getPort(), 100), this);
 			mainserver.start();
 
@@ -271,7 +268,7 @@ public abstract class AbstractXServerManager<T> {
 		}
 	}
 
-	public XServer<T> getHomeServer() {
+	public XServer getHomeServer() {
 		homeLock.lock();
 		try {
 			return homeServer;
@@ -280,7 +277,7 @@ public abstract class AbstractXServerManager<T> {
 		}
 	}
 
-	public XServer<T> getServer(String servername) {
+	public XServer getServer(String servername) {
 		serversLock.readLock();
 		try {
 			return servers.get(servername);
@@ -289,7 +286,7 @@ public abstract class AbstractXServerManager<T> {
 		}
 	}
 
-	public XServerPlugin<T> getPlugin() {
+	public XServerPlugin getPlugin() {
 		return plugin;
 	}
 	
@@ -305,7 +302,7 @@ public abstract class AbstractXServerManager<T> {
 		return sf;
 	}
 
-	public XServer<T> getXServer(String name) {
+	public XServer getXServer(String name) {
 		serversLock.readLock().lock();
 		try {
 			return servers.get(name);
@@ -319,10 +316,10 @@ public abstract class AbstractXServerManager<T> {
 	 * 
 	 * @return servers
 	 */
-	public Set<XServer<T>> getServers() {
+	public Set<XServer> getServers() {
 		serversLock.readLock().lock();
 		try {
-			return new HashSet<XServer<T>>(servers.values());
+			return new HashSet<XServer>(servers.values());
 		} finally {
 			serversLock.readLock().unlock();
 		}
@@ -349,10 +346,10 @@ public abstract class AbstractXServerManager<T> {
 	 *            servername
 	 * @return XServer with that name
 	 */
-	public XServer<T> getServerIgnoreCase(String name) {
+	public XServer getServerIgnoreCase(String name) {
 		serversLock.readLock().lock();
 		try {
-			for (XServer<T> s : servers.values()) {
+			for (XServer s : servers.values()) {
 				if (s.getName().equalsIgnoreCase(name)) {
 					return s;
 				}
@@ -370,10 +367,10 @@ public abstract class AbstractXServerManager<T> {
 	 * @param port
 	 * @return XServer
 	 */
-	public XServer<T> getServer(String host, int port) {
+	public XServer getServer(String host, int port) {
 		serversLock.readLock().lock();
 		try {
-			for (XServer<T> s : servers.values()) {
+			for (XServer s : servers.values()) {
 				if (s.getHost().equalsIgnoreCase(host) && s.getPort() == port) {
 					return s;
 				}
@@ -384,7 +381,7 @@ public abstract class AbstractXServerManager<T> {
 		}
 	}
 
-	public EventHandler<T> getEventHandler() {
+	public EventHandler<?> getEventHandler() {
 		return eventhandler;
 	}
 
@@ -396,7 +393,7 @@ public abstract class AbstractXServerManager<T> {
 		return new Message(getHomeServer(), subChannel, content);
 	}
 	
-	public Message readMessage(XServer<T> sender, byte[] data) throws IOException {
+	public Message readMessage(XServer sender, byte[] data) throws IOException {
 		return new Message(sender, data);
 	}
 

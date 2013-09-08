@@ -14,17 +14,17 @@ import com.mickare.xserver.events.XServerLoggedInEvent;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
-public class NetPacketHandler<T> extends Thread
+public class NetPacketHandler extends Thread
 {
 
 	private final static int CAPACITY = 512;
 
-	private final Connection<T> con;
-	private final AbstractXServerManager<T> manager;
+	private final Connection con;
+	private final AbstractXServerManager manager;
 
 	private final ArrayBlockingQueue<Packet> pendingReceivingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
 
-	public NetPacketHandler(Connection<T> con, AbstractXServerManager<T> manager)
+	public NetPacketHandler(Connection con, AbstractXServerManager manager)
 	{
 		this.con = con;
 		this.manager = manager;
@@ -86,7 +86,7 @@ public class NetPacketHandler<T> extends Thread
 				String name = is.readUTF();
 				String password = is.readUTF();
 				XType xtype = XType.getByNumber(is.readInt());
-				XServer<T> s = manager.getServer(name);
+				XServer s = manager.getServer(name);
 
 				// Debugging...
 				/*
@@ -121,7 +121,7 @@ public class NetPacketHandler<T> extends Thread
 				String name = is.readUTF();
 				String password = is.readUTF();
 				XType xtype = XType.getByNumber(is.readInt());
-				XServer<T> s = manager.getServer(name);
+				XServer s = manager.getServer(name);
 
 				// Debugging...
 
@@ -220,7 +220,7 @@ public class NetPacketHandler<T> extends Thread
 			out = new DataOutputStream(b);
 			out.writeUTF(manager.getHomeServer().getName());
 			out.writeUTF(manager.getHomeServer().getPassword());
-			out.writeInt(manager.getHomeType().getNumber());
+			out.writeInt(manager.getPlugin().getHomeType().getNumber());
 			con.send(new Packet(type, b.toByteArray()));
 		} finally
 		{

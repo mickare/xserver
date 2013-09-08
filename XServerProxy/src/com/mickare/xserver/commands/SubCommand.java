@@ -5,13 +5,13 @@ import net.md_5.bungee.api.CommandSender;
 
 import com.mickare.xserver.XServerPlugin;
 
-public abstract class SubCommand<T> {
+public abstract class SubCommand {
 
-        private final XServerPlugin<T> plugin;
+        private final XServerPlugin plugin;
 
         private final String command, arguments, desc;
 
-        public SubCommand(XServerPlugin<T> plugin, String command, String arguments, String desc) {
+        public SubCommand(XServerPlugin plugin, String command, String arguments, String desc) {
                 this.plugin = plugin;
                 this.command = command;
                 this.arguments = arguments;
@@ -20,7 +20,7 @@ public abstract class SubCommand<T> {
 
         public abstract void execute(CommandSender sender, String[] args);
 
-        public XServerPlugin<T> getPlugin() {
+        public XServerPlugin getPlugin() {
                 return plugin;
         }
 

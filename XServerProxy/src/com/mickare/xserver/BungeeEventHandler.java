@@ -12,14 +12,13 @@ public class BungeeEventHandler extends EventHandler<Plugin> {
 	}
 
 	@Override
-	protected void runTask(Boolean sync, Plugin plugin, Runnable run) {
-		plugin.getProxy().getScheduler().runAsync(plugin, run);
+	protected void runTask(Boolean sync, XServerListenerPlugin<Plugin> plugin, Runnable run) {
+		plugin.getPlugin().getProxy().getScheduler().runAsync(plugin.getPlugin(), run);
 	}
 
 	public Plugin getPlugin() {
 		return plugin;
 	}
-
 
 
 }

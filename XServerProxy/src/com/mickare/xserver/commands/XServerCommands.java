@@ -11,13 +11,13 @@ import net.md_5.bungee.api.plugin.Command;
 import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.XServerSubCommands.*;
 
-public class XServerCommands<T> extends Command {
+public class XServerCommands extends Command {
 
-        private HashSet<SubCommand<T>> commands = new HashSet<SubCommand<T>>();
+        private HashSet<SubCommand> commands = new HashSet<SubCommand>();
         
-        private final XServerPlugin<T> plugin;
+        private final XServerPlugin plugin;
         
-        public XServerCommands(XServerPlugin<T> plugin) {
+        public XServerCommands(XServerPlugin plugin) {
                 super("xserver", "xserver");
                 this.plugin = plugin;
                 initialize();
@@ -29,7 +29,7 @@ public class XServerCommands<T> extends Command {
                                 StringBuilder sb = new StringBuilder();
                                 sb.append(ChatColor.GOLD);
                                 sb.append("XServer Sub-Commands:");
-                                for (SubCommand<T> sc : commands) {
+                                for (SubCommand sc : commands) {
                                         sb.append("\n").append(ChatColor.RESET).append(" - ").append(sc.getCommand())
                                                         .append(ChatColor.GRAY).append(" | ").append(sc.getDescription());
                                 }
@@ -47,12 +47,12 @@ public class XServerCommands<T> extends Command {
         }
 
         
-        public HashSet<SubCommand<T>> getSubCommands() {
+        public HashSet<SubCommand> getSubCommands() {
                 return commands;
         }
         
-        public SubCommand<T> getSubCommand(String cmdstr) {
-                for (SubCommand<T> cmd : commands) {
+        public SubCommand getSubCommand(String cmdstr) {
+                for (SubCommand cmd : commands) {
                         if (cmd.getCommand().equalsIgnoreCase(cmdstr)) {
                                 return cmd;
                         }
@@ -61,10 +61,10 @@ public class XServerCommands<T> extends Command {
         }
         
         private void initialize() {
-                commands.add(new PingCommand<T>(plugin));
-                commands.add(new Reconnect<T>(plugin));
-                commands.add(new Reload<T>(plugin));
-                commands.add(new Status<T>(plugin));
+                commands.add(new PingCommand(plugin));
+                commands.add(new Reconnect(plugin));
+                commands.add(new Reload(plugin));
+                commands.add(new Status(plugin));
         }
 
 

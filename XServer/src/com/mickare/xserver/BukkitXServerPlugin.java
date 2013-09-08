@@ -10,7 +10,10 @@ import com.mickare.xserver.exceptions.InvalidConfigurationException;
 import com.mickare.xserver.util.MySQL;
 import com.mickare.xserver.util.MyStringUtils;
 
-public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin<JavaPlugin> {
+public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
+	
+	private static final long AUTORECONNECT = 10000;
+	public static final XType HOMETYPE = XType.Bukkit;
 	
 	private Logger log;
 	
@@ -90,6 +93,16 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin<Jav
 	@Override
 	public XServerManager getManager() {
 		return xmanager;
+	}
+
+	@Override
+	public long getAutoReconnectTime() {
+		return AUTORECONNECT;
+	}
+
+	@Override
+	public XType getHomeType() {
+		return HOMETYPE;
 	}
 	
 }

@@ -7,9 +7,9 @@ import net.md_5.bungee.api.CommandSender;
 import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 
-public class Reconnect<T> extends SubCommand<T> {
+public class Reconnect extends SubCommand {
 
-        public Reconnect(XServerPlugin<T> plugin) {
+        public Reconnect(XServerPlugin plugin) {
                 super(plugin, "reconnect", "[s]", "Reconnects all servers. It accepts one flag (s) for softly reconnect only those not connected servers.");
         }
 

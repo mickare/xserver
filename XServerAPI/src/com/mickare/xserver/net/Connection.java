@@ -18,7 +18,7 @@ import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.events.XServerDisconnectEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
-public class Connection<T>
+public class Connection
 {
 
 	private final static int CAPACITY = 512;
@@ -31,7 +31,7 @@ public class Connection<T>
 	private final int port;
 
 	private ReentrantReadWriteLock xserverLock = new ReentrantReadWriteLock();
-	private XServer<T> xserver;
+	private XServer xserver;
 
 	private final Socket socket;
 	private final DataInputStream input;
@@ -41,7 +41,7 @@ public class Connection<T>
 
 	private Receiving receiving;
 	private Sending sending;
-	private final NetPacketHandler<T> packetHandler;
+	private final NetPacketHandler packetHandler;
 
 	public enum stats
 	{
@@ -59,7 +59,7 @@ public class Connection<T>
 	 * @throws InterruptedException
 	 * @throws NotInitializedException
 	 */
-	public Connection(SocketFactory sf, String host, int port, AbstractXServerManager<T> manager) throws UnknownHostException, IOException, InterruptedException,
+	public Connection(SocketFactory sf, String host, int port, AbstractXServerManager manager) throws UnknownHostException, IOException, InterruptedException,
 			NotInitializedException
 	{
 
@@ -71,7 +71,7 @@ public class Connection<T>
 		this.input = new DataInputStream(socket.getInputStream());
 		this.output = new DataOutputStream(socket.getOutputStream());
 
-		this.packetHandler = new NetPacketHandler<T>(this, manager);
+		this.packetHandler = new NetPacketHandler(this, manager);
 		this.receiving = new Receiving();
 		this.sending = new Sending();
 
@@ -90,7 +90,7 @@ public class Connection<T>
 	 * @throws IOException
 	 * @throws NotInitializedException
 	 */
-	public Connection(Socket socket, AbstractXServerManager<T> manager) throws IOException
+	public Connection(Socket socket, AbstractXServerManager manager) throws IOException
 	{
 
 		this.host = socket.getInetAddress().getHostAddress();
@@ -101,7 +101,7 @@ public class Connection<T>
 		this.input = new DataInputStream(socket.getInputStream());
 		this.output = new DataOutputStream(socket.getOutputStream());
 
-		this.packetHandler = new NetPacketHandler<T>(this, manager);
+		this.packetHandler = new NetPacketHandler(this, manager);
 		this.receiving = new Receiving();
 		this.sending = new Sending();
 
@@ -110,7 +110,7 @@ public class Connection<T>
 		this.packetHandler.start();
 	}
 
-	public void ping(Ping<?> ping) throws InterruptedException, IOException
+	public void ping(Ping ping) throws InterruptedException, IOException
 	{
 		ByteArrayOutputStream b = null;
 		DataOutputStream out = null;
@@ -312,7 +312,7 @@ public class Connection<T>
 		}
 	}
 
-	public XServer<T> getXserver()
+	public XServer getXserver()
 	{
 		xserverLock.readLock().lock();
 		try
@@ -324,7 +324,7 @@ public class Connection<T>
 		}
 	}
 
-	protected void setXserver(XServer<T> xserver)
+	protected void setXserver(XServer xserver)
 	{
 		xserverLock.writeLock().lock();
 		try
@@ -337,7 +337,7 @@ public class Connection<T>
 		}
 	}
 
-	protected void setReloginXserver(XServer<T> xserver)
+	protected void setReloginXserver(XServer xserver)
 	{
 		xserverLock.writeLock().lock();
 		try
