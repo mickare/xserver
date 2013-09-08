@@ -8,10 +8,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.BukkitXServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
-import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.XServer;
 
 public class Status extends SubCommand
@@ -28,20 +26,18 @@ public class Status extends SubCommand
 	{
 		StringBuilder sb = new StringBuilder();
 
-		try
-		{
 
-			LinkedList<XServer> servers = new LinkedList<XServer>(XServerManager.getInstance().getServers());
+			LinkedList<XServer<?>> servers = new LinkedList<XServer<?>>(getPlugin().getManager().getServers());
 
-			Collections.sort(servers, new Comparator<XServer>() {
+			Collections.sort(servers, new Comparator<XServer<?>>() {
 				@Override
-				public int compare(XServer o1, XServer o2)
+				public int compare(XServer<?> o1, XServer<?> o2)
 				{
 					return o1.getName().compareTo(o2.getName());
 				}
 			});
 
-			for (XServer s : servers)
+			for (XServer<?> s : servers)
 			{
 				sb.append("\n").append(ChatColor.RESET).append(s.getName()).append(ChatColor.GRAY).append(" : ");
 				if (s.isConnected())
@@ -53,10 +49,6 @@ public class Status extends SubCommand
 				}
 			}
 
-		} catch (NotInitializedException e)
-		{
-			sb.append(ChatColor.RED).append(e.getMessage());
-		}
 
 		sender.sendMessage(sb.toString());
 		return true;

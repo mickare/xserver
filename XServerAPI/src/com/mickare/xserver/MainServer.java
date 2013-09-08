@@ -5,15 +5,17 @@ import java.net.ServerSocket;
 
 import com.mickare.xserver.net.Connection;
 
-public class MainServer extends Thread
+public class MainServer<T> extends Thread
 {
 
 	private final ServerSocket server;
+	private final AbstractXServerManager<T> manager;
 	
-	protected MainServer(ServerSocket server)
+	protected MainServer(ServerSocket server, AbstractXServerManager<T> manager)
 	{
 		super("XServer Main Server Thread");
 		this.server = server;
+		this.manager = manager;
 	}
 
 	public void close() throws IOException {
@@ -32,7 +34,7 @@ public class MainServer extends Thread
 		{
 			try
 			{
-				new Connection(server.accept());
+				new Connection<T>(server.accept(), manager);
 			} catch (IOException e)
 			{
 				

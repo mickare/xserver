@@ -7,10 +7,8 @@ import java.util.LinkedList;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 
-import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
-import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.XServer;
 
 public class Status<T> extends SubCommand<T> {
@@ -25,18 +23,17 @@ public class Status<T> extends SubCommand<T> {
         public void execute(CommandSender sender, String[] args) {
                 StringBuilder sb = new StringBuilder();
 
-                try {
-                        LinkedList<XServer> servers = new LinkedList<XServer>(
-                                        XServerManager.getInstance().getServers());
+                        LinkedList<XServer<T>> servers = new LinkedList<XServer<T>>(
+                                        getPlugin().getManager().getServers());
 
-                        Collections.sort(servers, new Comparator<XServer>() {
+                        Collections.sort(servers, new Comparator<XServer<T>>() {
                                 @Override
-                                public int compare(XServer o1, XServer o2) {
+                                public int compare(XServer<T> o1, XServer<T> o2) {
                                         return o1.getName().compareTo(o2.getName());
                                 }
                         });
 
-                        for (XServer s : servers) {
+                        for (XServer<T> s : servers) {
                                 sb.append("\n").append(ChatColor.RESET).append(s.getName())
                                                 .append(ChatColor.GRAY).append(" : ");
                                 if (s.isConnected()) {
@@ -46,9 +43,6 @@ public class Status<T> extends SubCommand<T> {
                                 }
                         }
 
-                } catch (NotInitializedException e) {
-                        sb.append(ChatColor.RED).append(e.getMessage());
-                }
 
                 sender.sendMessage(sb.toString());
                 return;

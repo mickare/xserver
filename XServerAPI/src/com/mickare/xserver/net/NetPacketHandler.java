@@ -7,26 +7,27 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import com.mickare.xserver.Message;
-import com.mickare.xserver.XServerManager;
+import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerConnectionDenied;
 import com.mickare.xserver.events.XServerLoggedInEvent;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
-public class NetPacketHandler extends Thread
+public class NetPacketHandler<T> extends Thread
 {
 
 	private final static int CAPACITY = 512;
 
-	private final Connection con;
+	private final Connection<T> con;
+	private final AbstractXServerManager<T> manager;
 
 	private final ArrayBlockingQueue<Packet> pendingReceivingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
 
-	public NetPacketHandler(Connection con)
+	public NetPacketHandler(Connection<T> con, AbstractXServerManager<T> manager)
 	{
 		this.con = con;
+		this.manager = manager;
 	}
 
 	@Override
@@ -54,13 +55,9 @@ public class NetPacketHandler extends Thread
 	{
 		DataInputStream is = null;
 
-		try
-		{
-			XServerManager.getInstance().getLogger().info("Packet: " + p.getPacketID() + " - L" + p.getData().length);
-		} catch (NotInitializedException e2)
-		{
 
-		}
+		manager.getLogger().info("Packet: " + p.getPacketID() + " - L" + p.getData().length);
+
 
 		try
 		{
@@ -70,17 +67,17 @@ public class NetPacketHandler extends Thread
 
 			} else if (p.getPacketID() == PacketType.Disconnect.packetID) // Disconnect
 			{
-				XServerManager.getInstance().getLogger().info("Disconnecting from " + con.getHost() + ":" + con.getPort());
+				manager.getLogger().info("Disconnecting from " + con.getHost() + ":" + con.getPort());
 				con.disconnect();
 
 			} else if (p.getPacketID() == PacketType.Error.packetID) // Error
 			{
-				XServerManager.getInstance().getLogger().info("Connection Error with " + con.getHost() + ":" + con.getPort());
+				manager.getLogger().info("Connection Error with " + con.getHost() + ":" + con.getPort());
 				con.errorDisconnect();
 
 			} else if (p.getPacketID() == PacketType.LoginDenied.packetID) // LoginDenied
 			{
-				XServerManager.getInstance().getLogger().info("Login denied from " + con.getHost() + ":" + con.getPort());
+				manager.getLogger().info("Login denied from " + con.getHost() + ":" + con.getPort());
 				con.errorDisconnect();
 
 			} else if (p.getPacketID() == PacketType.LoginRequest.packetID) // LoginRequest
@@ -89,11 +86,11 @@ public class NetPacketHandler extends Thread
 				String name = is.readUTF();
 				String password = is.readUTF();
 				XType xtype = XType.getByNumber(is.readInt());
-				XServer s = XServerManager.getInstance().getServer(name);
+				XServer<T> s = manager.getServer(name);
 
 				// Debugging...
 				/*
-				 * XServerManager.getInstance().getLogger().info ("Debugging!\n"
+				 * manager.getLogger().info ("Debugging!\n"
 				 * + name + " - " + password + "\n" + "Serverfound:" +
 				 * String.valueOf(s != null) + "\n" + ((s != null) ? s.getName()
 				 * + " - " + s.getPassword() : ""));
@@ -111,10 +108,10 @@ public class NetPacketHandler extends Thread
 				} else
 				{
 					con.send(new Packet(PacketType.LoginDenied, new byte[0]));
-					XServerManager.getInstance().getLogger()
+					manager.getLogger()
 							.info("Login Request from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
 					con.errorDisconnect();
-					XServerManager.getInstance().getEventHandler()
+					manager.getEventHandler()
 							.callEvent(new XServerConnectionDenied(name, password, con.getHost(), con.getPort()));
 				}
 
@@ -124,7 +121,7 @@ public class NetPacketHandler extends Thread
 				String name = is.readUTF();
 				String password = is.readUTF();
 				XType xtype = XType.getByNumber(is.readInt());
-				XServer s = XServerManager.getInstance().getServer(name);
+				XServer<T> s = manager.getServer(name);
 
 				// Debugging...
 
@@ -146,10 +143,10 @@ public class NetPacketHandler extends Thread
 				} else
 				{
 					con.send(new Packet(PacketType.LoginDenied, new byte[0]));
-					XServerManager.getInstance().getLogger()
+					manager.getLogger()
 							.info("Login Reply from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
 					con.errorDisconnect();
-					XServerManager.getInstance().getEventHandler()
+					manager.getEventHandler()
 							.callEvent(new XServerConnectionDenied(name, password, con.getHost(), con.getPort()));
 				}
 
@@ -164,7 +161,7 @@ public class NetPacketHandler extends Thread
 
 			} else if (p.getPacketID() == PacketType.Message.packetID) // Message
 			{
-				// XServerManager.getInstance().getThreadPool().runTask(new
+				// manager.getThreadPool().runTask(new
 				// Runnable() {
 				// public void run() {
 
@@ -172,12 +169,9 @@ public class NetPacketHandler extends Thread
 				{
 					if (con.getXserver() != null && con.isConnected() && con.isLoggedIn())
 					{
-						XServerManager.getInstance().getEventHandler()
-								.callEvent(new XServerMessageIncomingEvent(con.getXserver(), Message.read(con.getXserver(), p.getData())));
+						manager.getEventHandler()
+								.callEvent(new XServerMessageIncomingEvent(con.getXserver(), manager.readMessage(con.getXserver(), p.getData())));
 					}
-				} catch (NotInitializedException e)
-				{
-					con.errorDisconnect();
 				} catch (IOException e)
 				{
 
@@ -192,12 +186,9 @@ public class NetPacketHandler extends Thread
 			}
 		} catch (InterruptedException | IOException | NotInitializedException e)
 		{
-			try
-			{
-				XServerManager.getInstance().getLogger().severe(e.getMessage());
-			} catch (NotInitializedException e1)
-			{
-			}
+
+			manager.getLogger().severe(e.getMessage());
+
 			con.errorDisconnect();
 		} finally
 		{
@@ -227,9 +218,9 @@ public class NetPacketHandler extends Thread
 		{
 			b = new ByteArrayOutputStream();
 			out = new DataOutputStream(b);
-			out.writeUTF(XServerManager.getInstance().getHomeServer().getName());
-			out.writeUTF(XServerManager.getInstance().getHomeServer().getPassword());
-			out.writeInt(XServerManager.HOMETYPE.getNumber());
+			out.writeUTF(manager.getHomeServer().getName());
+			out.writeUTF(manager.getHomeServer().getPassword());
+			out.writeInt(manager.getHomeType().getNumber());
 			con.send(new Packet(type, b.toByteArray()));
 		} finally
 		{

@@ -17,7 +17,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin<Jav
 	private String servername;
 	
 	private MySQL cfgconnection = null;
-	private XServerManager<JavaPlugin> xmanager;
+	private XServerManager xmanager;
 	
 	@Override
 	public void onDisable() {
@@ -68,7 +68,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin<Jav
 		
 		try {
 			log.info("Starting XServer async.");
-			xmanager = new XServerManager<JavaPlugin>(servername, this, cfgconnection, new BukkitEventHandler(this));
+			xmanager = new XServerManager(servername, this, cfgconnection, new BukkitEventHandler(this));
 		} catch (IOException | InvalidConfigurationException e) {
 			log.severe("XServerManager not initialized correctly!\n" + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
 			this.getServer().shutdown();
@@ -88,7 +88,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin<Jav
 	}
 
 	@Override
-	public XServerManager<JavaPlugin> getManager() {
+	public XServerManager getManager() {
 		return xmanager;
 	}
 	

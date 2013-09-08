@@ -5,8 +5,8 @@ import java.net.UnknownHostException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.Message;
-import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerMessageOutgoingEvent;
 import com.mickare.xserver.exceptions.NotConnectedException;
@@ -14,7 +14,7 @@ import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.util.CacheList;
 import com.mickare.xserver.util.Encryption;
 
-public class XServer {
+public class XServer<T> {
 
 	private final static int MESSAGE_CACHE_SIZE = 256;
 	
@@ -23,8 +23,8 @@ public class XServer {
 	private final int port;
 	private final String password;
 
-	private Connection connection = null;
-	private Connection connection2 = null;	// Fix for HomeServer that is not connectable.
+	private Connection<T> connection = null;
+	private Connection<T> connection2 = null;	// Fix for HomeServer that is not connectable.
 	private Lock conLock = new ReentrantLock();
 	
 	private Lock typeLock = new ReentrantLock();
@@ -32,9 +32,9 @@ public class XServer {
 
 	private CacheList<Packet> pendingPackets = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
 	
-	private final XServerManager<?> manager;
+	private final AbstractXServerManager<T> manager;
 	
-	public XServer(String name, String host, int port, String password, XServerManager<?> manager) {
+	public XServer(String name, String host, int port, String password, AbstractXServerManager<T> manager) {
 		this.name = name;
 		this.host = host;
 		this.port = port;
@@ -42,7 +42,7 @@ public class XServer {
 		this.manager = manager;
 	}
 	
-	public XServer(String name, String host, int port, String password, XType type, XServerManager<?> manager) {
+	public XServer(String name, String host, int port, String password, XType type, AbstractXServerManager<T> manager) {
 		this.name = name;
 		this.host = host;
 		this.port = port;
@@ -59,15 +59,15 @@ public class XServer {
 				if (isConnected()) {
 					this.disconnect();
 				}
-				connection = new Connection(XServerManager.getInstance()
-						.getSocketFactory(), host, port);
+				connection = new Connection<T>(manager
+						.getSocketFactory(), host, port, manager);
 			}
 		} finally {
 			conLock.unlock();
 		}
 	}
 
-	protected void setConnection(Connection con) {
+	protected void setConnection(Connection<T> con) {
 		conLock.lock();
 		try {
 			if (this.connection != con && isConnected()) {
@@ -84,7 +84,7 @@ public class XServer {
 		}
 	}
 
-	public void setReloginConnection(Connection con) {
+	public void setReloginConnection(Connection<T> con) {
 		conLock.lock();
 		try {
 			if(manager.getHomeServer() == this) {
@@ -155,7 +155,7 @@ public class XServer {
 		
 	}
 	
-	public void ping(Ping ping) throws InterruptedException, IOException {
+	public void ping(Ping<?> ping) throws InterruptedException, IOException {
 		conLock.lock();
 		if(isConnected()) {
 			connection.ping(ping);
@@ -196,7 +196,7 @@ public class XServer {
 		}
 	}
 
-	public XServerManager<?> getManager()
+	public AbstractXServerManager<T> getManager()
 	{
 		return manager;
 	}

@@ -22,9 +22,9 @@ public class Reload extends SubCommand {
 	public boolean onCommand(CommandSender sender, Command cmd, String label,
 			String[] args) {
 		try {
-			XServerManager.getInstance().reload();
+			getPlugin().getManager().reload();
 			sender.sendMessage("Reload done and now connecting to servers...");
-			XServerManager.getInstance().getThreadPool().runTask(new Runnable() {
+			getPlugin().getManager().getThreadPool().runTask(new Runnable() {
 				public void run() {
 					try {
 						XServerManager.getInstance().reconnectAll_forced();
@@ -32,8 +32,6 @@ public class Reload extends SubCommand {
 						getPlugin().getLogger().severe(e.getMessage());
 					}
 				}});
-		} catch (NotInitializedException e) {
-			sender.sendMessage(ChatColor.RED + "XServer isn't initialized!");
 		} catch (IOException e1)
 		{
 			sender.sendMessage(ChatColor.RED + "XServer ERROR: " + e1.getMessage());

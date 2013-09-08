@@ -8,6 +8,6 @@ public interface XServerPlugin<T> {
 	
 	public void shutdownServer();
 
-	public XServerManager<T> getManager();
+	public AbstractXServerManager<T> getManager();
 	
 }

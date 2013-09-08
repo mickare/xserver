@@ -4,10 +4,8 @@ package com.mickare.xserver.commands.XServerSubCommands;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 
-import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.XServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
-import com.mickare.xserver.exceptions.NotInitializedException;
 
 public class Reconnect<T> extends SubCommand<T> {
 
@@ -27,16 +25,13 @@ public class Reconnect<T> extends SubCommand<T> {
                                 return;
                         }
                 }
-                try {
+          
                         if(soft) {
-                                XServerManager.getInstance().reconnectAll_soft();
+                        	getPlugin().getManager().reconnectAll_soft();
                         } else {
-                                XServerManager.getInstance().reconnectAll_forced();
+                        	getPlugin().getManager().reconnectAll_forced();
                         }
-                } catch (NotInitializedException e) {
-                        sender.sendMessage(ChatColor.RED + "XServer isn't initialized!");
-                        return;
-                }
+
                 return;
         }
 

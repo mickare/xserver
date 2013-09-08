@@ -4,10 +4,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.BukkitXServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
-import com.mickare.xserver.exceptions.NotInitializedException;
 
 public class Reconnect extends SubCommand {
 
@@ -28,16 +26,13 @@ public class Reconnect extends SubCommand {
 				return true;
 			}
 		}
-		try {
+
 			if(soft) {
-				XServerManager.getInstance().reconnectAll_soft();
+				getPlugin().getManager().reconnectAll_soft();
 			} else {
-				XServerManager.getInstance().reconnectAll_forced();
+				getPlugin().getManager().reconnectAll_forced();
 			}
-		} catch (NotInitializedException e) {
-			sender.sendMessage(ChatColor.RED + "XServer isn't initialized!");
-			return false;
-		}
+
 		return true;
 	}
 

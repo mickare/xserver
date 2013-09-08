@@ -6,30 +6,23 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.XServer;
 
 public class Message {
 
-	private final XServer sender;
+	private final XServer<? extends Object> sender;
 	private final String subChannel;
 	private final byte[] content;
 
-	public static Message create(String subChannel, byte[] content) throws NotInitializedException {
-		return new Message(XServerManager.getInstance().getHomeServer(), subChannel, content);
-	}
 	
-	public static Message read(XServer sender, byte[] data) throws IOException {
-		return new Message(sender, data);
-	}
 	
-	private Message(XServer sender, String subChannel, byte[] content) {
+	protected Message(XServer<? extends Object> sender, String subChannel, byte[] content) {
 		this.sender = sender;
 		this.subChannel = subChannel;
 		this.content = content;
 	}
 
-	private Message(XServer sender, byte[] data) throws IOException {
+	protected Message(XServer<? extends Object> sender, byte[] data) throws IOException {
 		this.sender = sender;
 		DataInputStream in = null;
 		try {
@@ -51,7 +44,7 @@ public class Message {
 	 * Get Sender Server Name
 	 * @return sender name
 	 */
-	public XServer getSender() {
+	public XServer<? extends Object> getSender() {
 		return sender;
 	}
 
