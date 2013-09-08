@@ -20,6 +20,15 @@ public abstract class EventHandler<T> {
 		this.logger = logger;
 		bus = new EventBus<T>(this, logger);
 	}
+	
+	protected XServerListenerPlugin<T> getListPlugin(T original) {
+		for(XServerListenerPlugin<T> lp : listeners.values()) {
+			if(lp.getPlugin() == original) {
+				return lp;
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * Get all Listeners...
@@ -34,7 +43,9 @@ public abstract class EventHandler<T> {
 	 * @param plugin
 	 * @param lis
 	 */
-	public synchronized void registerListener(XServerListenerPlugin<T> plugin, XServerListener lis) {
+	public abstract void registerListener(T plugin, XServerListener lis);
+	
+	protected synchronized void registerListener(XServerListenerPlugin<T> plugin, XServerListener lis) {
 		listeners.put(lis, plugin);
 		bus.register(lis, plugin);
 	}
@@ -51,6 +62,13 @@ public abstract class EventHandler<T> {
 	/**
 	 * Unregister all for a plugin listeners...
 	 */
+	public synchronized void unregisterAll(T plugin) {
+		XServerListenerPlugin<T> lp = getListPlugin(plugin);
+		if(lp != null) {
+			unregisterAll(lp);
+		}
+	}
+	
 	public synchronized void unregisterAll(XServerListenerPlugin<T> plugin) {
 		for(Entry<XServerListener, XServerListenerPlugin<T>> e : new HashSet<Entry<XServerListener, XServerListenerPlugin<T>>>(listeners.entrySet())) {
 			if(e.getValue() == plugin) {

@@ -31,5 +31,15 @@ public class BukkitEventHandler extends EventHandler<JavaPlugin> {
 		return plugin;
 	}
 
+	@Override
+	public void registerListener(JavaPlugin plugin, XServerListener lis) {
+		XServerListenerPlugin<JavaPlugin> lp = null;
+		lp = this.getListPlugin(plugin);
+		if(lp == null) {
+			lp = new BukkitListenerPlugin(plugin);
+		}
+		this.registerListener(lp, lis);
+	}
+
 
 }

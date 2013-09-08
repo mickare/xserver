@@ -20,5 +20,15 @@ public class BungeeEventHandler extends EventHandler<Plugin> {
 		return plugin;
 	}
 
+	@Override
+	public void registerListener(Plugin plugin, XServerListener lis) {
+		XServerListenerPlugin<Plugin> lp = null;
+		lp = this.getListPlugin(plugin);
+		if(lp == null) {
+			lp = new BungeeListenerPlugin(plugin);
+		}
+		this.registerListener(lp, lis);
+	}
+
 
 }
