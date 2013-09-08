@@ -86,5 +86,5 @@ public class Message {
 		
 		return b.toByteArray();
 	}
-
+	
 }

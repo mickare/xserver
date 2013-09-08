@@ -71,7 +71,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
                 try {
                         log.info("Starting XServer async.");
                         xmanager = new XServerManager(servername, this,
-                                        cfgconnection, new BungeeEventHandler(this));
+                                        cfgconnection);
                         
                         
                 } catch (InvalidConfigurationException | IOException e) {

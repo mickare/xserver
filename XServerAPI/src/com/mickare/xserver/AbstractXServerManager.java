@@ -25,7 +25,6 @@ import com.mickare.xserver.util.MyStringUtils;
 public abstract class AbstractXServerManager {
 
 	private final XServerPlugin plugin;
-	private EventHandler<?> eventhandler;
 	private ServerThreadPoolExecutor stpool;
 	private SocketFactory sf;
 	private MainServer mainserver;
@@ -43,7 +42,7 @@ public abstract class AbstractXServerManager {
 
 	private boolean reconnectClockRunning = false;
 
-	protected AbstractXServerManager(String servername, XServerPlugin plugin, MySQL connection, EventHandler<?> eventhandler)
+	protected AbstractXServerManager(String servername, XServerPlugin plugin, MySQL connection)
 			throws InvalidConfigurationException, IOException {
 		this.plugin = plugin;
 		stpool = new ServerThreadPoolExecutor();
@@ -55,8 +54,7 @@ public abstract class AbstractXServerManager {
 			throw new InvalidConfigurationException("Server information for \""
 					+ servername + "\" was not found!");
 		}
-
-		this.eventhandler = eventhandler;
+		
 	}
 
 	private synchronized boolean isReconnectClockRunning() {
@@ -381,9 +379,7 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
-	public EventHandler<?> getEventHandler() {
-		return eventhandler;
-	}
+	
 
 	public String getHomeServerName() {
 		return homeServerName;
@@ -396,5 +392,7 @@ public abstract class AbstractXServerManager {
 	public Message readMessage(XServer sender, byte[] data) throws IOException {
 		return new Message(sender, data);
 	}
+	
+	public abstract EventHandler<?> getEventHandler();
 
 }
