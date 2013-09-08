@@ -7,13 +7,13 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import com.mickare.xserver.XServerManager;
-import com.mickare.xserver.XServerPlugin;
+import com.mickare.xserver.BukkitXServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
 public class Reload extends SubCommand {
 
-	public Reload(XServerPlugin plugin) {
+	public Reload(BukkitXServerPlugin plugin) {
 		super(plugin, "reload", "", "Reloads the server list and reconnects.");
 		// TODO Auto-generated constructor stub
 	}

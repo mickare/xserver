@@ -4,15 +4,15 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
-import com.mickare.xserver.XServerPlugin;
+import com.mickare.xserver.BukkitXServerPlugin;
 
 public abstract class AbstractCommand implements CommandExecutor {
 
-	private final XServerPlugin plugin;
+	private final BukkitXServerPlugin plugin;
 
 	private final String command;
 
-	public AbstractCommand(XServerPlugin plugin, String command) {
+	public AbstractCommand(BukkitXServerPlugin plugin, String command) {
 		this.plugin = plugin;
 		this.command = command;
 		plugin.getCommand(command).setExecutor(this);
@@ -21,7 +21,7 @@ public abstract class AbstractCommand implements CommandExecutor {
 	@Override
 	public abstract boolean onCommand(CommandSender sender, Command cmd, String label, String[] args);
 
-	public XServerPlugin getPlugin() {
+	public BukkitXServerPlugin getPlugin() {
 		return plugin;
 	}
 

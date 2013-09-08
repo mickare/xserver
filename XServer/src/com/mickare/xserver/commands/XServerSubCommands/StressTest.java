@@ -3,12 +3,12 @@ package com.mickare.xserver.commands.XServerSubCommands;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import com.mickare.xserver.XServerPlugin;
+import com.mickare.xserver.BukkitXServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 
 public class StressTest extends SubCommand {
 
-	public StressTest(XServerPlugin plugin) {
+	public StressTest(BukkitXServerPlugin plugin) {
 		super(plugin, "stresstest", "", "Stress test for XServer.");
 		// TODO Auto-generated constructor stub
 	}

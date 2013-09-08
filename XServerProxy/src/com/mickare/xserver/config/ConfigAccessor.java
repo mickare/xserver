@@ -58,76 +58,76 @@ import net.md_5.bungee.api.plugin.Plugin;
 
 public class ConfigAccessor {
 
-	private final Plugin plugin;
+        private final Plugin plugin;
 
-	private final String fileName;
-	private File configFile;
+        private final String fileName;
+        private File configFile;
 
-	private final Yaml yaml;
+        private final Yaml yaml;
 
-	@SuppressWarnings("rawtypes")
-	private Map config;
+        @SuppressWarnings("rawtypes")
+        private Map config;
 
-	public ConfigAccessor(Plugin plugin, String fileName) {
+        public ConfigAccessor(Plugin plugin, String fileName) {
 
-		if (plugin == null)
+                if (plugin == null)
 
-			throw new IllegalArgumentException("plugin cannot be null");
+                        throw new IllegalArgumentException("plugin cannot be null");
 
-		this.plugin = plugin;
+                this.plugin = plugin;
 
-		this.fileName = fileName;
+                this.fileName = fileName;
 
-		DumperOptions options = new DumperOptions();
-		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-		yaml = new Yaml(options);
+                DumperOptions options = new DumperOptions();
+                options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+                yaml = new Yaml(options);
 
-		reloadConfig();
-	}
+                reloadConfig();
+        }
 
-	@SuppressWarnings("rawtypes")
-	public void reloadConfig() {
+        @SuppressWarnings("rawtypes")
+        public void reloadConfig() {
 
-		if (configFile == null) {
-			File dataFolder = plugin.getDataFolder();
-			if (dataFolder == null) {
-				throw new IllegalStateException();
-			}
-			configFile = new File(dataFolder, fileName);
-		}
+                if (configFile == null) {
+                        File dataFolder = plugin.getDataFolder();
+                        if (dataFolder == null) {
+                                throw new IllegalStateException();
+                        }
+                        configFile = new File(dataFolder, fileName);
+                }
 
-		InputStream defConfigStream = null;
+                InputStream defConfigStream = null;
 
-		try {
-			if (configFile.exists()) {
-				defConfigStream = new FileInputStream(configFile);
-			} else {
-				// Look for defaults in the jar
-				defConfigStream = plugin.getResourceAsStream(fileName);
-			}
+                try {
+                        if (configFile.exists()) {
+                                defConfigStream = new FileInputStream(configFile);
+                        } else {
+                                // Look for defaults in the jar
+                                defConfigStream = plugin.getResourceAsStream(fileName);
+                        }
 
-			if (defConfigStream != null) {
-				config = (Map) yaml.load(defConfigStream);
-				if (config == null) {
-					config = new HashMap();
-				}
+                        if (defConfigStream != null) {
+                                config = (Map) yaml.load(defConfigStream);
+                                if (config == null) {
+                                        config = new HashMap();
+                                }
 
-			}
+                        }
 
-		} catch (IOException e) {
-			// Never happens... i think...
-			e.printStackTrace();
-		} finally {
-			if (defConfigStream != null) {
-				try {
-					defConfigStream.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
+                } catch (IOException e) {
+                        // Never happens... i think...
+                        e.printStackTrace();
+                } finally {
+                        if (defConfigStream != null) {
+                                try {
+                                        defConfigStream.close();
+                                } catch (IOException e) {
+                                        e.printStackTrace();
+                                }
+                        }
+                }
 
-	}
+        }
 
     private <T> T get(String path, T def)
     {
@@ -160,62 +160,62 @@ public class ConfigAccessor {
             return get( second, def, sub );
         }
     }
-	
-	public int getInt(String path) {
-		return get( path, null );
-	}
+        
+        public int getInt(String path) {
+                return get( path, null );
+        }
 
-	public String getString(String path) {
-		return get( path, null );
-	}
+        public String getString(String path) {
+                return get( path, null );
+        }
 
-	public boolean getBoolean(String path)
+        public boolean getBoolean(String path)
     {
         return get( path, null );
     }
-	
-	public void saveDefaultConfig() {
+        
+        public void saveDefaultConfig() {
 
-		if (!configFile.exists()) {
-			InputStream inputStream = null;
-			OutputStream outputStream = null;
-			try {
-				
-				configFile.getParentFile().mkdirs();
-				configFile.createNewFile();
-				
-				inputStream = plugin.getResourceAsStream("config.yml");
-				outputStream = new FileOutputStream(configFile);
+                if (!configFile.exists()) {
+                        InputStream inputStream = null;
+                        OutputStream outputStream = null;
+                        try {
+                                
+                                configFile.getParentFile().mkdirs();
+                                configFile.createNewFile();
+                                
+                                inputStream = plugin.getResourceAsStream("config.yml");
+                                outputStream = new FileOutputStream(configFile);
 
-				int read = 0;
-				byte[] bytes = new byte[1024];
+                                int read = 0;
+                                byte[] bytes = new byte[1024];
 
-				while ((read = inputStream.read(bytes)) != -1) {
-					outputStream.write(bytes, 0, read);
-				}
+                                while ((read = inputStream.read(bytes)) != -1) {
+                                        outputStream.write(bytes, 0, read);
+                                }
 
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				if (inputStream != null) {
-					try {
-						inputStream.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-				if (outputStream != null) {
-					try {
-						// outputStream.flush();
-						outputStream.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
+                        } catch (IOException e) {
+                                e.printStackTrace();
+                        } finally {
+                                if (inputStream != null) {
+                                        try {
+                                                inputStream.close();
+                                        } catch (IOException e) {
+                                                e.printStackTrace();
+                                        }
+                                }
+                                if (outputStream != null) {
+                                        try {
+                                                // outputStream.flush();
+                                                outputStream.close();
+                                        } catch (IOException e) {
+                                                e.printStackTrace();
+                                        }
 
-				}
-			}
-		}
+                                }
+                        }
+                }
 
-	}
+        }
 
 }

@@ -5,13 +5,13 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import com.mickare.xserver.XServerManager;
-import com.mickare.xserver.XServerPlugin;
+import com.mickare.xserver.BukkitXServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
 public class Reconnect extends SubCommand {
 
-	public Reconnect(XServerPlugin plugin) {
+	public Reconnect(BukkitXServerPlugin plugin) {
 		super(plugin, "reconnect", "[s]", "Reconnects all servers. It accepts one flag (s) for softly reconnect only those not connected servers.");
 	}
 

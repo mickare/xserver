@@ -7,14 +7,14 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import com.mickare.xserver.XServerPlugin;
+import com.mickare.xserver.BukkitXServerPlugin;
 import com.mickare.xserver.commands.XServerSubCommands.*;
 
 public class XServerCommands extends AbstractCommand {
 
 	private HashSet<SubCommand> commands = new HashSet<SubCommand>();	
 	
-	public XServerCommands(XServerPlugin plugin) {
+	public XServerCommands(BukkitXServerPlugin plugin) {
 		super(plugin, "xserver");
 		initialize();
 	}

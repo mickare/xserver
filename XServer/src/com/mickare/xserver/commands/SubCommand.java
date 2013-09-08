@@ -3,15 +3,15 @@ package com.mickare.xserver.commands;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import com.mickare.xserver.XServerPlugin;
+import com.mickare.xserver.BukkitXServerPlugin;
 
 public abstract class SubCommand {
 
-	private final XServerPlugin plugin;
+	private final BukkitXServerPlugin plugin;
 
 	private final String command, arguments, desc;
 
-	public SubCommand(XServerPlugin plugin, String command, String arguments, String desc) {
+	public SubCommand(BukkitXServerPlugin plugin, String command, String arguments, String desc) {
 		this.plugin = plugin;
 		this.command = command;
 		this.arguments = arguments;
@@ -20,7 +20,7 @@ public abstract class SubCommand {
 
 	public abstract boolean onCommand(CommandSender sender, Command cmd, String label, String[] args);
 
-	public XServerPlugin getPlugin() {
+	public BukkitXServerPlugin getPlugin() {
 		return plugin;
 	}
 

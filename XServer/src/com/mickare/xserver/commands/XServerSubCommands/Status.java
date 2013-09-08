@@ -9,7 +9,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import com.mickare.xserver.XServerManager;
-import com.mickare.xserver.XServerPlugin;
+import com.mickare.xserver.BukkitXServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.XServer;
@@ -17,7 +17,7 @@ import com.mickare.xserver.net.XServer;
 public class Status extends SubCommand
 {
 
-	public Status(XServerPlugin plugin)
+	public Status(BukkitXServerPlugin plugin)
 	{
 		super(plugin, "status", "", "Shows the connection status of the servers.");
 		// TODO Auto-generated constructor stub
