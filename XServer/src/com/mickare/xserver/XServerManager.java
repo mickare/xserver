@@ -24,8 +24,7 @@ import com.mickare.xserver.net.XServer;
 import com.mickare.xserver.util.MySQL;
 import com.mickare.xserver.util.MyStringUtils;
 
-public class XServerManager
-{
+public class XServerManager {
 
 	// In Milliseconds
 	private static final long AUTORECONNECT = 10000;
@@ -33,10 +32,8 @@ public class XServerManager
 
 	private static XServerManager instance = null;
 
-	public static XServerManager getInstance() throws NotInitializedException
-	{
-		if (instance == null)
-		{
+	public static XServerManager getInstance() throws NotInitializedException {
+		if (instance == null) {
 			throw new NotInitializedException();
 		}
 		return instance;
@@ -56,12 +53,13 @@ public class XServerManager
 
 	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
 
-	private final Map<XServer, Integer> notConnectedServers = Collections.synchronizedMap(new HashMap<XServer, Integer>());
+	private final Map<XServer, Integer> notConnectedServers = Collections
+			.synchronizedMap(new HashMap<XServer, Integer>());
 
 	private boolean reconnectClockRunning = false;
 
-	protected XServerManager(String servername, Logger logger, MySQL connection) throws InvalidConfigurationException, IOException
-	{
+	protected XServerManager(String servername, Logger logger, MySQL connection)
+			throws InvalidConfigurationException, IOException {
 		instance = this;
 		this.logger = logger;
 		stpool = new ServerThreadPoolExecutor();
@@ -69,166 +67,135 @@ public class XServerManager
 		this.connection = connection;
 		this.homeServerName = servername;
 		this.reload();
-		if (homeServer == null)
-		{
-			throw new InvalidConfigurationException("Server information for \"" + servername + "\" was not found!");
+		if (homeServer == null) {
+			throw new InvalidConfigurationException("Server information for \""
+					+ servername + "\" was not found!");
 		}
 
 		this.eventhandler = new EventHandler(this);
 	}
 
-	private synchronized boolean isReconnectClockRunning()
-	{
+	private synchronized boolean isReconnectClockRunning() {
 		return reconnectClockRunning;
 	}
 
-	public void start() throws IOException
-	{
+	public void start() throws IOException {
 		serversLock.readLock().lock();
-		try
-		{
+		try {
 			reconnectAll_soft();
-			if (!isReconnectClockRunning())
-			{
+			if (!isReconnectClockRunning()) {
 				reconnectClockRunning = true;
 				stpool.runTask(new Runnable() {
 					@Override
-					public void run()
-					{
-						try
-						{
-							while (isReconnectClockRunning())
-							{
+					public void run() {
+						try {
+							while (isReconnectClockRunning()) {
 								reconnectAll_soft();
 								Thread.sleep(AUTORECONNECT);
 							}
-						} catch (InterruptedException e)
-						{
+						} catch (InterruptedException e) {
 						}
 					}
 				});
 			}
-		} finally
-		{
+		} finally {
 			serversLock.readLock().unlock();
 		}
 	}
 
-	public void start_async()
-	{
+	public void start_async() {
 		stpool.runTask(new Runnable() {
-			public void run()
-			{
-				try
-				{
+			public void run() {
+				try {
 					start();
-				} catch (Exception e)
-				{
-					logger.severe("XServer not started correctly!" + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
+				} catch (Exception e) {
+					logger.severe("XServer not started correctly!"
+							+ e.getMessage() + "\n"
+							+ MyStringUtils.stackTraceToString(e));
 					Bukkit.getServer().shutdown();
 				}
 			}
 		});
 	}
 
-	private synchronized void notifyNotConnected(XServer s, Exception e)
-	{
-		synchronized (notConnectedServers)
-		{
+	private synchronized void notifyNotConnected(XServer s, Exception e) {
+		synchronized (notConnectedServers) {
 			int n = 0;
-			if (notConnectedServers.containsKey(s))
-			{
+			if (notConnectedServers.containsKey(s)) {
 				n = notConnectedServers.get(s).intValue();
 			}
-			/*
-			 * if (n++ % 100 == 0) { logger.info("Connection to " + s.getName()
-			 * + " failed!\n" + e.getMessage() + "\n" +
-			 * MyStringUtils.stackTraceToString(e)); }
-			 */
-			logger.warning("Connection to " + s.getName() + " failed!\n" + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
+
+			if (n++ % 100 == 0) {
+				logger.info("Connection to " + s.getName() + " failed! {Cause: "
+						+ e.getMessage() + "}");
+			}
+
+			// logger.warning("Connection to " + s.getName() + " failed!\n" +
+			// e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
 			notConnectedServers.put(s, new Integer(n));
 		}
 	}
 
-	public void reconnectAll_soft()
-	{
+	public void reconnectAll_soft() {
 		serversLock.readLock().lock();
-		try
-		{
-			for (final XServer s : servers.values())
-			{
+		try {
+			for (final XServer s : servers.values()) {
 				stpool.runTask(new Runnable() {
-					public void run()
-					{
-						if (!s.isConnected())
-						{
-							try
-							{
+					public void run() {
+						if (!s.isConnected()) {
+							try {
 								s.connect();
-								synchronized (notConnectedServers)
-								{
+								synchronized (notConnectedServers) {
 									notConnectedServers.remove(s);
 								}
-							} catch (IOException | InterruptedException | NotInitializedException e)
-							{
+							} catch (IOException | InterruptedException
+									| NotInitializedException e) {
 								notifyNotConnected(s, e);
 							}
 						}
 					}
 				});
 			}
-		} finally
-		{
+		} finally {
 			serversLock.readLock().unlock();
 		}
 	}
 
-	public void reconnectAll_forced()
-	{
+	public void reconnectAll_forced() {
 		serversLock.readLock().lock();
-		try
-		{
-			for (final XServer s : servers.values())
-			{
+		try {
+			for (final XServer s : servers.values()) {
 				stpool.runTask(new Runnable() {
-					public void run()
-					{
-						try
-						{
+					public void run() {
+						try {
 							s.connect();
-							synchronized (notConnectedServers)
-							{
+							synchronized (notConnectedServers) {
 								notConnectedServers.remove(s);
 							}
-						} catch (IOException | InterruptedException | NotInitializedException e)
-						{
+						} catch (IOException | InterruptedException
+								| NotInitializedException e) {
 							notifyNotConnected(s, e);
 						}
 					}
 				});
 			}
-		} finally
-		{
+		} finally {
 			serversLock.readLock().unlock();
 		}
 	}
 
-	public void stop() throws IOException
-	{
+	public void stop() throws IOException {
 		serversLock.readLock().lock();
-		try
-		{
+		try {
 			mainserver.close();
 			stpool.shutDown();
 			reconnectClockRunning = false;
 
-			for (XServer s : this.getServers())
-			{
+			for (XServer s : this.getServers()) {
 				s.disconnect();
 			}
 
-		} finally
-		{
+		} finally {
 			serversLock.readLock().unlock();
 		}
 	}
@@ -240,140 +207,118 @@ public class XServerManager
 	 * 
 	 * @throws InvalidConfigurationException
 	 */
-	public void reload() throws IOException
-	{
+	public void reload() throws IOException {
 		homeLock.lock();
 		serversLock.writeLock().lock();
-		try
-		{
+		try {
 
-			if (mainserver != null)
-			{
-				try
-				{
+			if (mainserver != null) {
+				try {
 					mainserver.close();
-				} catch (IOException e)
-				{
+				} catch (IOException e) {
 
 				}
 			}
-			for (XServer s : servers.values())
-			{
+			for (XServer s : servers.values()) {
 				s.disconnect();
 			}
 			servers.clear();
 
 			ResultSet rs = null;
 
-			synchronized (connection)
-			{
+			synchronized (connection) {
 				rs = connection.query("SELECT * FROM xserver");
 			}
 
-			if (rs != null)
-			{
-				try
-				{
-					while (rs.next())
-					{
+			if (rs != null) {
+				try {
+					while (rs.next()) {
 						String servername = rs.getString("NAME");
 						String[] hostip = rs.getString("ADRESS").split(":");
 
-						if (hostip.length < 2)
-						{
-							logger.warning("XServer \"" + servername + "\" has an invalid address! (host:port)");
+						if (hostip.length < 2) {
+							logger.warning("XServer \"" + servername
+									+ "\" has an invalid address! (host:port)");
 							continue;
 						}
 
 						String host = hostip[0];
-						if (hostip.length > 2)
-						{
-							for (int i = 1; i < hostip.length - 1; i++)
-							{
+						if (hostip.length > 2) {
+							for (int i = 1; i < hostip.length - 1; i++) {
 								host += ":" + hostip[i];
 							}
 						}
 						int ip = 20000;
-						try
-						{
+						try {
 							ip = Integer.valueOf(hostip[hostip.length - 1]);
-						} catch (NumberFormatException nfe)
-						{
-							logger.warning("XServer \"" + servername + "\" has an invalid address! (host:port)");
+						} catch (NumberFormatException nfe) {
+							logger.warning("XServer \"" + servername
+									+ "\" has an invalid address! (host:port)");
 							continue;
 						}
 						String pw = rs.getString("PW");
-						servers.put(servername, new XServer(servername, host, ip, pw, this));
+						servers.put(servername, new XServer(servername, host,
+								ip, pw, this));
 					}
-				} catch (SQLException e)
-				{
+				} catch (SQLException e) {
 					logger.severe(e.getMessage());
 				}
-			} else
-			{
+			} else {
 				logger.severe("Couldn't load XServer List form Database!");
 			}
 			homeServer = getServer(this.homeServerName);
 
-			mainserver = new MainServer(ServerSocketFactory.getDefault().createServerSocket(homeServer.getPort(), 100));
+			if(homeServer == null) {
+				throw new IllegalArgumentException("The home server \"" + this.homeServerName + "\" wasn't found!");				
+			}
+			
+			mainserver = new MainServer(ServerSocketFactory.getDefault()
+					.createServerSocket(homeServer.getPort(), 100));
 			mainserver.start();
 
 			start_async();
 
-		} finally
-		{
+		} finally {
 			homeLock.unlock();
 			serversLock.writeLock().unlock();
 		}
 	}
 
-	public XServer getHomeServer()
-	{
+	public XServer getHomeServer() {
 		homeLock.lock();
-		try
-		{
+		try {
 			return homeServer;
-		} finally
-		{
+		} finally {
 			homeLock.unlock();
 		}
 	}
 
-	public XServer getServer(String servername)
-	{
+	public XServer getServer(String servername) {
 		serversLock.readLock();
-		try
-		{
+		try {
 			return servers.get(servername);
-		} finally
-		{
+		} finally {
 			serversLock.readLock();
 		}
 	}
 
-	public Logger getLogger()
-	{
+	public Logger getLogger() {
 		return logger;
 	}
 
-	public ServerThreadPoolExecutor getThreadPool()
-	{
+	public ServerThreadPoolExecutor getThreadPool() {
 		return stpool;
 	}
 
-	public SocketFactory getSocketFactory()
-	{
+	public SocketFactory getSocketFactory() {
 		return sf;
 	}
 
-	public XServer getXServer(String name)
-	{
+	public XServer getXServer(String name) {
 		serversLock.readLock().lock();
-		try
-		{
+		try {
 			return servers.get(name);
-		} finally
-		{
+		} finally {
 			serversLock.readLock().unlock();
 		}
 	}
@@ -383,14 +328,11 @@ public class XServerManager
 	 * 
 	 * @return servers
 	 */
-	public Set<XServer> getServers()
-	{
+	public Set<XServer> getServers() {
 		serversLock.readLock().lock();
-		try
-		{
+		try {
 			return new HashSet<XServer>(servers.values());
-		} finally
-		{
+		} finally {
 			serversLock.readLock().unlock();
 		}
 	}
@@ -400,14 +342,11 @@ public class XServerManager
 	 * 
 	 * @return
 	 */
-	public String[] getServernames()
-	{
+	public String[] getServernames() {
 		serversLock.readLock().lock();
-		try
-		{
+		try {
 			return servers.values().toArray(new String[servers.size()]);
-		} finally
-		{
+		} finally {
 			serversLock.readLock().unlock();
 		}
 	}
@@ -419,21 +358,16 @@ public class XServerManager
 	 *            servername
 	 * @return XServer with that name
 	 */
-	public XServer getServerIgnoreCase(String name)
-	{
+	public XServer getServerIgnoreCase(String name) {
 		serversLock.readLock().lock();
-		try
-		{
-			for (XServer s : servers.values())
-			{
-				if (s.getName().equalsIgnoreCase(name))
-				{
+		try {
+			for (XServer s : servers.values()) {
+				if (s.getName().equalsIgnoreCase(name)) {
 					return s;
 				}
 			}
 			return null;
-		} finally
-		{
+		} finally {
 			serversLock.readLock().unlock();
 		}
 	}
@@ -445,32 +379,25 @@ public class XServerManager
 	 * @param port
 	 * @return XServer
 	 */
-	public XServer getServer(String host, int port)
-	{
+	public XServer getServer(String host, int port) {
 		serversLock.readLock().lock();
-		try
-		{
-			for (XServer s : servers.values())
-			{
-				if (s.getHost().equalsIgnoreCase(host) && s.getPort() == port)
-				{
+		try {
+			for (XServer s : servers.values()) {
+				if (s.getHost().equalsIgnoreCase(host) && s.getPort() == port) {
 					return s;
 				}
 			}
 			return null;
-		} finally
-		{
+		} finally {
 			serversLock.readLock().unlock();
 		}
 	}
 
-	public EventHandler getEventHandler()
-	{
+	public EventHandler getEventHandler() {
 		return eventhandler;
 	}
 
-	public String getHomeServerName()
-	{
+	public String getHomeServerName() {
 		return homeServerName;
 	}
 

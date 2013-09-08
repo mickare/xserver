@@ -141,9 +141,9 @@ public class XServerManager
 			{
 				n = notConnectedServers.get(s).intValue();
 			}
-			if (n++ % 200 == 0)
-			{
-				logger.info("Connection to " + s.getName() + " failed!\n" + e.getMessage());
+			if (n++ % 100 == 0) {
+				logger.info("Connection to " + s.getName() + " failed! {Cause: "
+						+ e.getMessage() + "}");
 			}
 			notConnectedServers.put(s, new Integer(n));
 		}
@@ -312,6 +312,10 @@ public class XServerManager
 			}
 
 			homeServer = getServer(this.homeServerName);
+			
+			if(homeServer == null) {
+				throw new IllegalArgumentException("The home server \"" + this.homeServerName + "\" wasn't found!");				
+			}
 
 			mainserver = new MainServer(ServerSocketFactory.getDefault().createServerSocket(homeServer.getPort(), 100));
 			mainserver.start();
