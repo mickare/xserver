@@ -21,7 +21,7 @@ import com.mickare.xserver.exceptions.NotInitializedException;
 public class Connection
 {
 
-	private final static int CAPACITY = 512;
+	private final static int CAPACITY = 2048;
 	private final static int SOCKET_TIMEOUT = 5000;
 
 	private ReentrantReadWriteLock statusLock = new ReentrantReadWriteLock();
@@ -79,7 +79,7 @@ public class Connection
 
 		this.receiving.start();
 		this.sending.start();
-		this.packetHandler.start();
+		//this.packetHandler.start();
 	}
 
 	/**
@@ -108,7 +108,7 @@ public class Connection
 
 		this.receiving.start();
 		this.sending.start();
-		this.packetHandler.start();
+		//this.packetHandler.start();
 		
 		
 		//manager.getLogger().info("New Connection from: " + host + ":" + port);
@@ -143,7 +143,7 @@ public class Connection
 		setStatus(stats.disconnected);
 		sending.interrupt();
 		receiving.interrupt();
-		packetHandler.interrupt();
+		//packetHandler.interrupt();
 
 		try
 		{
@@ -167,7 +167,7 @@ public class Connection
 		setStatus(stats.error);
 		sending.interrupt();
 		receiving.interrupt();
-		packetHandler.interrupt();
+		//packetHandler.interrupt();
 
 		try
 		{

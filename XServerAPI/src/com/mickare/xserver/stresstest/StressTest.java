@@ -103,6 +103,8 @@ public class StressTest {
 	private final Map<XServer, AtomicInteger> targetResponses = new HashMap<XServer, AtomicInteger>();
 	private final Map<XServer, AtomicLong> targetPingSum = new HashMap<XServer, AtomicLong>();
 	private final boolean sync;
+	
+	private int expectedResponses = 0;
 
 	private final AtomicBoolean stopped = new AtomicBoolean(false);
 	private final AtomicBoolean timedOut = new AtomicBoolean(false);
@@ -160,6 +162,7 @@ public class StressTest {
 			List<XServer> servers = new LinkedList<XServer>();
 			for(XServer s : targetResponses.keySet()) {
 				if(s.isConnected()) {
+					expectedResponses += times;
 					servers.add(s);
 				} else {
 					targetResponses.get(s).set(-1);
@@ -210,7 +213,7 @@ public class StressTest {
 	}
 
 	public boolean isPending() {
-		return stopped.get() ? false : responsesTotal.get() < times * targetResponses.size() ? (System.currentTimeMillis() - started <= TIMEOUT) : false;
+		return stopped.get() ? false : responsesTotal.get() < expectedResponses ? (System.currentTimeMillis() - started <= TIMEOUT) : false;
 	}
 
 	private boolean check() {

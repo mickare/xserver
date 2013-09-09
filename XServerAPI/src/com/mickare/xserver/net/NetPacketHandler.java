@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.XType;
@@ -14,15 +13,15 @@ import com.mickare.xserver.events.XServerLoggedInEvent;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
-public class NetPacketHandler extends Thread
+public class NetPacketHandler //extends Thread
 {
 
-	private final static int CAPACITY = 512;
+	//private final static int CAPACITY = 2048;
 
 	private final Connection con;
 	private final AbstractXServerManager manager;
 
-	private final ArrayBlockingQueue<Packet> pendingReceivingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
+	//private final ArrayBlockingQueue<Packet> pendingReceivingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
 
 	public NetPacketHandler(Connection con, AbstractXServerManager manager)
 	{
@@ -30,6 +29,7 @@ public class NetPacketHandler extends Thread
 		this.manager = manager;
 	}
 
+	/*
 	@Override
 	public void run()
 	{
@@ -46,12 +46,17 @@ public class NetPacketHandler extends Thread
 		this.interrupt();
 	}
 
-	public void handle(Packet p)
+	public void handle(Packet p) throws InterruptedException
 	{
-		pendingReceivingPackets.offer(p);
+		pendingReceivingPackets.put(p);
+		//pendingReceivingPackets.offer(p);
 	}
 
 	private void doHandle(Packet p) throws IOException
+	{
+	*/
+	
+	public void handle(Packet p) throws IOException
 	{
 		DataInputStream is = null;
 
