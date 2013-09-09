@@ -6,7 +6,7 @@ public class ServerThreadPoolExecutor {
 
 	//Parallel running Threads(Executor) on System
 
-	private int corePoolSize = 64;
+	private int corePoolSize = 32;
  
     //Maximum Threads allowed in Pool
     private int maxPoolSize = 1024;
@@ -18,7 +18,7 @@ public class ServerThreadPoolExecutor {
     ThreadPoolExecutor threadPool = null;
  
     //Working queue for jobs (Runnable). We add them finally here
-	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(512);
+	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(1024);
 
     public ServerThreadPoolExecutor() {
         threadPool = new ThreadPoolExecutor(corePoolSize, maxPoolSize,

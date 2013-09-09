@@ -16,7 +16,7 @@ import com.mickare.xserver.util.Encryption;
 
 public class XServer {
 
-	private final static int MESSAGE_CACHE_SIZE = 256;
+	private final static int MESSAGE_CACHE_SIZE = 2048;
 	
 	private final String name;
 	private final String host;

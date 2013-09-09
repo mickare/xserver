@@ -41,7 +41,7 @@ public class StressTestListener implements XServerListener {
 	public void onStressTestPingAsync(XServerMessageIncomingEvent event) {
 		// Do Pong
 		try {
-			event.getServer().sendMessage(manager.createMessage(StressTest.STRESSTEST_CHANNEL_PONG_SYNC, event
+			event.getServer().sendMessage(manager.createMessage(StressTest.STRESSTEST_CHANNEL_PONG_ASYNC, event
 					.getMessage().getContent()));
 		} catch (NotConnectedException | IOException e) {
 
