@@ -6,6 +6,7 @@ import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.XServerListener;
 import com.mickare.xserver.annotations.XEventHandler;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
+import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.stresstest.StressTest;
 
 public class StressTestListener implements XServerListener {
@@ -19,8 +20,12 @@ public class StressTestListener implements XServerListener {
 	@XEventHandler(sync = true, channel = StressTest.STRESSTEST_CHANNEL_PING_SYNC)
 	public void onStressTestPingSync(XServerMessageIncomingEvent event) {
 		// Do Pong
-		manager.createMessage(StressTest.STRESSTEST_CHANNEL_PONG_SYNC, event
-				.getMessage().getContent());
+		try {
+			event.getServer().sendMessage(manager.createMessage(StressTest.STRESSTEST_CHANNEL_PONG_SYNC, event
+					.getMessage().getContent()));
+		} catch (NotConnectedException | IOException e) {
+
+		}
 	}
 
 	@XEventHandler(sync = true, channel = StressTest.STRESSTEST_CHANNEL_PONG_SYNC)
@@ -35,8 +40,12 @@ public class StressTestListener implements XServerListener {
 	@XEventHandler(sync = false, channel = StressTest.STRESSTEST_CHANNEL_PING_ASYNC)
 	public void onStressTestPingAsync(XServerMessageIncomingEvent event) {
 		// Do Pong
-		manager.createMessage(StressTest.STRESSTEST_CHANNEL_PONG_SYNC, event
-				.getMessage().getContent());
+		try {
+			event.getServer().sendMessage(manager.createMessage(StressTest.STRESSTEST_CHANNEL_PONG_SYNC, event
+					.getMessage().getContent()));
+		} catch (NotConnectedException | IOException e) {
+
+		}
 	}
 
 	@XEventHandler(sync = false, channel = StressTest.STRESSTEST_CHANNEL_PONG_ASYNC)

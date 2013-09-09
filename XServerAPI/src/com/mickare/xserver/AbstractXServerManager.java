@@ -394,5 +394,7 @@ public abstract class AbstractXServerManager {
 	}
 	
 	public abstract EventHandler<?> getEventHandler();
+	
+	public abstract void registerOwnListeners();
 
 }

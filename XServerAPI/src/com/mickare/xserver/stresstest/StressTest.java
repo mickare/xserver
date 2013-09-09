@@ -27,7 +27,7 @@ import com.mickare.xserver.util.Encryption;
 
 public class StressTest {
 
-	private static final long TIMEOUT = 2000;
+	private static final long TIMEOUT = 4000;
 	
 	public static final String STRESSTEST_CHANNEL_PING_SYNC = "STRESSTEST_CHANNEL_PING_SYNC";
 	public static final String STRESSTEST_CHANNEL_PONG_SYNC = "STRESSTEST_CHANNEL_PONG_SYNC";
@@ -56,13 +56,13 @@ public class StressTest {
 		}
 	}
 
-	public static void receive(String key, XServer server) {
+	public static void receive(String key, long created, XServer server) {
 		StressTest st = null;
 		synchronized (pending) {
 			st = pending.get(key);
 		}
 		if (st != null) {
-			st.receive(server);
+			st.receive(server, created);
 		}
 	}
 
@@ -70,9 +70,8 @@ public class StressTest {
 		DataInputStream in = null;
 		try {
 			in = new DataInputStream(new ByteArrayInputStream(m.getContent()));
-			String key = in.readUTF();
 			
-			receive(key, m.getSender());
+			receive(in.readUTF(), in.readLong(), m.getSender());
 		
 		} finally {
 			if (in != null) {
@@ -87,6 +86,7 @@ public class StressTest {
 			b = new ByteArrayOutputStream();
 			DataOutputStream out = new DataOutputStream(b);
 			out.writeUTF(st.key);
+			out.writeLong(System.currentTimeMillis());
 
 			return manager.createMessage(st.getChannelPing(), b.toByteArray());
 		} finally {
@@ -105,6 +105,7 @@ public class StressTest {
 	private final boolean sync;
 
 	private final AtomicBoolean stopped = new AtomicBoolean(false);
+	private final AtomicBoolean timedOut = new AtomicBoolean(false);
 	private final AtomicBoolean resultprinted = new AtomicBoolean(false);
 	
 	private final AtomicInteger responsesTotal = new AtomicInteger(0);
@@ -153,12 +154,14 @@ public class StressTest {
 
 	public boolean start() throws IOException {
 		if (started == -1) {
+			addPendingPing(this);
 			started = System.currentTimeMillis();
 
 			List<XServer> servers = new LinkedList<XServer>();
 			for(XServer s : targetResponses.keySet()) {
 				if(s.isConnected()) {
 					servers.add(s);
+				} else {
 					targetResponses.get(s).set(-1);
 				}
 			}
@@ -181,6 +184,7 @@ public class StressTest {
 					try {
 						Thread.sleep(TIMEOUT + 10);
 						stopped.set(true);
+						timedOut.set(true);
 						check();
 					} catch (InterruptedException e) {
 					}
@@ -195,8 +199,8 @@ public class StressTest {
 		return targetResponses.containsKey(s);
 	}
 	
-	public void receive(XServer server) {
-		long tDiff = System.currentTimeMillis() - started;
+	public void receive(XServer server, long created) {
+		long tDiff = System.currentTimeMillis() - created;
 		if (!stopped.get() && targetResponses.containsKey(server)) {
 			responsesTotal.incrementAndGet();
 			targetResponses.get(server).incrementAndGet();
@@ -229,6 +233,12 @@ public class StressTest {
 		} else {
 			StringBuilder sb = new StringBuilder();
 
+			if(timedOut.get()) {
+				sb.append(ChatColor.RED + (sync ? "Sync" : "Async") +  "StressTest(" + times + ") timed out after " + TIMEOUT + "ms!");
+			} else {
+				sb.append(ChatColor.GRAY + (sync ? "Sync" : "Async") + " StressTest(" + times + ")");
+			}
+			
 			LinkedList<XServer> servers = new LinkedList<XServer>(targetResponses.keySet());
 
 			Collections.sort(servers, new Comparator<XServer>() {
@@ -241,6 +251,9 @@ public class StressTest {
 			for (XServer s : servers) {
 				int responses = targetResponses.get(s).get();
 				long avg_ping = -1;
+				
+				//manager.getLogger().info(s.getName() + " - " + targetPingSum.get(s).get());
+				
 				if(responses > 0) {
 					avg_ping = targetPingSum.get(s).get() / responses;
 				}
@@ -250,7 +263,7 @@ public class StressTest {
 				
 				if (responses < 0) {
 					sb.append(ChatColor.RED).append("Not connected!");
-				} else if (responses == 0) {
+				} else if (responses == 0 || avg_ping < 0) {
 					if (s.isConnected()) {
 						sb.append(ChatColor.RED).append("Timeout!");
 					} else {

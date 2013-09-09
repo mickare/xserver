@@ -16,7 +16,7 @@ import com.mickare.xserver.util.ChatColor;
 public class StressTestCom extends SubCommand {
 
 	public StressTestCom(BukkitXServerPlugin plugin) {
-		super(plugin, "stresstest", "", "Stress test for XServer.");
+		super(plugin, "stresstest", "<times = 10> <targets = all> <async = false>", "Stress test for XServer. Targets can be: (all|servernames splitted by \";\")");
 		// TODO Auto-generated constructor stub
 	}
 	
