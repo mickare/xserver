@@ -12,5 +12,6 @@ public class XServerMessageOutgoingEvent extends XServerMessageEvent {
 	public XServerMessageOutgoingEvent(final XServer server, Message message, String text) {
 		super(server, message, text);
 	}
+	
 
 }

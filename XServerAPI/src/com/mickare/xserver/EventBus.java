@@ -16,12 +16,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.mickare.xserver.annotations.XEventHandler;
+import com.mickare.xserver.events.XServerEvent;
 
 public class EventBus<T>
 {
 	
     private final Map<Class<?>, Map<Object, Method[]>> eventToHandler = new HashMap<>();
     private final Map<Method, Boolean> synced = Collections.synchronizedMap(new HashMap<Method, Boolean>());
+    private final Map<Method, String> channeled = Collections.synchronizedMap(new HashMap<Method, String>());
     private final Map<Method, XServerListenerPlugin<T>> plugins = Collections.synchronizedMap(new HashMap<Method, XServerListenerPlugin<T>>());
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Logger logger;
@@ -34,7 +36,7 @@ public class EventBus<T>
         this.myhandler = myhandler;
     }
 
-    public void post(final Object event)
+    public void post(final XServerEvent event)
     {
         lock.readLock().lock();
         try
@@ -46,6 +48,12 @@ public class EventBus<T>
                 {
                     for ( final Method method : handler.getValue() )
                     {
+                    	final String channel = channeled.get(method);
+                    	if(channel != null && !channel.isEmpty()) {
+                    		if(!channel.equals(event.getChannel())) {
+                    			continue;
+                    		}
+                    	}
                     	myhandler.runTask(synced.get(method) , plugins.get(method),new Runnable(){
         					@Override
         					public void run() {
@@ -98,6 +106,7 @@ public class EventBus<T>
                     handler.put( params[0], existing );
                 }
                 synced.put(m, annotation.sync());
+                channeled.put(m, annotation.channel());
                 existing.add( m );
             }
         }

@@ -34,4 +34,10 @@ public class XServerMessageEvent extends XServerEvent {
 		
 	}
 
+	@Override
+	public String getChannel() {
+		return message.getSubChannel();
+	}
+
+	
 }

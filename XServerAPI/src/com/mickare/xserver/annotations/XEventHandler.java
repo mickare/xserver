@@ -11,4 +11,6 @@ public @interface XEventHandler {
 
 	boolean sync() default true;
 
+	String channel() default "";
+	
 }

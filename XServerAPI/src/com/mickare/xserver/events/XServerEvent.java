@@ -20,4 +20,8 @@ public class XServerEvent {
 		
 	}
 	
+	public String getChannel() {
+		return "";
+	}
+	
 }

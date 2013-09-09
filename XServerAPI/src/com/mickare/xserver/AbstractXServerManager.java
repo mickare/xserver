@@ -385,7 +385,7 @@ public abstract class AbstractXServerManager {
 		return homeServerName;
 	}
 	
-	public Message createMessage(String subChannel, byte[] content) throws NotInitializedException {
+	public Message createMessage(String subChannel, byte[] content) {
 		return new Message(getHomeServer(), subChannel, content);
 	}
 	

@@ -60,7 +60,7 @@ public class XServerCommands extends AbstractCommand {
 		commands.add(new Reconnect(getPlugin()));
 		commands.add(new Reload(getPlugin()));
 		commands.add(new Status(getPlugin()));
-		commands.add(new StressTest(getPlugin()));
+		commands.add(new StressTestCom(getPlugin()));
 	}
 
 
