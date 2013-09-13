@@ -1,6 +1,5 @@
 package com.mickare.xserver.commands.XServerSubCommands;
 
-import java.io.IOException;
 import java.util.LinkedList;
 
 import org.bukkit.command.Command;
@@ -72,12 +71,7 @@ public class StressTestCom extends SubCommand {
 		
 		StressTest st = new StressTest(getPlugin().getManager(), new BukkitComSender(sender), times, sender.getName(), !async);
 		st.addAll(targetServers);
-		try {
-			st.start();
-		} catch (IOException e) {
-			sender.sendMessage(ChatColor.RED + "An Exception occured! (" + e.getMessage() + ")");
-			return true;
-		}
+		st.start();
 		
 		return true;
 	}

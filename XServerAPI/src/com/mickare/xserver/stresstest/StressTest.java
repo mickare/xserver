@@ -49,7 +49,7 @@ public class StressTest {
 			40);
 
 	public static void addPendingPing(StressTest st) {
-		if (st.started == -1) {
+		if (st.started.get() == -1) {
 			synchronized (pending) {
 				pending.put(st.key, st);
 			}
@@ -112,7 +112,7 @@ public class StressTest {
 	
 	private final AtomicInteger responsesTotal = new AtomicInteger(0);
 
-	private long started = -1;
+	private final AtomicLong started = new AtomicLong(-1);
 	
 
 	public StressTest(AbstractXServerManager manager, ComSender sender,
@@ -142,7 +142,7 @@ public class StressTest {
 	}
 
 	public void add(XServer s) {
-		if (started == -1) {
+		if (started.get() == -1) {
 			targetResponses.put(s, new AtomicInteger(0));
 			targetPingSum.put(s, new AtomicLong(0));
 		}
@@ -154,46 +154,55 @@ public class StressTest {
 		}
 	}
 
-	public boolean start() throws IOException {
-		if (started == -1) {
-			addPendingPing(this);
-			started = System.currentTimeMillis();
+	public boolean start() {
+		if (started.get() == -1) {
+			
+			final StressTest self = this;
+		manager.getThreadPool().runTask(new Runnable() {
+			@Override
+			public void run() {
+				
+				addPendingPing(self);
+				started.set(System.currentTimeMillis());
 
-			List<XServer> servers = new LinkedList<XServer>();
-			for(XServer s : targetResponses.keySet()) {
-				if(s.isConnected()) {
-					expectedResponses += times;
-					servers.add(s);
-				} else {
-					targetResponses.get(s).set(-1);
-				}
-			}
-			
-			
-			for (int t = 0; t < times; t++) {
-				for (XServer s : servers) {
-					try {
-						s.sendMessage(createMessage());
-					} catch (NotConnectedException e) {
-						
+				List<XServer> servers = new LinkedList<XServer>();
+				for(XServer s : targetResponses.keySet()) {
+					if(s.isConnected()) {
+						expectedResponses += times;
+						servers.add(s);
+					} else {
+						targetResponses.get(s).set(-1);
 					}
 				}
-			}
-			
-			check();
-			
-			manager.getThreadPool().runTask(new Runnable() {
-				public void run() {
-					try {
-						Thread.sleep(TIMEOUT + 10);
-						stopped.set(true);
-						timedOut.set(true);
-						check();
-					} catch (InterruptedException e) {
+				
+				
+				for (int t = 0; t < times; t++) {
+					for (XServer s : servers) {
+						try {
+							s.sendMessage(createMessage());
+						} catch (NotConnectedException | IOException e) {
+							
+						}
 					}
 				}
-			});
-
+				
+				check();
+				
+				manager.getThreadPool().runTask(new Runnable() {
+					public void run() {
+						try {
+							Thread.sleep(TIMEOUT + 10);
+							stopped.set(true);
+							timedOut.set(true);
+							check();
+						} catch (InterruptedException e) {
+						}
+					}
+				});
+				
+			}
+		});
+		
 		}
 		return false;
 	}
@@ -213,7 +222,7 @@ public class StressTest {
 	}
 
 	public boolean isPending() {
-		return stopped.get() ? false : responsesTotal.get() < expectedResponses ? (System.currentTimeMillis() - started <= TIMEOUT) : false;
+		return stopped.get() ? false : responsesTotal.get() < expectedResponses ? (System.currentTimeMillis() - started.get() <= TIMEOUT) : false;
 	}
 
 	private boolean check() {
@@ -236,12 +245,6 @@ public class StressTest {
 		} else {
 			StringBuilder sb = new StringBuilder();
 
-			if(timedOut.get()) {
-				sb.append(ChatColor.RED + (sync ? "Sync" : "Async") +  "StressTest(" + times + ") timed out after " + TIMEOUT + "ms!");
-			} else {
-				sb.append(ChatColor.GRAY + (sync ? "Sync" : "Async") + " StressTest(" + times + ")");
-			}
-			
 			LinkedList<XServer> servers = new LinkedList<XServer>(targetResponses.keySet());
 
 			Collections.sort(servers, new Comparator<XServer>() {
@@ -261,7 +264,7 @@ public class StressTest {
 					avg_ping = targetPingSum.get(s).get() / responses;
 				}
 				
-				sb.append("\n").append(ChatColor.GOLD).append(s.getName())
+				sb.append(ChatColor.GOLD).append(s.getName())
 						.append(ChatColor.GRAY).append(" - ");
 				
 				if (responses < 0) {
@@ -297,7 +300,19 @@ public class StressTest {
 					}
 					sb.append(avg_ping).append("ms").append(ChatColor.GRAY).append(")");
 				}
+				sb.append("\n");
 			}
+			
+			if(timedOut.get()) {
+				sb.append(ChatColor.RED).append(sync ? "Sync" : "Async")
+				.append("StressTest(").append(times).append(") timed out after ").append(TIMEOUT).append("ms!")
+				.append("\n").append(ChatColor.GRAY).append("(Total: ").append(responsesTotal.get()).append("/").append(expectedResponses).append(")");
+			} else {
+				sb.append(ChatColor.GRAY).append(sync ? "Sync" : "Async")
+				.append(" StressTest(").append(times).append(")")
+				.append("\n").append(ChatColor.GRAY).append("(Total: ").append(responsesTotal.get()).append("/").append(expectedResponses).append(")");
+			}
+			
 			return sb.toString();
 		}
 	}
