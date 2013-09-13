@@ -2,8 +2,8 @@ package com.mickare.xserver.net;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.Message;
@@ -17,23 +17,24 @@ import com.mickare.xserver.util.Encryption;
 public class XServer {
 
 	private final static int MESSAGE_CACHE_SIZE = 2048;
-	
+
 	private final String name;
 	private final String host;
 	private final int port;
 	private final String password;
 
 	private Connection connection = null;
-	private Connection connection2 = null;	// Fix for HomeServer that is not connectable.
-	private Lock conLock = new ReentrantLock();
-	
-	private Lock typeLock = new ReentrantLock();
+	private Connection connection2 = null; // Fix for HomeServer that is not
+											// connectable.
+	private ReadWriteLock conLock = new ReentrantReadWriteLock();
+
+	private ReadWriteLock typeLock = new ReentrantReadWriteLock();
 	private XType type = XType.Other;
 
-	private CacheList<Packet> pendingPackets = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
-	
+	private final CacheList<Packet> pendingPackets = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
+
 	private final AbstractXServerManager manager;
-	
+
 	public XServer(String name, String host, int port, String password, AbstractXServerManager manager) {
 		this.name = name;
 		this.host = host;
@@ -41,7 +42,7 @@ public class XServer {
 		this.password = Encryption.MD5(password);
 		this.manager = manager;
 	}
-	
+
 	public XServer(String name, String host, int port, String password, XType type, AbstractXServerManager manager) {
 		this.name = name;
 		this.host = host;
@@ -51,74 +52,69 @@ public class XServer {
 		this.manager = manager;
 	}
 
-	public void connect() throws UnknownHostException, IOException,
-			InterruptedException, NotInitializedException {
-		conLock.lock();
-		try {
-			if(this.connection != null ? !this.connection.isLoggingIn() : true) {
-				if (isConnected()) {
-					this.disconnect();
-				}
-				connection = new Connection(manager
-						.getSocketFactory(), host, port, manager);
-			}
-		} finally {
-			conLock.unlock();
+	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
+
+		if (isConnected()) {
+			this.disconnect();
 		}
+
+		new Connection(manager.getSocketFactory(), host, port, manager);
 	}
 
 	protected void setConnection(Connection con) {
-		conLock.lock();
+		conLock.writeLock().lock();
 		try {
-			if (this.connection != con && isConnected()) {
-				for(Packet p : this.connection.getPendingPackets()) {
-					if(p.getPacketID() == PacketType.Message.packetID) {
-						this.pendingPackets.push(p);
-					}
-				}
+			if (this.connection != con) {
 				this.disconnect();
 			}
 			this.connection = con;
 		} finally {
-			conLock.unlock();
+			conLock.writeLock().unlock();
 		}
 	}
 
 	public void setReloginConnection(Connection con) {
-		conLock.lock();
-		try {
-			if(manager.getHomeServer() == this) {
+		if (manager.getHomeServer() == this) {
+			conLock.writeLock().lock();
+			try {
 				if (this.connection2 != con && (this.connection2 != null ? this.connection2.isConnected() : false)) {
 					this.disconnect();
 				}
 				this.connection2 = con;
-			} else {
-				setConnection(con);
+			} finally {
+				conLock.writeLock().unlock();
 			}
-		} finally {
-			conLock.unlock();
+		} else {
+			setConnection(con);
 		}
 	}
-	
+
 	public boolean isConnected() {
-		conLock.lock();
+		conLock.readLock().lock();
 		try {
 			return connection != null ? connection.isLoggedIn() : false;
 		} finally {
-			conLock.unlock();
+			conLock.readLock().unlock();
 		}
 	}
 
 	public void disconnect() {
-		conLock.lock();
+		conLock.writeLock().lock();
 		try {
-			if(connection != null) {
+			if (connection != null) {
 				connection.disconnect();
+				synchronized (pendingPackets) {
+					for (Packet p : this.connection.getPendingPackets()) {
+						if (p.getPacketID() == PacketType.Message.packetID) {
+							this.pendingPackets.push(p);
+						}
+					}
+				}
 				connection = null;
 				connection2 = null;
 			}
 		} finally {
-			conLock.unlock();
+			conLock.writeLock().unlock();
 		}
 	}
 
@@ -140,72 +136,73 @@ public class XServer {
 
 	public boolean sendMessage(Message message) throws NotConnectedException, IOException {
 		boolean result = false;
-		conLock.lock();	
-		try {
-			if (!isConnected()) {
+
+		if (!isConnected()) {
+			synchronized (pendingPackets) {
 				pendingPackets.push(new Packet(PacketType.Message, message.getData()));
-				
-				//throw new NotConnectedException("Not Connected to this server!");
-			} else if( connection
-					.send(new Packet(PacketType.Message, message.getData()))) {
-				result = true;								
 			}
-		} finally {
-			conLock.unlock();
+			// throw new NotConnectedException("Not Connected to this server!");
+		} else {
+			conLock.readLock().lock();
+			try {
+				if (connection.send(new Packet(PacketType.Message, message.getData()))) {
+					result = true;
+				}
+			} finally {
+				conLock.readLock().unlock();
+			}
 		}
+
 		manager.getEventHandler().callEvent(new XServerMessageOutgoingEvent(this, message));
 		return result;
-		
+
 	}
-	
+
 	public void ping(Ping ping) throws InterruptedException, IOException {
-		conLock.lock();
-		if(isConnected()) {
+		conLock.readLock().lock();
+		if (isConnected()) {
 			connection.ping(ping);
 		}
-		conLock.unlock();
+		conLock.readLock().unlock();
 	}
-	
+
 	public void flushCache() {
-		conLock.lock();
+		conLock.readLock().lock();
 		try {
 			if (isConnected()) {
-				Packet p = pendingPackets.pollLast();
-				while(p != null) {
-					connection.send(p);
-					p = pendingPackets.pollLast();
+				synchronized (pendingPackets) {
+					Packet p = pendingPackets.pollLast();
+					while (p != null) {
+						connection.send(p);
+						p = pendingPackets.pollLast();
+					}
 				}
 			}
 		} finally {
-			conLock.unlock();
+			conLock.readLock().unlock();
 		}
 	}
 
-	public XType getType()
-	{
-		typeLock.lock();
+	public XType getType() {
+		typeLock.readLock().lock();
 		try {
 			return type;
 		} finally {
-			typeLock.unlock();
+			typeLock.readLock().unlock();
 		}
 	}
 
-	protected void setType(XType type)
-	{
-		typeLock.lock();
+	protected void setType(XType type) {
+		typeLock.writeLock().lock();
 		try {
 			this.type = type;
 		} finally {
-			typeLock.unlock();
+			typeLock.writeLock().unlock();
 		}
 	}
 
-	public AbstractXServerManager getManager()
-	{
+	public AbstractXServerManager getManager() {
 		return manager;
 	}
 
-	
-	
 }
