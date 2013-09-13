@@ -158,50 +158,58 @@ public class StressTest {
 		if (started.get() == -1) {
 			
 			final StressTest self = this;
-		manager.getThreadPool().runTask(new Runnable() {
-			@Override
-			public void run() {
-				
-				addPendingPing(self);
-				started.set(System.currentTimeMillis());
+			
+			Runnable startRun = new Runnable() {
+				@Override
+				public void run() {
+					
+					addPendingPing(self);
+					started.set(System.currentTimeMillis());
 
-				List<XServer> servers = new LinkedList<XServer>();
-				for(XServer s : targetResponses.keySet()) {
-					if(s.isConnected()) {
-						expectedResponses += times;
-						servers.add(s);
-					} else {
-						targetResponses.get(s).set(-1);
-					}
-				}
-				
-				
-				for (int t = 0; t < times; t++) {
-					for (XServer s : servers) {
-						try {
-							s.sendMessage(createMessage());
-						} catch (NotConnectedException | IOException e) {
-							
+					List<XServer> servers = new LinkedList<XServer>();
+					for(XServer s : targetResponses.keySet()) {
+						if(s.isConnected()) {
+							expectedResponses += times;
+							servers.add(s);
+						} else {
+							targetResponses.get(s).set(-1);
 						}
 					}
-				}
-				
-				check();
-				
-				manager.getThreadPool().runTask(new Runnable() {
-					public void run() {
-						try {
-							Thread.sleep(TIMEOUT + 10);
-							stopped.set(true);
-							timedOut.set(true);
-							check();
-						} catch (InterruptedException e) {
+					
+					
+					for (int t = 0; t < times; t++) {
+						for (XServer s : servers) {
+							try {
+								s.sendMessage(createMessage());
+							} catch (NotConnectedException | IOException e) {
+								
+							}
 						}
 					}
-				});
-				
+					
+					check();
+					
+					manager.getThreadPool().runTask(new Runnable() {
+						public void run() {
+							try {
+								Thread.sleep(TIMEOUT + 10);
+								stopped.set(true);
+								timedOut.set(true);
+								check();
+							} catch (InterruptedException e) {
+							}
+						}
+					});
+				}
+			};
+			
+			if(sync) {
+				startRun.run();
+			} else {
+				manager.getThreadPool().runTask(startRun);
 			}
-		});
+			
+		
 		
 		}
 		return false;
