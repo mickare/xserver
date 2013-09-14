@@ -19,7 +19,7 @@ public class BukkitEventHandler extends EventHandler<JavaPlugin> {
 		plugin.getServer().getScheduler().runTaskTimer(plugin, new Runnable(){
 			@Override
 			public void run() {
-				syncTasksCount.set(0);
+				syncTasksCount.set(0);	
 			}
 		}, 100, 1);
 	}

@@ -16,7 +16,7 @@ import com.mickare.xserver.util.Encryption;
 
 public class XServer {
 
-	private final static int MESSAGE_CACHE_SIZE = 2048;
+	private final static int MESSAGE_CACHE_SIZE = 8192;
 
 	private final String name;
 	private final String host;
@@ -203,6 +203,70 @@ public class XServer {
 
 	public AbstractXServerManager getManager() {
 		return manager;
+	}
+
+	public long getSendingRecordSecondPackageCount() {
+		conLock.readLock().lock();
+		try {
+			if (isConnected()) {
+				if (this.connection2 != null) {
+					return this.connection.getSendingRecordSecondPackageCount()
+							+ this.connection2.getSendingRecordSecondPackageCount();
+				}
+				return this.connection.getSendingRecordSecondPackageCount();
+			}
+		} finally {
+			conLock.readLock().unlock();
+		}
+		return 0;
+	}
+
+	public long getSendinglastSecondPackageCount() {
+		conLock.readLock().lock();
+		try {
+			if (isConnected()) {
+				if (this.connection2 != null) {
+					return this.connection.getSendinglastSecondPackageCount()
+							+ this.connection2.getSendinglastSecondPackageCount();
+				}
+				return this.connection.getSendinglastSecondPackageCount();
+			}
+		} finally {
+			conLock.readLock().unlock();
+		}
+		return 0;
+	}
+
+	public long getReceivingRecordSecondPackageCount() {
+		conLock.readLock().lock();
+		try {
+			if (isConnected()) {
+				if (this.connection2 != null) {
+					return this.connection.getReceivingRecordSecondPackageCount()
+							+ this.connection2.getReceivingRecordSecondPackageCount();
+				}
+				return this.connection.getReceivingRecordSecondPackageCount();
+			}
+		} finally {
+			conLock.readLock().unlock();
+		}
+		return 0;
+	}
+
+	public long getReceivinglastSecondPackageCount() {
+		conLock.readLock().lock();
+		try {
+			if (isConnected()) {
+				if (this.connection2 != null) {
+					return this.connection.getReceivinglastSecondPackageCount()
+							+ this.connection2.getReceivinglastSecondPackageCount();
+				}
+				return this.connection.getReceivinglastSecondPackageCount();
+			}
+		} finally {
+			conLock.readLock().unlock();
+		}
+		return 0;
 	}
 
 }

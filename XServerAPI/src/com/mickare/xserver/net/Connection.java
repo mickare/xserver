@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.net.SocketFactory;
@@ -21,7 +22,7 @@ import com.mickare.xserver.exceptions.NotInitializedException;
 public class Connection
 {
 
-	private final static int CAPACITY = 2048;
+	private final static int CAPACITY = 8192;
 	private final static int SOCKET_TIMEOUT = 5000;
 
 	private ReentrantReadWriteLock statusLock = new ReentrantReadWriteLock();
@@ -42,7 +43,7 @@ public class Connection
 	private Receiving receiving;
 	private Sending sending;
 	private final NetPacketHandler packetHandler;
-
+	
 	public enum stats
 	{
 		disconnected, connecting, connected, error
@@ -206,7 +207,7 @@ public class Connection
 		boolean result = true;
 		for (Packet p : packets)
 		{
-			result &= pendingSendingPackets.offer(p);
+			result &= send(p);
 		}
 		return result;
 	}
@@ -214,11 +215,29 @@ public class Connection
 	private class Sending extends Thread
 	{
 
+		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
+		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
+		
+		private long lastSecond = 0;
+		private long packageCount = 0;
+		
 		public Sending()
 		{
 			super("Sending Thread to (" + host + ":" + port + ")");
 		}
 
+		private void tickPacket() {
+			if(System.currentTimeMillis() - lastSecond > 1000) {
+				lastSecondPackageCount.set(packageCount);
+				if(packageCount > recordSecondPackageCount.get()) {
+					recordSecondPackageCount.set(packageCount);
+				}
+				packageCount = 0;
+				lastSecond = System.currentTimeMillis();
+			}
+			packageCount++;
+		}
+		
 		@Override
 		public void run()
 		{
@@ -239,6 +258,7 @@ public class Connection
 						if (isLoggedIn())
 						{
 							new Packet(PacketType.KeepAlive, new byte[0]).writeToStream(output);
+							tickPacket();
 						} else
 						{
 							errorDisconnect();
@@ -246,6 +266,7 @@ public class Connection
 					} else
 					{
 						p.writeToStream(output);
+						tickPacket();
 					}
 					p = null;
 
@@ -264,11 +285,29 @@ public class Connection
 	private class Receiving extends Thread
 	{
 
+		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
+		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
+		
+		private long lastSecond = 0;
+		private long packageCount = 0;
+		
 		public Receiving()
 		{
 			super("Receiving Thread to (" + host + ":" + port + ")");
 		}
 
+		private void tickPacket() {
+			if(System.currentTimeMillis() - lastSecond > 1000) {
+				lastSecondPackageCount.set(packageCount);
+				if(packageCount > recordSecondPackageCount.get()) {
+					recordSecondPackageCount.set(packageCount);
+				}
+				packageCount = 0;
+				lastSecond = System.currentTimeMillis();
+			}
+			packageCount++;
+		}
+		
 		@Override
 		public void run()
 		{
@@ -277,6 +316,7 @@ public class Connection
 				while (!isInterrupted() && isConnected())
 				{
 					packetHandler.handle(Packet.readFromSteam(input));
+					tickPacket();
 				}
 			} catch (IOException e)
 			{
@@ -368,6 +408,24 @@ public class Connection
 	@Override
 	public String toString() {
 		return host + ":" + port;
+	}
+	
+	//recordSecondPackageCount
+	//lastSecondPackageCount
+	
+	public long getSendingRecordSecondPackageCount() {
+		return this.sending.recordSecondPackageCount.get();
+	}
+	public long getSendinglastSecondPackageCount() {
+		return this.sending.lastSecondPackageCount.get();
+	}
+	
+	public long getReceivingRecordSecondPackageCount() {
+		return this.receiving.recordSecondPackageCount.get();
+	}
+	
+	public long getReceivinglastSecondPackageCount() {
+		return this.receiving.lastSecondPackageCount.get();
 	}
 	
 }
