@@ -9,7 +9,6 @@ import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.Message;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerMessageOutgoingEvent;
-import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.util.CacheList;
 import com.mickare.xserver.util.Encryption;
@@ -134,7 +133,7 @@ public class XServer {
 		return password;
 	}
 
-	public boolean sendMessage(Message message) throws NotConnectedException, IOException {
+	public boolean sendMessage(Message message) throws IOException {
 		boolean result = false;
 
 		if (!isConnected()) {

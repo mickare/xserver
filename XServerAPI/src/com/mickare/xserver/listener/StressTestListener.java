@@ -6,7 +6,6 @@ import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.XServerListener;
 import com.mickare.xserver.annotations.XEventHandler;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
-import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.stresstest.StressTest;
 
 public class StressTestListener implements XServerListener {
@@ -23,7 +22,7 @@ public class StressTestListener implements XServerListener {
 		try {
 			event.getServer().sendMessage(manager.createMessage(StressTest.STRESSTEST_CHANNEL_PONG_SYNC, event
 					.getMessage().getContent()));
-		} catch (NotConnectedException | IOException e) {
+		} catch (IOException e) {
 
 		}
 	}
@@ -43,7 +42,7 @@ public class StressTestListener implements XServerListener {
 		try {
 			event.getServer().sendMessage(manager.createMessage(StressTest.STRESSTEST_CHANNEL_PONG_ASYNC, event
 					.getMessage().getContent()));
-		} catch (NotConnectedException | IOException e) {
+		} catch (IOException e) {
 
 		}
 	}

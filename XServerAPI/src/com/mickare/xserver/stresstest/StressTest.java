@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.Message;
-import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.net.XServer;
 import com.mickare.xserver.user.ComSender;
 import com.mickare.xserver.util.CacheMap;
@@ -181,7 +180,7 @@ public class StressTest {
 						for (XServer s : servers) {
 							try {
 								s.sendMessage(createMessage());
-							} catch (NotConnectedException | IOException e) {
+							} catch (IOException e) {
 								
 							}
 						}
