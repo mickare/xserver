@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/XServerAPI"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/XServerCore"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/Users/tobiasgriepentrog/Google Drive/Bukkit/BungeeCord-701.jar"/>
+	<classpathentry kind="lib" path="C:/Dropbox/Bukkit/BungeeCord-754.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
