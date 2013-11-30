@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
-public class BukkitEventHandler extends EventHandler<JavaPlugin> {
+public class BukkitEventHandler extends EventHandlerObj<JavaPlugin> {
 
 	// Spray those Sync tasks over some ticks...
 	private static final int SYNCTASK_SPRAY = 100;
@@ -25,7 +25,7 @@ public class BukkitEventHandler extends EventHandler<JavaPlugin> {
 	}
 
 	@Override
-	protected void runTask(Boolean sync, XServerListenerPlugin<JavaPlugin> plugin, Runnable run) {
+	public void runTask(Boolean sync, XServerListenerPlugin<JavaPlugin> plugin, Runnable run) {
 		boolean s = true;
 		if (sync != null) {
 			s = sync.booleanValue();

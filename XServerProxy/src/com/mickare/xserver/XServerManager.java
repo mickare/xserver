@@ -7,7 +7,7 @@ import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.listener.StressTestListener;
 import com.mickare.xserver.util.MySQL;
 
-public class XServerManager extends AbstractXServerManager {
+public class XServerManager extends AbstractXServerManagerObj {
 
 	private static XServerManager instance = null;
 

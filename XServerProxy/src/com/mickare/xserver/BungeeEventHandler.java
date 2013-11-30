@@ -2,7 +2,7 @@ package com.mickare.xserver;
 
 import net.md_5.bungee.api.plugin.Plugin;
 
-public class BungeeEventHandler extends EventHandler<Plugin> {
+public class BungeeEventHandler extends EventHandlerObj<Plugin> {
 
 	private final Plugin plugin;
 
@@ -12,7 +12,7 @@ public class BungeeEventHandler extends EventHandler<Plugin> {
 	}
 
 	@Override
-	protected void runTask(Boolean sync, XServerListenerPlugin<Plugin> plugin, Runnable run) {
+	public void runTask(Boolean sync, XServerListenerPlugin<Plugin> plugin, Runnable run) {
 		plugin.getPlugin().getProxy().getScheduler().runAsync(plugin.getPlugin(), run);
 	}
 

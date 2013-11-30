@@ -7,6 +7,7 @@ import org.bukkit.command.CommandSender;
 import com.mickare.xserver.BukkitXServerPlugin;
 import com.mickare.xserver.commands.SubCommand;
 import com.mickare.xserver.net.Ping;
+import com.mickare.xserver.net.PingObj;
 import com.mickare.xserver.net.XServer;
 import com.mickare.xserver.user.BukkitComSender;
 
@@ -27,12 +28,12 @@ public class PingCommand extends SubCommand {
 					sender.sendMessage(ChatColor.RED + "Server \"" + args[0] + "\" not found!");
 					return true;
 				}
-				Ping p = new Ping(getPlugin().getManager(), new BukkitComSender(sender), getPlugin().getManager().homeServer.getName());
+				Ping p = new PingObj(getPlugin().getManager(), new BukkitComSender(sender), getPlugin().getManager().homeServer.getName());
 				p.add(s);
 				p.start();
 			} else {
 				
-				Ping p = new Ping(getPlugin().getManager(), new BukkitComSender(sender), getPlugin().getManager().homeServer.getName());
+				Ping p = new PingObj(getPlugin().getManager(), new BukkitComSender(sender), getPlugin().getManager().homeServer.getName());
 				p.addAll(getPlugin().getManager().getServers());
 				p.start();
 				
