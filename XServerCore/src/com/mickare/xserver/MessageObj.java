@@ -8,7 +8,7 @@ import java.io.IOException;
 
 import com.mickare.xserver.net.XServer;
 
-public class Message {
+public class MessageObj implements Message {
 
 	private final XServer sender;
 	private final String subChannel;
@@ -16,13 +16,13 @@ public class Message {
 
 	
 	
-	protected Message(XServer sender, String subChannel, byte[] content) {
+	protected MessageObj(XServer sender, String subChannel, byte[] content) {
 		this.sender = sender;
 		this.subChannel = subChannel;
 		this.content = content;
 	}
 
-	protected Message(XServer sender, byte[] data) throws IOException {
+	protected MessageObj(XServer sender, byte[] data) throws IOException {
 		this.sender = sender;
 		DataInputStream in = null;
 		try {
@@ -40,35 +40,34 @@ public class Message {
 		
 	}
 
-	/**
-	 * Get Sender Server Name
-	 * @return sender name
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.Message#getSender()
 	 */
+	@Override
 	public XServer getSender() {
 		return sender;
 	}
 
-	/**
-	 * SubChannel
-	 * @return subchannel name
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.Message#getSubChannel()
 	 */
+	@Override
 	public String getSubChannel() {
 		return subChannel;
 	}
 
-	/**
-	 * Get the content of this message...
-	 * @return byte array
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.Message#getContent()
 	 */
+	@Override
 	public byte[] getContent() {
 		return content;
 	}
 	
-	/**
-	 * Get the compiled byte array of this message...
-	 * @return byte array
-	 * @throws IOException
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.Message#getData()
 	 */
+	@Override
 	public byte[] getData() throws IOException {
 		// Write Data
 		ByteArrayOutputStream b = new ByteArrayOutputStream();

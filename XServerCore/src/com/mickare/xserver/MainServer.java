@@ -3,16 +3,16 @@ package com.mickare.xserver;
 import java.io.IOException;
 import java.net.ServerSocket;
 
-import com.mickare.xserver.net.Connection;
+import com.mickare.xserver.net.ConnectionObj;
 import com.mickare.xserver.util.MyStringUtils;
 
 public class MainServer extends Thread
 {
 
 	private final ServerSocket server;
-	private final AbstractXServerManager manager;
+	private final AbstractXServerManagerObj manager;
 	
-	protected MainServer(ServerSocket server, AbstractXServerManager manager)
+	protected MainServer(ServerSocket server, AbstractXServerManagerObj manager)
 	{
 		super("XServer Main Server Thread");
 		this.server = server;
@@ -35,7 +35,7 @@ public class MainServer extends Thread
 		{
 			try
 			{
-				new Connection(server.accept(), manager);
+				new ConnectionObj(server.accept(), manager);
 			} catch (IOException e)
 			{
 				manager.getLogger().warning("Exception while connecting: " + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));

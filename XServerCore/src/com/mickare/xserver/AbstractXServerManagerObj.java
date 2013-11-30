@@ -19,10 +19,11 @@ import javax.net.SocketFactory;
 import com.mickare.xserver.exceptions.InvalidConfigurationException;
 import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.XServer;
+import com.mickare.xserver.net.XServerObj;
 import com.mickare.xserver.util.MySQL;
 import com.mickare.xserver.util.MyStringUtils;
 
-public abstract class AbstractXServerManager {
+public abstract class AbstractXServerManagerObj implements AbstractXServerManager {
 
 	private final XServerPlugin plugin;
 	private ServerThreadPoolExecutor stpool;
@@ -32,20 +33,20 @@ public abstract class AbstractXServerManager {
 	private final MySQL connection;
 	private final String homeServerName;
 	private Lock homeLock = new ReentrantLock();
-	public XServer homeServer;
+	public XServerObj homeServer;
 	private ReentrantReadWriteLock serversLock = new ReentrantReadWriteLock();
 
-	private final HashMap<String, XServer> servers = new HashMap<String, XServer>();
+	private final HashMap<String, XServerObj> servers = new HashMap<String, XServerObj>();
 
 	private final Map<XServer, Integer> notConnectedServers = Collections
 			.synchronizedMap(new HashMap<XServer, Integer>());
 
 	private boolean reconnectClockRunning = false;
 
-	protected AbstractXServerManager(String servername, XServerPlugin plugin, MySQL connection)
+	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection)
 			throws InvalidConfigurationException, IOException {
 		this.plugin = plugin;
-		stpool = new ServerThreadPoolExecutor();
+		stpool = new ServerThreadPoolExecutorObj();
 		sf = SocketFactory.getDefault();
 		this.connection = connection;
 		this.homeServerName = servername;
@@ -61,6 +62,10 @@ public abstract class AbstractXServerManager {
 		return reconnectClockRunning;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#start()
+	 */
+	@Override
 	public void start() throws IOException {
 		serversLock.readLock().lock();
 		try {
@@ -85,6 +90,10 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#start_async()
+	 */
+	@Override
 	public void start_async() {
 		stpool.runTask(new Runnable() {
 			public void run() {
@@ -118,10 +127,14 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#reconnectAll_soft()
+	 */
+	@Override
 	public void reconnectAll_soft() {
 		serversLock.readLock().lock();
 		try {
-			for (final XServer s : servers.values()) {
+			for (final XServerObj s : servers.values()) {
 				stpool.runTask(new Runnable() {
 					public void run() {
 						if (!s.isConnected()) {
@@ -143,10 +156,14 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#reconnectAll_forced()
+	 */
+	@Override
 	public void reconnectAll_forced() {
 		serversLock.readLock().lock();
 		try {
-			for (final XServer s : servers.values()) {
+			for (final XServerObj s : servers.values()) {
 				stpool.runTask(new Runnable() {
 					public void run() {
 						try {
@@ -166,6 +183,10 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#stop()
+	 */
+	@Override
 	public void stop() throws IOException {
 		serversLock.readLock().lock();
 		try {
@@ -173,7 +194,7 @@ public abstract class AbstractXServerManager {
 			stpool.shutDown();
 			reconnectClockRunning = false;
 
-			for (XServer s : this.getServers()) {
+			for (XServerObj s : servers.values()) {
 				s.disconnect();
 			}
 
@@ -182,13 +203,10 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
-	/**
-	 * Reload configuration
-	 * 
-	 * @throws IOException
-	 * 
-	 * @throws InvalidConfigurationException
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#reload()
 	 */
+	@Override
 	public void reload() throws IOException {
 		homeLock.lock();
 		serversLock.writeLock().lock();
@@ -201,7 +219,7 @@ public abstract class AbstractXServerManager {
 
 				}
 			}
-			for (XServer s : servers.values()) {
+			for (XServerObj s : servers.values()) {
 				s.disconnect();
 			}
 			servers.clear();
@@ -239,7 +257,7 @@ public abstract class AbstractXServerManager {
 							continue;
 						}
 						String pw = rs.getString("PW");
-						servers.put(servername, new XServer(servername, host,
+						servers.put(servername, new XServerObj(servername, host,
 								ip, pw, this));
 					}
 				} catch (SQLException e) {
@@ -266,7 +284,11 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
-	public XServer getHomeServer() {
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getHomeServer()
+	 */
+	@Override
+	public XServerObj getHomeServer() {
 		homeLock.lock();
 		try {
 			return homeServer;
@@ -275,7 +297,11 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
-	public XServer getServer(String servername) {
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getServer(java.lang.String)
+	 */
+	@Override
+	public XServerObj getServer(String servername) {
 		serversLock.readLock();
 		try {
 			return servers.get(servername);
@@ -284,23 +310,43 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getPlugin()
+	 */
+	@Override
 	public XServerPlugin getPlugin() {
 		return plugin;
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getLogger()
+	 */
+	@Override
 	public Logger getLogger() {
 		return plugin.getLogger();
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getThreadPool()
+	 */
+	@Override
 	public ServerThreadPoolExecutor getThreadPool() {
 		return stpool;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getSocketFactory()
+	 */
+	@Override
 	public SocketFactory getSocketFactory() {
 		return sf;
 	}
 
-	public XServer getXServer(String name) {
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getXServer(java.lang.String)
+	 */
+	@Override
+	public XServerObj getXServer(String name) {
 		serversLock.readLock().lock();
 		try {
 			return servers.get(name);
@@ -309,11 +355,10 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
-	/**
-	 * Get the list of all available servers
-	 * 
-	 * @return servers
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getServers()
 	 */
+	@Override
 	public Set<XServer> getServers() {
 		serversLock.readLock().lock();
 		try {
@@ -323,11 +368,10 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
-	/**
-	 * Get a string list of all servernames
-	 * 
-	 * @return
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getServernames()
 	 */
+	@Override
 	public String[] getServernames() {
 		serversLock.readLock().lock();
 		try {
@@ -337,17 +381,14 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
-	/**
-	 * Get the XServer Object with the servername name
-	 * 
-	 * @param name
-	 *            servername
-	 * @return XServer with that name
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getServerIgnoreCase(java.lang.String)
 	 */
-	public XServer getServerIgnoreCase(String name) {
+	@Override
+	public XServerObj getServerIgnoreCase(String name) {
 		serversLock.readLock().lock();
 		try {
-			for (XServer s : servers.values()) {
+			for (XServerObj s : servers.values()) {
 				if (s.getName().equalsIgnoreCase(name)) {
 					return s;
 				}
@@ -358,17 +399,14 @@ public abstract class AbstractXServerManager {
 		}
 	}
 
-	/**
-	 * Get the XServer Object via host and port
-	 * 
-	 * @param host
-	 * @param port
-	 * @return XServer
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getServer(java.lang.String, int)
 	 */
-	public XServer getServer(String host, int port) {
+	@Override
+	public XServerObj getServer(String host, int port) {
 		serversLock.readLock().lock();
 		try {
-			for (XServer s : servers.values()) {
+			for (XServerObj s : servers.values()) {
 				if (s.getHost().equalsIgnoreCase(host) && s.getPort() == port) {
 					return s;
 				}
@@ -381,20 +419,40 @@ public abstract class AbstractXServerManager {
 
 	
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getHomeServerName()
+	 */
+	@Override
 	public String getHomeServerName() {
 		return homeServerName;
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#createMessage(java.lang.String, byte[])
+	 */
+	@Override
 	public Message createMessage(String subChannel, byte[] content) {
-		return new Message(getHomeServer(), subChannel, content);
+		return new MessageObj(getHomeServer(), subChannel, content);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#readMessage(com.mickare.xserver.net.XServer, byte[])
+	 */
+	@Override
 	public Message readMessage(XServer sender, byte[] data) throws IOException {
-		return new Message(sender, data);
+		return new MessageObj(sender, data);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#getEventHandler()
+	 */
+	@Override
 	public abstract EventHandler<?> getEventHandler();
 	
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.AbstractXServerManager#registerOwnListeners()
+	 */
+	@Override
 	public abstract void registerOwnListeners();
 
 }

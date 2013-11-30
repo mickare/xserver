@@ -2,7 +2,7 @@ package com.mickare.xserver;
 
 import java.util.concurrent.*;
 
-public class ServerThreadPoolExecutor {
+public class ServerThreadPoolExecutorObj implements ServerThreadPoolExecutor {
 
 	//Parallel running Threads(Executor) on System
 
@@ -20,26 +20,26 @@ public class ServerThreadPoolExecutor {
     //Working queue for jobs (Runnable). We add them finally here
 	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(1024);
 
-    public ServerThreadPoolExecutor() {
+    public ServerThreadPoolExecutorObj() {
         threadPool = new ThreadPoolExecutor(corePoolSize, maxPoolSize,
                 keepAliveTime, TimeUnit.MILLISECONDS, workQueue);
     }
     
 
-    /**
-     * Here we add our jobs to working queue
-     *
-     * @param task a Runnable task
-     */
-    public void runTask(Runnable task) { 
+    /* (non-Javadoc)
+	 * @see com.mickare.xserver.ServerThreadPoolExecutor#runTask(java.lang.Runnable)
+	 */
+    @Override
+	public void runTask(Runnable task) { 
         threadPool.execute(task);
         //System.out.println("Tasks in workQueue.." + workQueue.size());
     }
  
-    /**
-     * Shutdown the Threadpool if it's finished
-     */
-    public void shutDown() {
+    /* (non-Javadoc)
+	 * @see com.mickare.xserver.ServerThreadPoolExecutor#shutDown()
+	 */
+    @Override
+	public void shutDown() {
         threadPool.shutdown();
     }
     

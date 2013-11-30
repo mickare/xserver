@@ -6,7 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import com.mickare.xserver.AbstractXServerManager;
+import com.mickare.xserver.AbstractXServerManagerObj;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerConnectionDenied;
 import com.mickare.xserver.events.XServerLoggedInEvent;
@@ -18,12 +18,12 @@ public class NetPacketHandler //extends Thread
 
 	//private final static int CAPACITY = 2048;
 
-	private final Connection con;
-	private final AbstractXServerManager manager;
+	private final ConnectionObj con;
+	private final AbstractXServerManagerObj manager;
 
 	//private final ArrayBlockingQueue<Packet> pendingReceivingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
 
-	public NetPacketHandler(Connection con, AbstractXServerManager manager)
+	public NetPacketHandler(ConnectionObj con, AbstractXServerManagerObj manager)
 	{
 		this.con = con;
 		this.manager = manager;
@@ -91,7 +91,7 @@ public class NetPacketHandler //extends Thread
 				String name = is.readUTF();
 				String password = is.readUTF();
 				XType xtype = XType.getByNumber(is.readInt());
-				XServer s = manager.getServer(name);
+				XServerObj s = manager.getServer(name);
 
 				// Debugging...
 				/*
@@ -126,7 +126,7 @@ public class NetPacketHandler //extends Thread
 				String name = is.readUTF();
 				String password = is.readUTF();
 				XType xtype = XType.getByNumber(is.readInt());
-				XServer s = manager.getServer(name);
+				XServerObj s = manager.getServer(name);
 
 				// Debugging...
 
@@ -162,7 +162,7 @@ public class NetPacketHandler //extends Thread
 			} else if (p.getPacketID() == PacketType.PingAnswer.packetID) // PingAnswer
 			{
 				is = new DataInputStream(new ByteArrayInputStream(p.getData()));
-				Ping.receive(is.readUTF(), con.getXserver());
+				PingObj.receive(is.readUTF(), con.getXserver());
 
 			} else if (p.getPacketID() == PacketType.Message.packetID) // Message
 			{

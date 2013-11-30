@@ -17,7 +17,7 @@ import com.mickare.xserver.util.CacheMap;
 import com.mickare.xserver.util.ChatColor;
 import com.mickare.xserver.util.Encryption;
 
-public class Ping {
+public class PingObj implements Ping {
 
 	private static final long TIMEOUT = 2000;
 	
@@ -35,9 +35,9 @@ public class Ping {
 	}
 
 	public static void addPendingPing(Ping ping) {
-		if (ping.started == -1) {
+		if (ping.getStarted() == -1) {
 			synchronized (pending) {
-				pending.put(ping.key, ping);
+				pending.put(ping.getKey(), ping);
 			}
 		}
 	}
@@ -65,11 +65,11 @@ public class Ping {
 
 	private final AbstractXServerManager manager;
 
-	public Ping(AbstractXServerManager manager, ComSender sender) {
+	public PingObj(AbstractXServerManager manager, ComSender sender) {
 		this(manager, sender, "Ping");
 	}
 
-	public Ping(AbstractXServerManager manager, ComSender sender, String salt) {
+	public PingObj(AbstractXServerManager manager, ComSender sender, String salt) {
 		this.manager = manager;
 		this.sender = sender;
 		this.key = Encryption.MD5(String.valueOf(Math.random()) + salt
@@ -77,6 +77,10 @@ public class Ping {
 
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.Ping#start()
+	 */
+	@Override
 	public boolean start() {
 		if (started == -1) {
 			addPendingPing(this);
@@ -110,17 +114,29 @@ public class Ping {
 		return false;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.Ping#add(com.mickare.xserver.net.XServer)
+	 */
+	@Override
 	public void add(XServer server) {
 		responses.put(server, Long.MAX_VALUE);
 		waiting.add(server);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.Ping#addAll(java.util.Collection)
+	 */
+	@Override
 	public void addAll(Collection<XServer> servers) {
 		for (XServer s : servers) {
 			add(s);
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.Ping#receive(com.mickare.xserver.net.XServer)
+	 */
+	@Override
 	public void receive(XServer server) {
 		long t = System.currentTimeMillis();
 		if (waiting.contains(server)) {
@@ -142,11 +158,19 @@ public class Ping {
 		return false;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.Ping#isPending()
+	 */
+	@Override
 	public boolean isPending() {
 		return ((waiting.size() > 0) ? (System.currentTimeMillis() - started <= TIMEOUT)
 				: false);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.Ping#getFormatedString()
+	 */
+	@Override
 	public String getFormatedString() {
 		if (waiting.size() > 0) {
 			return "Still Pending...";
@@ -195,12 +219,25 @@ public class Ping {
 
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.Ping#getSender()
+	 */
+	@Override
 	public ComSender getSender() {
 		return sender;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.Ping#getKey()
+	 */
+	@Override
 	public String getKey() {
 		return key;
+	}
+
+	@Override
+	public long getStarted() {
+		return started;
 	}
 
 }

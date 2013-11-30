@@ -6,6 +6,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.mickare.xserver.AbstractXServerManager;
+import com.mickare.xserver.AbstractXServerManagerObj;
 import com.mickare.xserver.Message;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerMessageOutgoingEvent;
@@ -13,7 +14,7 @@ import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.util.CacheList;
 import com.mickare.xserver.util.Encryption;
 
-public class XServer {
+public class XServerObj implements XServer {
 
 	private final static int MESSAGE_CACHE_SIZE = 8192;
 
@@ -32,9 +33,9 @@ public class XServer {
 
 	private final CacheList<Packet> pendingPackets = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
 
-	private final AbstractXServerManager manager;
+	private final AbstractXServerManagerObj manager;
 
-	public XServer(String name, String host, int port, String password, AbstractXServerManager manager) {
+	public XServerObj(String name, String host, int port, String password, AbstractXServerManagerObj manager) {
 		this.name = name;
 		this.host = host;
 		this.port = port;
@@ -42,7 +43,7 @@ public class XServer {
 		this.manager = manager;
 	}
 
-	public XServer(String name, String host, int port, String password, XType type, AbstractXServerManager manager) {
+	public XServerObj(String name, String host, int port, String password, XType type, AbstractXServerManagerObj manager) {
 		this.name = name;
 		this.host = host;
 		this.port = port;
@@ -51,16 +52,20 @@ public class XServer {
 		this.manager = manager;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#connect()
+	 */
+	@Override
 	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
 
 		if (isConnected()) {
 			this.disconnect();
 		}
 
-		new Connection(manager.getSocketFactory(), host, port, manager);
+		new ConnectionObj(manager.getSocketFactory(), host, port, manager);
 	}
 
-	protected void setConnection(Connection con) {
+	public void setConnection(Connection con) {
 		conLock.writeLock().lock();
 		try {
 			if (this.connection != con) {
@@ -72,6 +77,10 @@ public class XServer {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#setReloginConnection(com.mickare.xserver.net.Connection)
+	 */
+	@Override
 	public void setReloginConnection(Connection con) {
 		if (manager.getHomeServer() == this) {
 			conLock.writeLock().lock();
@@ -88,6 +97,10 @@ public class XServer {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#isConnected()
+	 */
+	@Override
 	public boolean isConnected() {
 		conLock.readLock().lock();
 		try {
@@ -97,6 +110,10 @@ public class XServer {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#disconnect()
+	 */
+	@Override
 	public void disconnect() {
 		conLock.writeLock().lock();
 		try {
@@ -117,22 +134,42 @@ public class XServer {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getName()
+	 */
+	@Override
 	public String getName() {
 		return name;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getHost()
+	 */
+	@Override
 	public String getHost() {
 		return host;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getPort()
+	 */
+	@Override
 	public int getPort() {
 		return port;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getPassword()
+	 */
+	@Override
 	public String getPassword() {
 		return password;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#sendMessage(com.mickare.xserver.Message)
+	 */
+	@Override
 	public boolean sendMessage(Message message) throws IOException {
 		boolean result = false;
 
@@ -157,6 +194,10 @@ public class XServer {
 
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#ping(com.mickare.xserver.net.Ping)
+	 */
+	@Override
 	public void ping(Ping ping) throws InterruptedException, IOException {
 		conLock.readLock().lock();
 		if (isConnected()) {
@@ -165,6 +206,10 @@ public class XServer {
 		conLock.readLock().unlock();
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#flushCache()
+	 */
+	@Override
 	public void flushCache() {
 		conLock.readLock().lock();
 		try {
@@ -182,6 +227,10 @@ public class XServer {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getType()
+	 */
+	@Override
 	public XType getType() {
 		typeLock.readLock().lock();
 		try {
@@ -200,10 +249,18 @@ public class XServer {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getManager()
+	 */
+	@Override
 	public AbstractXServerManager getManager() {
 		return manager;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getSendingRecordSecondPackageCount()
+	 */
+	@Override
 	public long getSendingRecordSecondPackageCount() {
 		conLock.readLock().lock();
 		try {
@@ -220,6 +277,10 @@ public class XServer {
 		return 0;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getSendinglastSecondPackageCount()
+	 */
+	@Override
 	public long getSendinglastSecondPackageCount() {
 		conLock.readLock().lock();
 		try {
@@ -236,6 +297,10 @@ public class XServer {
 		return 0;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getReceivingRecordSecondPackageCount()
+	 */
+	@Override
 	public long getReceivingRecordSecondPackageCount() {
 		conLock.readLock().lock();
 		try {
@@ -252,6 +317,10 @@ public class XServer {
 		return 0;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.mickare.xserver.net.asd#getReceivinglastSecondPackageCount()
+	 */
+	@Override
 	public long getReceivinglastSecondPackageCount() {
 		conLock.readLock().lock();
 		try {
