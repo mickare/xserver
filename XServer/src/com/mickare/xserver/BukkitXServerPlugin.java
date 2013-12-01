@@ -71,7 +71,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
 		
 		try {
 			log.info("Starting XServer async.");
-			xmanager = new XServerManagerBukkit(servername, this, cfgconnection);
+			xmanager = new XServerManager(servername, this, cfgconnection);
 		} catch (IOException | InvalidConfigurationException e) {
 			log.severe("XServerManager not initialized correctly!\n" + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
 			this.getServer().shutdown();

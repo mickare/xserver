@@ -21,7 +21,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
         private String servername;
 
         private MySQL cfgconnection = null;
-        private XServerManagerBungee xmanager;
+        private XServerManager xmanager;
         private ConfigAccessor config;
 
         @Override
@@ -70,7 +70,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
 
                 try {
                         log.info("Starting XServer async.");
-                        xmanager = new XServerManagerBungee(servername, this,
+                        xmanager = new XServerManager(servername, this,
                                         cfgconnection);
                         
                         

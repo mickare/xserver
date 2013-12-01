@@ -6,7 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import com.mickare.xserver.AbstractXServerManager;
+import com.mickare.xserver.AbstractXServerManagerObj;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerConnectionDenied;
 import com.mickare.xserver.events.XServerLoggedInEvent;
@@ -19,11 +19,11 @@ public class NetPacketHandler //extends Thread
 	//private final static int CAPACITY = 2048;
 
 	private final ConnectionObj con;
-	private final AbstractXServerManager manager;
+	private final AbstractXServerManagerObj manager;
 
 	//private final ArrayBlockingQueue<Packet> pendingReceivingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
 
-	public NetPacketHandler(ConnectionObj con, AbstractXServerManager manager)
+	public NetPacketHandler(ConnectionObj con, AbstractXServerManagerObj manager)
 	{
 		this.con = con;
 		this.manager = manager;

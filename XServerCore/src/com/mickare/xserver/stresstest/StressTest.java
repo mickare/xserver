@@ -16,8 +16,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.Message;
-import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.net.XServer;
 import com.mickare.xserver.user.ComSender;
 import com.mickare.xserver.util.CacheMap;
@@ -79,7 +79,7 @@ public class StressTest {
 		}
 	}
 	
-	private static Message createMessage(XServerManager manager, StressTest st) throws IOException {
+	private static Message createMessage(AbstractXServerManager manager, StressTest st) throws IOException {
 		ByteArrayOutputStream b = null;
 		try {
 			b = new ByteArrayOutputStream();
@@ -95,7 +95,7 @@ public class StressTest {
 		}
 	}
 	
-	private final XServerManager manager;
+	private final AbstractXServerManager manager;
 	private final ComSender sender;
 	private final int times;
 	private final String key;
@@ -114,12 +114,12 @@ public class StressTest {
 	private final AtomicLong started = new AtomicLong(-1);
 	
 
-	public StressTest(XServerManager manager, ComSender sender,
+	public StressTest(AbstractXServerManager manager, ComSender sender,
 			int times, boolean sync) {
 		this(manager, sender, times, "StressTest", sync);
 	}
 
-	public StressTest(XServerManager manager, ComSender sender,
+	public StressTest(AbstractXServerManager manager, ComSender sender,
 			int times, String salt, boolean sync) {
 		this.manager = manager;
 		this.sender = sender;

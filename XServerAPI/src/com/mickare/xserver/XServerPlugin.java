@@ -8,7 +8,7 @@ public interface XServerPlugin {
 	
 	public void shutdownServer();
 
-	public XServerManager getManager();
+	public AbstractXServerManager getManager();
 	
 	public long getAutoReconnectTime();
 	public XType getHomeType();

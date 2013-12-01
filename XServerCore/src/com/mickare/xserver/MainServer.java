@@ -10,9 +10,9 @@ public class MainServer extends Thread
 {
 
 	private final ServerSocket server;
-	private final AbstractXServerManager manager;
+	private final AbstractXServerManagerObj manager;
 	
-	protected MainServer(ServerSocket server, AbstractXServerManager manager)
+	protected MainServer(ServerSocket server, AbstractXServerManagerObj manager)
 	{
 		super("XServer Main Server Thread");
 		this.server = server;

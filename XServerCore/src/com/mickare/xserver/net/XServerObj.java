@@ -6,6 +6,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.mickare.xserver.AbstractXServerManager;
+import com.mickare.xserver.AbstractXServerManagerObj;
 import com.mickare.xserver.Message;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerMessageOutgoingEvent;
@@ -32,9 +33,9 @@ public class XServerObj implements XServer {
 
 	private final CacheList<Packet> pendingPackets = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
 
-	private final AbstractXServerManager manager;
+	private final AbstractXServerManagerObj manager;
 
-	public XServerObj(String name, String host, int port, String password, AbstractXServerManager manager) {
+	public XServerObj(String name, String host, int port, String password, AbstractXServerManagerObj manager) {
 		this.name = name;
 		this.host = host;
 		this.port = port;
@@ -42,7 +43,7 @@ public class XServerObj implements XServer {
 		this.manager = manager;
 	}
 
-	public XServerObj(String name, String host, int port, String password, XType type, AbstractXServerManager manager) {
+	public XServerObj(String name, String host, int port, String password, XType type, AbstractXServerManagerObj manager) {
 		this.name = name;
 		this.host = host;
 		this.port = port;

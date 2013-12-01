@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.mickare.xserver.XServerManager;
+import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.user.ComSender;
 import com.mickare.xserver.util.CacheMap;
 import com.mickare.xserver.util.ChatColor;
@@ -63,13 +63,13 @@ public class PingObj implements Ping {
 	private final Set<XServer> waiting = Collections
 			.synchronizedSet(new HashSet<XServer>());
 
-	private final XServerManager manager;
+	private final AbstractXServerManager manager;
 
-	public PingObj(XServerManager manager, ComSender sender) {
+	public PingObj(AbstractXServerManager manager, ComSender sender) {
 		this(manager, sender, "Ping");
 	}
 
-	public PingObj(XServerManager manager, ComSender sender, String salt) {
+	public PingObj(AbstractXServerManager manager, ComSender sender, String salt) {
 		this.manager = manager;
 		this.sender = sender;
 		this.key = Encryption.MD5(String.valueOf(Math.random()) + salt

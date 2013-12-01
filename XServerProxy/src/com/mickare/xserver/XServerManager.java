@@ -7,7 +7,7 @@ import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.listener.StressTestListener;
 import com.mickare.xserver.util.MySQL;
 
-public class XServerManagerBungee extends AbstractXServerManager {
+public class XServerManager extends AbstractXServerManagerObj {
 
 	private static XServerManager instance = null;
 
@@ -22,7 +22,7 @@ public class XServerManagerBungee extends AbstractXServerManager {
 	private final BungeeXServerPlugin bungeePlugin;
 	private final StressTestListener stressListener;
 	
-	protected XServerManagerBungee(String servername, BungeeXServerPlugin bungeePlugin,
+	protected XServerManager(String servername, BungeeXServerPlugin bungeePlugin,
 			MySQL connection) throws InvalidConfigurationException, IOException {
 		super(servername, bungeePlugin, connection);
 		instance = this;
