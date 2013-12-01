@@ -7,7 +7,7 @@ import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.listener.StressTestListener;
 import com.mickare.xserver.util.MySQL;
 
-public class XServerManager extends AbstractXServerManagerObj {
+public class XServerManagerBukkit extends AbstractXServerManager {
 
 	// In Milliseconds
 
@@ -24,7 +24,7 @@ public class XServerManager extends AbstractXServerManagerObj {
 	private final BukkitXServerPlugin bukkitPlugin;
 	private final StressTestListener stressListener;
 
-	protected XServerManager(String servername, BukkitXServerPlugin bukkitPlugin,
+	protected XServerManagerBukkit(String servername, BukkitXServerPlugin bukkitPlugin,
 			MySQL connection) throws InvalidConfigurationException, IOException {
 		super(servername, bukkitPlugin, connection);
 		instance = this;

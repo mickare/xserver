@@ -23,7 +23,7 @@ import com.mickare.xserver.net.XServerObj;
 import com.mickare.xserver.util.MySQL;
 import com.mickare.xserver.util.MyStringUtils;
 
-public abstract class AbstractXServerManagerObj implements AbstractXServerManager {
+public abstract class AbstractXServerManager extends XServerManager {
 
 	private final XServerPlugin plugin;
 	private ServerThreadPoolExecutor stpool;
@@ -43,8 +43,9 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
 	private boolean reconnectClockRunning = false;
 
-	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection)
+	protected AbstractXServerManager(String servername, XServerPlugin plugin, MySQL connection)
 			throws InvalidConfigurationException, IOException {
+		super();
 		this.plugin = plugin;
 		stpool = new ServerThreadPoolExecutorObj();
 		sf = SocketFactory.getDefault();

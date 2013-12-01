@@ -3,8 +3,8 @@ package com.mickare.xserver.net;
 import java.io.IOException;
 import java.net.UnknownHostException;
 
-import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.Message;
+import com.mickare.xserver.XServerManager;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
@@ -99,7 +99,7 @@ public interface XServer {
 	 * Get the Current Server Manager Object
 	 * @return
 	 */
-	public abstract AbstractXServerManager getManager();
+	public abstract XServerManager getManager();
 	
 	/**
 	 * Get the record number of packages sended in one second

@@ -7,10 +7,32 @@ import java.util.logging.Logger;
 import javax.net.SocketFactory;
 
 import com.mickare.xserver.exceptions.InvalidConfigurationException;
+import com.mickare.xserver.exceptions.NotInitializedException;
 import com.mickare.xserver.net.XServer;
 
-public interface AbstractXServerManager {
+public abstract class XServerManager {
 
+	private static XServerManager instance = null;
+
+	/**
+	 * Get the last XServerManager instance.
+	 * @return
+	 * @throws NotInitializedException
+	 */
+	public static XServerManager getInstance() throws NotInitializedException {
+		if (instance == null) {
+			throw new NotInitializedException();
+		}
+		return instance;
+	}
+	
+	/**
+	 * Overwrites the current XServerMangager instance
+	 */
+	public XServerManager() {
+		instance = this;
+	}
+	
 	public abstract void start() throws IOException;
 
 	public abstract void start_async();

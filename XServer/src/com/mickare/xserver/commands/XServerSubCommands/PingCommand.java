@@ -28,12 +28,12 @@ public class PingCommand extends SubCommand {
 					sender.sendMessage(ChatColor.RED + "Server \"" + args[0] + "\" not found!");
 					return true;
 				}
-				Ping p = new PingObj(getPlugin().getManager(), new BukkitComSender(sender), getPlugin().getManager().homeServer.getName());
+				Ping p = new PingObj(getPlugin().getManager(), new BukkitComSender(sender), getPlugin().getManager().getHomeServer().getName());
 				p.add(s);
 				p.start();
 			} else {
 				
-				Ping p = new PingObj(getPlugin().getManager(), new BukkitComSender(sender), getPlugin().getManager().homeServer.getName());
+				Ping p = new PingObj(getPlugin().getManager(), new BukkitComSender(sender), getPlugin().getManager().getHomeServer().getName());
 				p.addAll(getPlugin().getManager().getServers());
 				p.start();
 				

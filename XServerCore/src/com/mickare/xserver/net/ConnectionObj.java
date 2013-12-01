@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.net.SocketFactory;
 
-import com.mickare.xserver.AbstractXServerManagerObj;
+import com.mickare.xserver.AbstractXServerManager;
 import com.mickare.xserver.events.XServerDisconnectEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
@@ -57,7 +57,7 @@ public class ConnectionObj implements Connection
 	 * @throws InterruptedException
 	 * @throws NotInitializedException
 	 */
-	public ConnectionObj(SocketFactory sf, String host, int port, AbstractXServerManagerObj manager) throws UnknownHostException, IOException, InterruptedException,
+	public ConnectionObj(SocketFactory sf, String host, int port, AbstractXServerManager manager) throws UnknownHostException, IOException, InterruptedException,
 			NotInitializedException
 	{
 
@@ -88,7 +88,7 @@ public class ConnectionObj implements Connection
 	 * @throws IOException
 	 * @throws NotInitializedException
 	 */
-	public ConnectionObj(Socket socket, AbstractXServerManagerObj manager) throws IOException
+	public ConnectionObj(Socket socket, AbstractXServerManager manager) throws IOException
 	{
 
 
