@@ -94,12 +94,6 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
                 return config;
         }
 
-        
-        public Logger getLogger()
-    	{
-    		return Logger.getLogger("XServer");
-    	}
-
 		@Override
 		public void shutdownServer() {
 			this.getProxy().stop();
