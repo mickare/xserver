@@ -8,8 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
@@ -32,9 +31,9 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
 	private final MySQL connection;
 	private final String homeServerName;
-	private Lock homeLock = new ReentrantLock();
+	private ReadWriteLock homeLock = new ReentrantReadWriteLock();
 	public XServerObj homeServer;
-	private ReentrantReadWriteLock serversLock = new ReentrantReadWriteLock();
+	private ReadWriteLock serversLock = new ReentrantReadWriteLock();
 
 	private final HashMap<String, XServerObj> servers = new HashMap<String, XServerObj>();
 
@@ -208,7 +207,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	 */
 	@Override
 	public void reload() throws IOException {
-		homeLock.lock();
+		homeLock.writeLock().lock();
 		serversLock.writeLock().lock();
 		try {
 
@@ -279,7 +278,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 			start_async();
 
 		} finally {
-			homeLock.unlock();
+			homeLock.writeLock().unlock();
 			serversLock.writeLock().unlock();
 		}
 	}
@@ -289,11 +288,11 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	 */
 	@Override
 	public XServerObj getHomeServer() {
-		homeLock.lock();
+		homeLock.readLock().lock();
 		try {
 			return homeServer;
 		} finally {
-			homeLock.unlock();
+			homeLock.readLock().unlock();
 		}
 	}
 

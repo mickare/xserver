@@ -200,10 +200,13 @@ public class XServerObj implements XServer {
 	@Override
 	public void ping(Ping ping) throws InterruptedException, IOException {
 		conLock.readLock().lock();
-		if (isConnected()) {
-			connection.ping(ping);
+		try {
+			if (isConnected()) {
+				connection.ping(ping);
+			}
+		} finally {
+			conLock.readLock().unlock();
 		}
-		conLock.readLock().unlock();
 	}
 
 	/* (non-Javadoc)

@@ -24,6 +24,7 @@ public class CacheMap<K, V> implements Map<K, V> {
     @Override
     public void clear() {
         delegate.clear();
+        keyInsertionOrder.clear();
     }
 
     @Override
