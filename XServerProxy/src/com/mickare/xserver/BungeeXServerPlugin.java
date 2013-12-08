@@ -26,7 +26,6 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
 
         @Override
         public void onDisable() {
-                log = Logger.getLogger("BungeeCord");
                 log = this.getLogger();
                 log.info("---------------------------------");
                 log.info("--------- Proxy XServer ---------");
@@ -50,7 +49,6 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
 
         @Override
         public void onEnable() {
-                log = Logger.getLogger("BungeeCord");
                 log = this.getLogger();
                 log.info("---------------------------------");
                 log.info("--------- Proxy XServer ---------");
@@ -97,9 +95,10 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
         }
 
         
-        public Logger getLogger() {
-                return log;
-        }
+        public Logger getLogger()
+    	{
+    		return Logger.getLogger("XServer");
+    	}
 
 		@Override
 		public void shutdownServer() {
