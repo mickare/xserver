@@ -18,7 +18,7 @@ public class XServerCommands extends Command {
         private final XServerPlugin plugin;
         
         public XServerCommands(XServerPlugin plugin) {
-                super("xserver", "xserver");
+                super("pxserver", "xserver");
                 this.plugin = plugin;
                 initialize();
         }
