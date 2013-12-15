@@ -73,9 +73,12 @@ public class ConnectionObj implements Connection {
 
 		this.packetHandler.sendFirstLoginRequest();
 
-		manager.getThreadPool().runTask(this.receiving);
-		manager.getThreadPool().runTask(this.sending);
-
+		//manager.getThreadPool().runTask(this.receiving);
+		//manager.getThreadPool().runTask(this.sending);
+		if (!manager.getThreadPool().runTask(this.receiving) || !manager.getThreadPool().runTask(this.sending)) {
+			this.errorDisconnect();
+		}
+		
 		// this.receiving.start();
 		// this.sending.start();
 		// this.packetHandler.start();
@@ -103,8 +106,8 @@ public class ConnectionObj implements Connection {
 		this.receiving = new Receiving();
 		this.sending = new Sending();
 
-		if (!manager.getThreadPool().runTask(this.receiving) || manager.getThreadPool().runTask(this.sending)) {
-			this.disconnect();
+		if (!manager.getThreadPool().runTask(this.receiving) || !manager.getThreadPool().runTask(this.sending)) {
+			this.errorDisconnect();
 		}
 
 		// this.receiving.start();
