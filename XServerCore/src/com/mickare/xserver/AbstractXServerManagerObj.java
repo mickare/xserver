@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
@@ -40,7 +41,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	private final Map<XServer, Integer> notConnectedServers = Collections
 			.synchronizedMap(new HashMap<XServer, Integer>());
 
-	private boolean reconnectClockRunning = false;
+	private final AtomicBoolean reconnectClockRunning = new AtomicBoolean(false);
 
 	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection)
 			throws InvalidConfigurationException, IOException {
@@ -57,9 +58,11 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 		
 	}
 
-	private synchronized boolean isReconnectClockRunning() {
-		return reconnectClockRunning;
+	@Override
+	public boolean isShutdown() {
+		return stpool.isShutdown();
 	}
+	
 
 	/* (non-Javadoc)
 	 * @see com.mickare.xserver.AbstractXServerManager#start()
@@ -69,13 +72,13 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 		serversLock.readLock().lock();
 		try {
 			reconnectAll_soft();
-			if (!isReconnectClockRunning()) {
-				reconnectClockRunning = true;
+			if (!reconnectClockRunning.get()) {
+				reconnectClockRunning.set(true);
 				stpool.runTask(new Runnable() {
 					@Override
 					public void run() {
 						try {
-							while (isReconnectClockRunning()) {
+							while (reconnectClockRunning.get()) {
 								reconnectAll_soft();
 								Thread.sleep(plugin.getAutoReconnectTime());
 							}
@@ -189,14 +192,12 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	public void stop() throws IOException {
 		serversLock.readLock().lock();
 		try {
+			reconnectClockRunning.set(false);
 			mainserver.close();
-			stpool.shutDown();
-			reconnectClockRunning = false;
-
 			for (XServerObj s : servers.values()) {
 				s.disconnect();
 			}
-
+			stpool.shutDown();
 		} finally {
 			serversLock.readLock().unlock();
 		}

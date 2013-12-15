@@ -87,4 +87,6 @@ public interface AbstractXServerManager {
 
 	public abstract void registerOwnListeners();
 
+	public abstract boolean isShutdown();
+
 }

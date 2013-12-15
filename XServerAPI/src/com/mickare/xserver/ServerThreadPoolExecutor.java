@@ -6,12 +6,15 @@ public interface ServerThreadPoolExecutor {
 	 * Here we add our jobs to working queue
 	 *
 	 * @param task a Runnable task
+	 * @return 
 	 */
-	public abstract void runTask(Runnable task);
+	public abstract boolean runTask(Runnable task);
 
 	/**
 	 * Shutdown the Threadpool if it's finished
 	 */
 	public abstract void shutDown();
+
+	public abstract boolean isShutdown();
 
 }

@@ -5,12 +5,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import com.mickare.xserver.AbstractXServerManagerObj;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerConnectionDenied;
 import com.mickare.xserver.events.XServerLoggedInEvent;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
+import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.exceptions.NotInitializedException;
 
 public class NetPacketHandler //extends Thread
@@ -23,7 +25,7 @@ public class NetPacketHandler //extends Thread
 
 	//private final ArrayBlockingQueue<Packet> pendingReceivingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
 
-	public NetPacketHandler(ConnectionObj con, AbstractXServerManagerObj manager)
+	public NetPacketHandler(final ConnectionObj con, final AbstractXServerManagerObj manager)
 	{
 		this.con = con;
 		this.manager = manager;
@@ -56,7 +58,7 @@ public class NetPacketHandler //extends Thread
 	{
 	*/
 	
-	public void handle(Packet p) throws IOException
+	public void handle(final Packet p) throws IOException, NotConnectedException
 	{
 		DataInputStream is = null;
 
@@ -157,32 +159,37 @@ public class NetPacketHandler //extends Thread
 
 			} else if (p.getPacketID() == PacketType.PingRequest.packetID) // PingRequest
 			{
+				// Security Throw Exception
+				if(!con.isLoggedIn()) {
+					throw new NotConnectedException("Not logged in!");
+				}
+				
 				con.send(new Packet(PacketType.PingAnswer, p.getData()));
 
 			} else if (p.getPacketID() == PacketType.PingAnswer.packetID) // PingAnswer
 			{
+				// Security Throw Exception
+				if(!con.isLoggedIn()) {
+					throw new NotConnectedException("Not logged in!");
+				}
+				
 				is = new DataInputStream(new ByteArrayInputStream(p.getData()));
 				PingObj.receive(is.readUTF(), con.getXserver());
 
 			} else if (p.getPacketID() == PacketType.Message.packetID) // Message
 			{
-				// manager.getThreadPool().runTask(new
-				// Runnable() {
-				// public void run() {
 
-				try
-				{
-					if (con.getXserver() != null && con.isConnected() && con.isLoggedIn())
+				// Security Throw Exception
+					if(!con.isLoggedIn()) {
+						throw new NotConnectedException("Not logged in!");
+					}
+				
+				
+					if (con.getXserver() != null && con.isConnected())
 					{
 						manager.getEventHandler()
 								.callEvent(new XServerMessageIncomingEvent(con.getXserver(), manager.readMessage(con.getXserver(), p.getData())));
 					}
-				} catch (IOException e)
-				{
-
-				}
-				// }
-				// });
 
 			} else
 			{
@@ -204,7 +211,7 @@ public class NetPacketHandler //extends Thread
 		}
 
 	}
-
+	
 	protected void sendFirstLoginRequest() throws IOException, InterruptedException, NotInitializedException
 	{
 		sendLoginRequest(PacketType.LoginRequest);
@@ -234,6 +241,10 @@ public class NetPacketHandler //extends Thread
 				out.close();
 			}
 		}
+	}
+
+	public Logger getLogger() {
+		return manager.getLogger();
 	}
 
 }

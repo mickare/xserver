@@ -30,8 +30,12 @@ public class ServerThreadPoolExecutorObj implements ServerThreadPoolExecutor {
 	 * @see com.mickare.xserver.ServerThreadPoolExecutor#runTask(java.lang.Runnable)
 	 */
     @Override
-	public void runTask(Runnable task) { 
+	public boolean runTask(Runnable task) { 
+    	if(threadPool.isShutdown()) {
+    		return false;
+    	}
         threadPool.execute(task);
+        return true;
         //System.out.println("Tasks in workQueue.." + workQueue.size());
     }
  
@@ -42,5 +46,11 @@ public class ServerThreadPoolExecutorObj implements ServerThreadPoolExecutor {
 	public void shutDown() {
         threadPool.shutdown();
     }
+    
+    @Override
+    public boolean isShutdown() {
+    	return threadPool.isShutdown();
+    }
+    
     
 }

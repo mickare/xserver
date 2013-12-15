@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -18,9 +19,9 @@ import javax.net.SocketFactory;
 import com.mickare.xserver.AbstractXServerManagerObj;
 import com.mickare.xserver.events.XServerDisconnectEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
+import com.mickare.xserver.util.MyStringUtils;
 
-public class ConnectionObj implements Connection
-{
+public class ConnectionObj implements Connection {
 
 	private final static int CAPACITY = 8192;
 	private final static int SOCKET_TIMEOUT = 5000;
@@ -38,13 +39,11 @@ public class ConnectionObj implements Connection
 	private final DataInputStream input;
 	private final DataOutputStream output;
 
-	private final ArrayBlockingQueue<Packet> pendingSendingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
+	private final ArrayBlockingQueue<Packet> pendingSendingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, false);
 
 	private Receiving receiving;
 	private Sending sending;
 	private final NetPacketHandler packetHandler;
-	
-	
 
 	/**
 	 * Create a new Connection to another Server (sends a Login Request)
@@ -57,9 +56,8 @@ public class ConnectionObj implements Connection
 	 * @throws InterruptedException
 	 * @throws NotInitializedException
 	 */
-	public ConnectionObj(SocketFactory sf, String host, int port, AbstractXServerManagerObj manager) throws UnknownHostException, IOException, InterruptedException,
-			NotInitializedException
-	{
+	public ConnectionObj(SocketFactory sf, String host, int port, AbstractXServerManagerObj manager)
+			throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
 
 		this.host = host;
 		this.port = port;
@@ -75,9 +73,12 @@ public class ConnectionObj implements Connection
 
 		this.packetHandler.sendFirstLoginRequest();
 
-		this.receiving.start();
-		this.sending.start();
-		//this.packetHandler.start();
+		manager.getThreadPool().runTask(this.receiving);
+		manager.getThreadPool().runTask(this.sending);
+
+		// this.receiving.start();
+		// this.sending.start();
+		// this.packetHandler.start();
 	}
 
 	/**
@@ -88,9 +89,7 @@ public class ConnectionObj implements Connection
 	 * @throws IOException
 	 * @throws NotInitializedException
 	 */
-	public ConnectionObj(Socket socket, AbstractXServerManagerObj manager) throws IOException
-	{
-
+	public ConnectionObj(Socket socket, AbstractXServerManagerObj manager) throws IOException {
 
 		this.host = socket.getInetAddress().getHostAddress();
 		this.port = socket.getPort();
@@ -104,161 +103,167 @@ public class ConnectionObj implements Connection
 		this.receiving = new Receiving();
 		this.sending = new Sending();
 
-		this.receiving.start();
-		this.sending.start();
-		//this.packetHandler.start();
-		
-		
-		//manager.getLogger().info("New Connection from: " + host + ":" + port);
+		if (!manager.getThreadPool().runTask(this.receiving) || manager.getThreadPool().runTask(this.sending)) {
+			this.disconnect();
+		}
+
+		// this.receiving.start();
+		// this.sending.start();
+		// this.packetHandler.start();
+
+		// manager.getLogger().info("New Connection from: " + host + ":" +
+		// port);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#ping(com.mickare.xserver.net.Ping)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.mickare.xserver.net.Connection#ping(com.mickare.xserver.net.Ping)
 	 */
 	@Override
-	public void ping(Ping ping) throws InterruptedException, IOException
-	{
+	public void ping(Ping ping) throws InterruptedException, IOException {
 		ByteArrayOutputStream b = null;
 		DataOutputStream out = null;
-		try
-		{
+		try {
 			b = new ByteArrayOutputStream();
 			out = new DataOutputStream(b);
 			out.writeUTF(ping.getKey());
 			pendingSendingPackets.put(new Packet(PacketType.PingRequest, b.toByteArray()));
-		} finally
-		{
-			if (out != null)
-			{
+		} finally {
+			if (out != null) {
 				out.close();
 			}
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#isConnected()
 	 */
 	@Override
-	public boolean isConnected()
-	{
+	public boolean isConnected() {
 		return socket != null ? !socket.isClosed() : false;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#disconnect()
 	 */
 	@Override
-	public void disconnect()
-	{
+	public void disconnect() {
 		setStatus(stats.disconnected);
-		sending.interrupt();
-		receiving.interrupt();
-		//packetHandler.interrupt();
+		sending.stop();
+		receiving.stop();
+		// packetHandler.interrupt();
 
-		try
-		{
+		try {
 			socket.close();
 			input.close();
 			output.close();
-		} catch (IOException e)
-		{
+		} catch (IOException e) {
 
-		} finally
-		{
-			if (this.xserver != null)
-			{
+		} finally {
+			if (this.xserver != null) {
 				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
 			}
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#errorDisconnect()
 	 */
 	@Override
-	public void errorDisconnect()
-	{
+	public void errorDisconnect() {
 		setStatus(stats.error);
-		sending.interrupt();
-		receiving.interrupt();
-		//packetHandler.interrupt();
+		sending.stop();
+		receiving.stop();
+		// packetHandler.interrupt();
 
-		try
-		{
+		try {
 			socket.close();
 			input.close();
 			output.close();
-		} catch (IOException e)
-		{
+		} catch (IOException e) {
 
-		} finally
-		{
-			if (this.xserver != null)
-			{
+		} finally {
+			if (this.xserver != null) {
 				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
 			}
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#getHost()
 	 */
 	@Override
-	public String getHost()
-	{
+	public String getHost() {
 		return host;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#getPort()
 	 */
 	@Override
-	public int getPort()
-	{
+	public int getPort() {
 		return port;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#send(com.mickare.xserver.net.Packet)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.mickare.xserver.net.Connection#send(com.mickare.xserver.net.Packet)
 	 */
 	@Override
-	public boolean send(Packet packet)
-	{
+	public boolean send(Packet packet) {
 		return pendingSendingPackets.offer(packet);
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#sendAll(java.util.Collection)
 	 */
 	@Override
-	public boolean sendAll(Collection<Packet> packets)
-	{
+	public boolean sendAll(Collection<Packet> packets) {
 		boolean result = true;
-		for (Packet p : packets)
-		{
+		for (Packet p : packets) {
 			result &= send(p);
 		}
 		return result;
 	}
 
-	private class Sending extends Thread
-	{
+	private final class Sending implements Runnable {
+
+		private final AtomicBoolean stopped = new AtomicBoolean(false);
 
 		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
 		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
-		
+
 		private long lastSecond = 0;
 		private long packageCount = 0;
-		
-		public Sending()
-		{
-			super("Sending Thread to (" + host + ":" + port + ")");
+
+		public Sending() {
+			// super("Sending Thread to (" + host + ":" + port + ")");
+		}
+
+		public void stop() {
+			stopped.set(true);
 		}
 
 		private void tickPacket() {
-			if(System.currentTimeMillis() - lastSecond > 1000) {
+			if (System.currentTimeMillis() - lastSecond > 1000) {
 				lastSecondPackageCount.set(packageCount);
-				if(packageCount > recordSecondPackageCount.get()) {
+				if (packageCount > recordSecondPackageCount.get()) {
 					recordSecondPackageCount.set(packageCount);
 				}
 				packageCount = 0;
@@ -266,69 +271,72 @@ public class ConnectionObj implements Connection
 			}
 			packageCount++;
 		}
-		
+
 		@Override
-		public void run()
-		{
-			try
-			{
-				while (!isInterrupted() && isConnected())
-				{
+		public void run() {
+			try {
+				// while (!isInterrupted() && isConnected())
+				while (isConnected() && !stopped.get()) {
 
 					Packet p = pendingSendingPackets.poll(1000, TimeUnit.MILLISECONDS);
 
-					if (isInterrupted())
-					{
+					if (stopped.get()) {
 						return;
 					}
 
-					if (p == null)
-					{
-						if (isLoggedIn())
-						{
+					/*
+					 * if (isInterrupted()) { return; }
+					 */
+
+					if (p == null) {
+						if (isLoggedIn()) {
 							new Packet(PacketType.KeepAlive, new byte[0]).writeToStream(output);
 							tickPacket();
-						} else
-						{
+						} else {
 							errorDisconnect();
 						}
-					} else
-					{
+					} else {
 						p.writeToStream(output);
 						tickPacket();
 					}
 					p = null;
 
 				}
-			} catch (IOException | InterruptedException e)
-			{
-				//TODO
-				//manager.getLogger().warning("Error Disconnect (" + host + ":" + port + "): " + e.getMessage() + "\n" +  MyStringUtils.stackTraceToString(e));
+			} catch (Exception e) {
+				if(!(e instanceof IOException || e instanceof InterruptedException)) {
+					packetHandler.getLogger().warning("Error Disconnect (" + host + ":"
+					+ port + "): " + e.getMessage() + "\n" +
+					MyStringUtils.stackTraceToString(e));
+				}
 				errorDisconnect();
 			}
-			this.interrupt();
+			// this.interrupt();
 		}
 
 	}
 
-	private class Receiving extends Thread
-	{
+	private final class Receiving implements Runnable {
+
+		private final AtomicBoolean stopped = new AtomicBoolean(false);
 
 		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
 		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
-		
+
 		private long lastSecond = 0;
 		private long packageCount = 0;
-		
-		public Receiving()
-		{
-			super("Receiving Thread to (" + host + ":" + port + ")");
+
+		public Receiving() {
+			// super("Receiving Thread to (" + host + ":" + port + ")");
+		}
+
+		public void stop() {
+			stopped.set(true);
 		}
 
 		private void tickPacket() {
-			if(System.currentTimeMillis() - lastSecond > 1000) {
+			if (System.currentTimeMillis() - lastSecond > 1000) {
 				lastSecondPackageCount.set(packageCount);
-				if(packageCount > recordSecondPackageCount.get()) {
+				if (packageCount > recordSecondPackageCount.get()) {
 					recordSecondPackageCount.set(packageCount);
 				}
 				packageCount = 0;
@@ -336,164 +344,172 @@ public class ConnectionObj implements Connection
 			}
 			packageCount++;
 		}
-		
+
 		@Override
-		public void run()
-		{
-			try
-			{
-				while (!isInterrupted() && isConnected())
-				{
+		public void run() {
+			try {
+				// while (!isInterrupted() && isConnected())
+				while (isConnected() && !stopped.get()) {
 					packetHandler.handle(Packet.readFromSteam(input));
 					tickPacket();
 				}
-			} catch (IOException e)
-			{
-				//TODO
-				//manager.getLogger().warning("Error Disconnect (" + host + ":" + port + "): " + e.getMessage() + "\n" +  MyStringUtils.stackTraceToString(e));
+			} catch (Exception e) {
+				if(!(e instanceof IOException)) {
+					packetHandler.getLogger().warning("Error Disconnect (" + host + ":"
+					+ port + "): " + e.getMessage() + "\n" +
+					MyStringUtils.stackTraceToString(e));
+				}
+				
 				errorDisconnect();
 			}
-			this.interrupt();
+			// this.interrupt();
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#getStatus()
 	 */
 	@Override
-	public stats getStatus()
-	{
+	public stats getStatus() {
 		statusLock.readLock().lock();
-		try
-		{
+		try {
 			return status;
-		} finally
-		{
+		} finally {
 			statusLock.readLock().unlock();
 		}
 	}
 
-	protected void setStatus(stats status)
-	{
+	protected void setStatus(stats status) {
 		statusLock.writeLock().lock();
-		try
-		{
+		try {
 			this.status = status;
-		} finally
-		{
+		} finally {
 			statusLock.writeLock().unlock();
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#getXserver()
 	 */
 	@Override
-	public XServer getXserver()
-	{
+	public XServer getXserver() {
 		xserverLock.readLock().lock();
-		try
-		{
+		try {
 			return xserver;
-		} finally
-		{
+		} finally {
 			xserverLock.readLock().unlock();
 		}
 	}
 
-	protected void setXserver(XServer xserver)
-	{
+	protected void setXserver(XServer xserver) {
 		xserverLock.writeLock().lock();
-		try
-		{
+		try {
 			this.xserver = xserver;
 			xserver.setConnection(this);
-		} finally
-		{
+		} finally {
 			xserverLock.writeLock().unlock();
 		}
 	}
 
-	protected void setReloginXserver(XServer xserver)
-	{
+	protected void setReloginXserver(XServer xserver) {
 		xserverLock.writeLock().lock();
-		try
-		{
+		try {
 			this.xserver = xserver;
 			xserver.setReloginConnection(this);
-		} finally
-		{
+		} finally {
 			xserverLock.writeLock().unlock();
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#getPendingPackets()
 	 */
 	@Override
-	public Queue<Packet> getPendingPackets()
-	{
+	public Queue<Packet> getPendingPackets() {
 		return new ArrayBlockingQueue<Packet>(CAPACITY, false, pendingSendingPackets);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#isLoggedIn()
 	 */
 	@Override
-	public boolean isLoggedIn()
-	{
+	public boolean isLoggedIn() {
 		return isConnected() ? stats.connected.equals(getStatus()) : false;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#isLoggingIn()
 	 */
 	@Override
-	public boolean isLoggingIn()
-	{
+	public boolean isLoggingIn() {
 		return isConnected() ? stats.connecting.equals(getStatus()) : false;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.Connection#toString()
 	 */
 	@Override
 	public String toString() {
 		return host + ":" + port;
 	}
-	
-	//recordSecondPackageCount
-	//lastSecondPackageCount
-	
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getSendingRecordSecondPackageCount()
+
+	// recordSecondPackageCount
+	// lastSecondPackageCount
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.mickare.xserver.net.Connection#getSendingRecordSecondPackageCount()
 	 */
 	@Override
 	public long getSendingRecordSecondPackageCount() {
 		return this.sending.recordSecondPackageCount.get();
 	}
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getSendinglastSecondPackageCount()
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.mickare.xserver.net.Connection#getSendinglastSecondPackageCount()
 	 */
 	@Override
 	public long getSendinglastSecondPackageCount() {
 		return this.sending.lastSecondPackageCount.get();
 	}
-	
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getReceivingRecordSecondPackageCount()
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.mickare.xserver.net.Connection#getReceivingRecordSecondPackageCount()
 	 */
 	@Override
 	public long getReceivingRecordSecondPackageCount() {
 		return this.receiving.recordSecondPackageCount.get();
 	}
-	
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getReceivinglastSecondPackageCount()
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.mickare.xserver.net.Connection#getReceivinglastSecondPackageCount()
 	 */
 	@Override
 	public long getReceivinglastSecondPackageCount() {
 		return this.receiving.lastSecondPackageCount.get();
 	}
-	
+
 }

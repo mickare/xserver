@@ -5,8 +5,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class Packet {
-		private int packetID;
-		private byte[] data;
+		private final int packetID;
+		private final byte[] data;
 		
 		public static Packet readFromSteam(DataInputStream input) throws IOException {
 			int packetID = input.readInt();

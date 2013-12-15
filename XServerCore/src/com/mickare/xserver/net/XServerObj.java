@@ -62,6 +62,10 @@ public class XServerObj implements XServer {
 			this.disconnect();
 		}
 
+		if(this.manager.isShutdown()) {
+			return;
+		}
+		
 		new ConnectionObj(manager.getSocketFactory(), host, port, manager);
 	}
 
