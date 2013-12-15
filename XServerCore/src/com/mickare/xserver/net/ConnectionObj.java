@@ -10,7 +10,6 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -75,12 +74,14 @@ public class ConnectionObj implements Connection {
 
 		//manager.getThreadPool().runTask(this.receiving);
 		//manager.getThreadPool().runTask(this.sending);
+		/*
 		if (!manager.getThreadPool().runTask(this.receiving) || !manager.getThreadPool().runTask(this.sending)) {
 			this.errorDisconnect();
 		}
+		*/
 		
-		// this.receiving.start();
-		// this.sending.start();
+		this.receiving.start();
+		this.sending.start();
 		// this.packetHandler.start();
 	}
 
@@ -106,12 +107,12 @@ public class ConnectionObj implements Connection {
 		this.receiving = new Receiving();
 		this.sending = new Sending();
 
-		if (!manager.getThreadPool().runTask(this.receiving) || !manager.getThreadPool().runTask(this.sending)) {
-			this.errorDisconnect();
-		}
+		//if (!manager.getThreadPool().runTask(this.receiving) || !manager.getThreadPool().runTask(this.sending)) {
+		//	this.errorDisconnect();
+		//}
 
-		// this.receiving.start();
-		// this.sending.start();
+		this.receiving.start();
+		this.sending.start();
 		// this.packetHandler.start();
 
 		// manager.getLogger().info("New Connection from: " + host + ":" +
@@ -158,8 +159,8 @@ public class ConnectionObj implements Connection {
 	@Override
 	public void disconnect() {
 		setStatus(stats.disconnected);
-		sending.stop();
-		receiving.stop();
+		sending.interrupt();
+		receiving.interrupt();
 		// packetHandler.interrupt();
 
 		try {
@@ -183,8 +184,8 @@ public class ConnectionObj implements Connection {
 	@Override
 	public void errorDisconnect() {
 		setStatus(stats.error);
-		sending.stop();
-		receiving.stop();
+		sending.interrupt();
+		receiving.interrupt();
 		// packetHandler.interrupt();
 
 		try {
@@ -245,9 +246,7 @@ public class ConnectionObj implements Connection {
 		return result;
 	}
 
-	private final class Sending implements Runnable {
-
-		private final AtomicBoolean stopped = new AtomicBoolean(false);
+	private final class Sending extends Thread {
 
 		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
 		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
@@ -256,11 +255,7 @@ public class ConnectionObj implements Connection {
 		private long packageCount = 0;
 
 		public Sending() {
-			// super("Sending Thread to (" + host + ":" + port + ")");
-		}
-
-		public void stop() {
-			stopped.set(true);
+			 super("Sending Thread to (" + host + ":" + port + ")");
 		}
 
 		private void tickPacket() {
@@ -278,18 +273,12 @@ public class ConnectionObj implements Connection {
 		@Override
 		public void run() {
 			try {
-				// while (!isInterrupted() && isConnected())
-				while (isConnected() && !stopped.get()) {
+				while (!isInterrupted() && isConnected()) {
 
 					Packet p = pendingSendingPackets.poll(1000, TimeUnit.MILLISECONDS);
 
-					if (stopped.get()) {
-						return;
-					}
-
-					/*
-					 * if (isInterrupted()) { return; }
-					 */
+				  if (isInterrupted()) { return; }
+					
 
 					if (p == null) {
 						if (isLoggedIn()) {
@@ -318,9 +307,7 @@ public class ConnectionObj implements Connection {
 
 	}
 
-	private final class Receiving implements Runnable {
-
-		private final AtomicBoolean stopped = new AtomicBoolean(false);
+	private final class Receiving extends Thread {
 
 		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
 		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
@@ -329,12 +316,9 @@ public class ConnectionObj implements Connection {
 		private long packageCount = 0;
 
 		public Receiving() {
-			// super("Receiving Thread to (" + host + ":" + port + ")");
+			 super("Receiving Thread to (" + host + ":" + port + ")");
 		}
 
-		public void stop() {
-			stopped.set(true);
-		}
 
 		private void tickPacket() {
 			if (System.currentTimeMillis() - lastSecond > 1000) {
@@ -351,13 +335,12 @@ public class ConnectionObj implements Connection {
 		@Override
 		public void run() {
 			try {
-				// while (!isInterrupted() && isConnected())
-				while (isConnected() && !stopped.get()) {
+				while (!isInterrupted() && isConnected()) {
 					packetHandler.handle(Packet.readFromSteam(input));
 					tickPacket();
 				}
 			} catch (Exception e) {
-				if(!(e instanceof IOException)) {
+				if(!(e instanceof IOException || e instanceof InterruptedException)) {
 					packetHandler.getLogger().warning("Error Disconnect (" + host + ":"
 					+ port + "): " + e.getMessage() + "\n" +
 					MyStringUtils.stackTraceToString(e));
