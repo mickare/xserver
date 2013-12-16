@@ -60,7 +60,7 @@ public class XServerObj implements XServer {
 	@Override
 	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
 
-		if(blockConnectUntil.get() < System.currentTimeMillis()) {
+		if(blockConnectUntil.get() > System.currentTimeMillis()) {
 			return;
 		}
 		blockNextConnect();
