@@ -78,6 +78,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 					@Override
 					public void run() {
 						try {
+							Thread.sleep(plugin.getAutoReconnectTime());
 							while (reconnectClockRunning.get()) {
 								reconnectAll_soft();
 								Thread.sleep(plugin.getAutoReconnectTime());
