@@ -2,6 +2,7 @@ package com.mickare.xserver.net;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -17,7 +18,8 @@ import com.mickare.xserver.util.Encryption;
 public class XServerObj implements XServer {
 
 	private final static int MESSAGE_CACHE_SIZE = 8192;
-
+	private final static long CONNECT_TIMEOUT = 300;
+	
 	private final String name;
 	private final String host;
 	private final int port;
@@ -58,6 +60,11 @@ public class XServerObj implements XServer {
 	@Override
 	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
 
+		if(blockConnectUntil.get() < System.currentTimeMillis()) {
+			return;
+		}
+		blockNextConnect();
+		
 		if (isConnected()) {
 			this.disconnect();
 		}
@@ -342,6 +349,12 @@ public class XServerObj implements XServer {
 			conLock.readLock().unlock();
 		}
 		return 0;
+	}
+
+	private final AtomicLong blockConnectUntil = new AtomicLong(0);
+	
+	public void blockNextConnect() {
+		blockConnectUntil.set(System.currentTimeMillis() + CONNECT_TIMEOUT);
 	}
 
 }

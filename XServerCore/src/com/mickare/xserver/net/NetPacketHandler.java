@@ -96,8 +96,8 @@ public class NetPacketHandler //extends Thread
 				String name = is.readUTF();
 				String password = is.readUTF();
 				//XType xtype = XType.getByNumber(is.readInt());
-				XServerObj s = manager.getServer(name);
-
+				XServerObj s = manager.getServer(name);				
+				
 				// Debugging...
 				/*
 				 * manager.getLogger().info ("Debugging!\n"
@@ -109,16 +109,20 @@ public class NetPacketHandler //extends Thread
 				{
 					approved_loginProcedure = true;
 
-					sendAcceptedLoginRequest();
+					s.blockNextConnect();
+					
+					sendLogin_AcceptedRequest();
 
 				} else
 				{
+
 					con.send(new Packet(PacketType.LoginDenied, new byte[0]));
 					manager.getLogger()
 							.info("Login Request from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
 					con.errorDisconnect();
 					manager.getEventHandler()
 							.callEvent(new XServerConnectionDenied(name, password, con.getHost(), con.getPort()));
+					
 				}
 
 			} else if (p.getPacketID() == PacketType.LoginAccepted.packetID) // LoginAccepted
@@ -140,10 +144,12 @@ public class NetPacketHandler //extends Thread
 
 				if (s != null && s.getPassword().equals(password))
 				{
+					s.blockNextConnect();
+					
 					approved_loginProcedure = true;
 					
 					s.setType(xtype);
-					sendLoginAcceptedAnswer();
+					sendLogin_AcceptedAnswer();
 					con.setXserver(s);
 					con.setStatus(Connection.STATS.connected);
 					s.getManager().getLogger().info("Login Reply accepted from " + s.getName());
@@ -157,6 +163,7 @@ public class NetPacketHandler //extends Thread
 					con.errorDisconnect();
 					manager.getEventHandler()
 							.callEvent(new XServerConnectionDenied(name, password, con.getHost(), con.getPort()));
+
 				}
 
 			} else if(p.getPacketID() == PacketType.LoginAcceptedAnswer.packetID) { // LoginAcceptedAnswer
@@ -169,6 +176,8 @@ public class NetPacketHandler //extends Thread
 				
 				if (s != null && s.getPassword().equals(password) && approved_loginProcedure)
 				{
+					s.blockNextConnect();
+					
 					s.setType(xtype);
 					con.setReloginXserver(s);
 					con.setStatus(Connection.STATS.connected);
@@ -179,13 +188,16 @@ public class NetPacketHandler //extends Thread
 
 				} else
 				{
+					
 					con.send(new Packet(PacketType.LoginDenied, new byte[0]));
 					manager.getLogger()
 							.info("Login from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
 					con.errorDisconnect();
 					manager.getEventHandler()
 							.callEvent(new XServerConnectionDenied(name, password, con.getHost(), con.getPort()));
+
 				}
+				
 				
 			} else if (p.getPacketID() == PacketType.PingRequest.packetID) // PingRequest
 			{
@@ -242,20 +254,22 @@ public class NetPacketHandler //extends Thread
 
 	}
 	
-	private void sendLoginAcceptedAnswer() throws IOException, InterruptedException, NotInitializedException {
-		sendLoginRequest(PacketType.LoginAcceptedAnswer);
-	}
+	
 
-	protected void sendFirstLoginRequest() throws IOException, InterruptedException, NotInitializedException
+	protected void sendLogin_FirstRequest() throws IOException, InterruptedException, NotInitializedException
 	{
 		sendLoginRequest(PacketType.LoginRequest);
 	}
 
-	protected void sendAcceptedLoginRequest() throws IOException, InterruptedException, NotInitializedException
+	protected void sendLogin_AcceptedRequest() throws IOException, InterruptedException, NotInitializedException
 	{
 		sendLoginRequest(PacketType.LoginAccepted);
 	}
 
+	private void sendLogin_AcceptedAnswer() throws IOException, InterruptedException, NotInitializedException {
+		sendLoginRequest(PacketType.LoginAcceptedAnswer);
+	}
+	
 	private void sendLoginRequest(PacketType type) throws IOException, InterruptedException, NotInitializedException
 	{
 		ByteArrayOutputStream b = null;

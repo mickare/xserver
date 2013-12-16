@@ -73,7 +73,7 @@ public class ConnectionObj implements Connection {
 		this.receiving = new Receiving();
 		this.sending = new Sending();
 
-		this.packetHandler.sendFirstLoginRequest();
+		this.packetHandler.sendLogin_FirstRequest();
 
 		//manager.getThreadPool().runTask(this.receiving);
 		//manager.getThreadPool().runTask(this.sending);
