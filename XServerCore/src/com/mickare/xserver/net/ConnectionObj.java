@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -17,7 +18,9 @@ import javax.net.SocketFactory;
 
 import com.mickare.xserver.AbstractXServerManagerObj;
 import com.mickare.xserver.events.XServerDisconnectEvent;
+import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.exceptions.NotInitializedException;
+import com.mickare.xserver.exceptions.NotLoggedInException;
 import com.mickare.xserver.util.MyStringUtils;
 
 public class ConnectionObj implements Connection {
@@ -26,7 +29,7 @@ public class ConnectionObj implements Connection {
 	private final static int SOCKET_TIMEOUT = 5000;
 
 	private ReentrantReadWriteLock statusLock = new ReentrantReadWriteLock();
-	private stats status = stats.connecting;
+	private STATS status = STATS.connecting;
 
 	private final String host;
 	private final int port;
@@ -57,7 +60,7 @@ public class ConnectionObj implements Connection {
 	 */
 	public ConnectionObj(SocketFactory sf, String host, int port, AbstractXServerManagerObj manager)
 			throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
-
+		
 		this.host = host;
 		this.port = port;
 		this.socket = sf.createSocket(host, port);
@@ -95,6 +98,10 @@ public class ConnectionObj implements Connection {
 	 */
 	public ConnectionObj(Socket socket, AbstractXServerManagerObj manager) throws IOException {
 
+		if(socket == null) {
+			throw new IllegalArgumentException("socket is null!");
+		}
+		
 		this.host = socket.getInetAddress().getHostAddress();
 		this.port = socket.getPort();
 		this.socket = socket;
@@ -158,11 +165,8 @@ public class ConnectionObj implements Connection {
 	 */
 	@Override
 	public void disconnect() {
-		setStatus(stats.disconnected);
-		sending.interrupt();
-		receiving.interrupt();
-		// packetHandler.interrupt();
-
+		setStatus(STATS.disconnected);
+		
 		try {
 			socket.close();
 			input.close();
@@ -170,9 +174,25 @@ public class ConnectionObj implements Connection {
 		} catch (IOException e) {
 
 		} finally {
-			if (this.xserver != null) {
-				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
+			xserverLock.readLock().lock();
+			try {
+				if (this.xserver != null) {
+					this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(getXserver()));
+					this.xserver = null;
+				}
+			} finally {
+				xserverLock.readLock().unlock();
 			}
+			
+			if(!sending.isDisconnectHalt()) {
+				sending.disconnectHalt();
+				sending.interrupt();
+			}
+			if(!receiving.isDisconnectHalt()) {
+				receiving.disconnectHalt();
+				receiving.interrupt();
+			}
+			
 		}
 	}
 
@@ -183,11 +203,13 @@ public class ConnectionObj implements Connection {
 	 */
 	@Override
 	public void errorDisconnect() {
-		setStatus(stats.error);
-		sending.interrupt();
-		receiving.interrupt();
-		// packetHandler.interrupt();
+		errorDisconnect(STATS.error);
+	}
 
+	@Override
+	public void errorDisconnect(STATS errorstatus) {
+		setStatus(errorstatus);
+		
 		try {
 			socket.close();
 			input.close();
@@ -195,9 +217,25 @@ public class ConnectionObj implements Connection {
 		} catch (IOException e) {
 
 		} finally {
-			if (this.xserver != null) {
-				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
+			xserverLock.readLock().lock();
+			try {
+				if (this.xserver != null) {
+					this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(this.xserver));
+					this.xserver = null;
+				}
+			} finally {
+				xserverLock.readLock().unlock();
 			}
+			
+			if(!sending.isDisconnectHalt()) {
+				sending.disconnectHalt();
+				sending.interrupt();
+			}
+			if(!receiving.isDisconnectHalt()) {
+				receiving.disconnectHalt();
+				receiving.interrupt();
+			}
+		
 		}
 	}
 
@@ -247,7 +285,9 @@ public class ConnectionObj implements Connection {
 	}
 
 	private final class Sending extends Thread {
-
+		
+		private final AtomicBoolean disconnectHalted = new AtomicBoolean(false);
+		
 		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
 		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
 
@@ -256,6 +296,14 @@ public class ConnectionObj implements Connection {
 
 		public Sending() {
 			 super("Sending Thread to (" + host + ":" + port + ")");
+		}
+
+		public void disconnectHalt() {
+			disconnectHalted.set(true);
+		}
+		
+		public boolean isDisconnectHalt() {
+			return this.disconnectHalted.get();
 		}
 
 		private void tickPacket() {
@@ -273,11 +321,11 @@ public class ConnectionObj implements Connection {
 		@Override
 		public void run() {
 			try {
-				while (!isInterrupted() && isConnected()) {
+				while (!isInterrupted() && isConnected() && !disconnectHalted.get()) {
 
 					Packet p = pendingSendingPackets.poll(1000, TimeUnit.MILLISECONDS);
 
-				  if (isInterrupted()) { return; }
+				  if (isInterrupted() || disconnectHalted.get()) { return; }
 					
 
 					if (p == null) {
@@ -294,12 +342,12 @@ public class ConnectionObj implements Connection {
 					p = null;
 
 				}
+			} catch (IOException | InterruptedException e){
+				errorDisconnect();
 			} catch (Exception e) {
-				if(!(e instanceof IOException || e instanceof InterruptedException)) {
-					packetHandler.getLogger().warning("Error Disconnect (" + host + ":"
-					+ port + "): " + e.getMessage() + "\n" +
-					MyStringUtils.stackTraceToString(e));
-				}
+				packetHandler.getLogger().warning("Error Disconnect (" + host + ":"
+						+ port + "): " + e.getMessage() + "\n" +
+						MyStringUtils.stackTraceToString(e));
 				errorDisconnect();
 			}
 			// this.interrupt();
@@ -309,6 +357,8 @@ public class ConnectionObj implements Connection {
 
 	private final class Receiving extends Thread {
 
+		private final AtomicBoolean disconnectHalted = new AtomicBoolean(false);
+		
 		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
 		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
 
@@ -319,6 +369,14 @@ public class ConnectionObj implements Connection {
 			 super("Receiving Thread to (" + host + ":" + port + ")");
 		}
 
+
+		public void disconnectHalt() {
+			this.disconnectHalted.set(true);
+		}
+
+		public boolean isDisconnectHalt() {
+			return this.disconnectHalted.get();
+		}
 
 		private void tickPacket() {
 			if (System.currentTimeMillis() - lastSecond > 1000) {
@@ -335,17 +393,16 @@ public class ConnectionObj implements Connection {
 		@Override
 		public void run() {
 			try {
-				while (!isInterrupted() && isConnected()) {
+				while (!isInterrupted() && isConnected() && !disconnectHalted.get()) {
 					packetHandler.handle(Packet.readFromSteam(input));
 					tickPacket();
 				}
+			} catch (NotConnectedException | NotLoggedInException | IOException e){
+				errorDisconnect();
 			} catch (Exception e) {
-				if(!(e instanceof IOException || e instanceof InterruptedException)) {
-					packetHandler.getLogger().warning("Error Disconnect (" + host + ":"
-					+ port + "): " + e.getMessage() + "\n" +
-					MyStringUtils.stackTraceToString(e));
-				}
-				
+				packetHandler.getLogger().warning("Error Disconnect (" + host + ":"
+						+ port + "): " + e.getMessage() + "\n" +
+						MyStringUtils.stackTraceToString(e));
 				errorDisconnect();
 			}
 			// this.interrupt();
@@ -358,7 +415,7 @@ public class ConnectionObj implements Connection {
 	 * @see com.mickare.xserver.net.Connection#getStatus()
 	 */
 	@Override
-	public stats getStatus() {
+	public STATS getStatus() {
 		statusLock.readLock().lock();
 		try {
 			return status;
@@ -367,7 +424,7 @@ public class ConnectionObj implements Connection {
 		}
 	}
 
-	protected void setStatus(stats status) {
+	protected void setStatus(STATS status) {
 		statusLock.writeLock().lock();
 		try {
 			this.status = status;
@@ -428,7 +485,7 @@ public class ConnectionObj implements Connection {
 	 */
 	@Override
 	public boolean isLoggedIn() {
-		return isConnected() ? stats.connected.equals(getStatus()) : false;
+		return isConnected() ? STATS.connected.equals(getStatus()) : false;
 	}
 
 	/*
@@ -438,7 +495,7 @@ public class ConnectionObj implements Connection {
 	 */
 	@Override
 	public boolean isLoggingIn() {
-		return isConnected() ? stats.connecting.equals(getStatus()) : false;
+		return isConnected() ? STATS.connecting.equals(getStatus()) : false;
 	}
 
 	/*

@@ -3,8 +3,9 @@ package com.mickare.xserver.net;
 public enum PacketType
 {
 
-	BadPacket(1), KeepAlive(100), Disconnect(200), Error(400), LoginDenied(401), LoginRequest(500), LoginAccepted(501), PingRequest(
-			600), PingAnswer(601), Message(800);
+	BadPacket(1), KeepAlive(100), Disconnect(200), Error(400), LoginDenied(401), 
+	LoginRequest(500), LoginAccepted(501), LoginAcceptedAnswer(502),
+	PingRequest(600), PingAnswer(601), Message(800);
 
 	public final int packetID;
 

@@ -14,10 +14,11 @@ import com.mickare.xserver.events.XServerLoggedInEvent;
 import com.mickare.xserver.events.XServerMessageIncomingEvent;
 import com.mickare.xserver.exceptions.NotConnectedException;
 import com.mickare.xserver.exceptions.NotInitializedException;
+import com.mickare.xserver.exceptions.NotLoggedInException;
 
 public class NetPacketHandler //extends Thread
 {
-
+	
 	//private final static int CAPACITY = 2048;
 
 	private final ConnectionObj con;
@@ -25,6 +26,8 @@ public class NetPacketHandler //extends Thread
 
 	//private final ArrayBlockingQueue<Packet> pendingReceivingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
 
+	private volatile boolean approved_loginProcedure = false;
+	
 	public NetPacketHandler(final ConnectionObj con, final AbstractXServerManagerObj manager)
 	{
 		this.con = con;
@@ -58,7 +61,7 @@ public class NetPacketHandler //extends Thread
 	{
 	*/
 	
-	public void handle(final Packet p) throws IOException, NotConnectedException
+	public void handle(final Packet p) throws IOException, NotConnectedException, NotLoggedInException
 	{
 		DataInputStream is = null;
 
@@ -92,7 +95,7 @@ public class NetPacketHandler //extends Thread
 				is = new DataInputStream(new ByteArrayInputStream(p.getData()));
 				String name = is.readUTF();
 				String password = is.readUTF();
-				XType xtype = XType.getByNumber(is.readInt());
+				//XType xtype = XType.getByNumber(is.readInt());
 				XServerObj s = manager.getServer(name);
 
 				// Debugging...
@@ -104,14 +107,10 @@ public class NetPacketHandler //extends Thread
 				 */
 				if (s != null && s.getPassword().equals(password))
 				{
-					s.setType(xtype);
-					sendAcceptedLoginRequest();
-					con.setReloginXserver(s);
-					con.setStatus(Connection.stats.connected);
+					approved_loginProcedure = true;
 
-					s.getManager().getLogger().info("Login Request from " + name + " accepted!");
-					s.flushCache();
-					s.getManager().getEventHandler().callEvent(new XServerLoggedInEvent(con.getXserver()));
+					sendAcceptedLoginRequest();
+
 				} else
 				{
 					con.send(new Packet(PacketType.LoginDenied, new byte[0]));
@@ -141,9 +140,12 @@ public class NetPacketHandler //extends Thread
 
 				if (s != null && s.getPassword().equals(password))
 				{
+					approved_loginProcedure = true;
+					
 					s.setType(xtype);
+					sendLoginAcceptedAnswer();
 					con.setXserver(s);
-					con.setStatus(Connection.stats.connected);
+					con.setStatus(Connection.STATS.connected);
 					s.getManager().getLogger().info("Login Reply accepted from " + s.getName());
 					s.flushCache();
 					s.getManager().getEventHandler().callEvent(new XServerLoggedInEvent(s));
@@ -157,6 +159,34 @@ public class NetPacketHandler //extends Thread
 							.callEvent(new XServerConnectionDenied(name, password, con.getHost(), con.getPort()));
 				}
 
+			} else if(p.getPacketID() == PacketType.LoginAcceptedAnswer.packetID) { // LoginAcceptedAnswer
+				
+				is = new DataInputStream(new ByteArrayInputStream(p.getData()));
+				String name = is.readUTF();
+				String password = is.readUTF();
+				XType xtype = XType.getByNumber(is.readInt());
+				XServerObj s = manager.getServer(name);
+				
+				if (s != null && s.getPassword().equals(password) && approved_loginProcedure)
+				{
+					s.setType(xtype);
+					con.setReloginXserver(s);
+					con.setStatus(Connection.STATS.connected);
+
+					s.getManager().getLogger().info("Login Request from " + name + " accepted!");
+					s.flushCache();
+					s.getManager().getEventHandler().callEvent(new XServerLoggedInEvent(s));
+
+				} else
+				{
+					con.send(new Packet(PacketType.LoginDenied, new byte[0]));
+					manager.getLogger()
+							.info("Login from " + name + " denied! (" + con.getHost() + ":" + con.getPort() + ")");
+					con.errorDisconnect();
+					manager.getEventHandler()
+							.callEvent(new XServerConnectionDenied(name, password, con.getHost(), con.getPort()));
+				}
+				
 			} else if (p.getPacketID() == PacketType.PingRequest.packetID) // PingRequest
 			{
 				// Security Throw Exception
@@ -212,6 +242,10 @@ public class NetPacketHandler //extends Thread
 
 	}
 	
+	private void sendLoginAcceptedAnswer() throws IOException, InterruptedException, NotInitializedException {
+		sendLoginRequest(PacketType.LoginAcceptedAnswer);
+	}
+
 	protected void sendFirstLoginRequest() throws IOException, InterruptedException, NotInitializedException
 	{
 		sendLoginRequest(PacketType.LoginRequest);

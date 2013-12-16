@@ -6,7 +6,7 @@ import java.util.Queue;
 
 public interface Connection {
 
-	public enum stats
+	public enum STATS
 	{
 		disconnected, connecting, connected, error
 	}
@@ -17,9 +17,11 @@ public interface Connection {
 	public abstract boolean isConnected();
 
 	public abstract void disconnect();
-
+	
 	public abstract void errorDisconnect();
 
+	public abstract void errorDisconnect(STATS errorstatus);
+	
 	public abstract String getHost();
 
 	public abstract int getPort();
@@ -28,7 +30,7 @@ public interface Connection {
 
 	public abstract boolean sendAll(Collection<Packet> packets);
 
-	public abstract stats getStatus();
+	public abstract STATS getStatus();
 
 	public abstract XServer getXserver();
 
