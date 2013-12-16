@@ -174,25 +174,25 @@ public class ConnectionObj implements Connection {
 		} catch (IOException e) {
 
 		} finally {
-			xserverLock.readLock().lock();
+			xserverLock.writeLock().lock();
 			try {
 				if (this.xserver != null) {
-					this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(getXserver()));
+					this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(this.xserver));
 					this.xserver = null;
 				}
 			} finally {
-				xserverLock.readLock().unlock();
+				xserverLock.writeLock().unlock();
+				
+				if(!sending.isDisconnectHalt()) {
+					sending.disconnectHalt();
+					sending.interrupt();
+				}
+				if(!receiving.isDisconnectHalt()) {
+					receiving.disconnectHalt();
+					receiving.interrupt();
+				}
+				
 			}
-			
-			if(!sending.isDisconnectHalt()) {
-				sending.disconnectHalt();
-				sending.interrupt();
-			}
-			if(!receiving.isDisconnectHalt()) {
-				receiving.disconnectHalt();
-				receiving.interrupt();
-			}
-			
 		}
 	}
 
@@ -217,23 +217,23 @@ public class ConnectionObj implements Connection {
 		} catch (IOException e) {
 
 		} finally {
-			xserverLock.readLock().lock();
+			xserverLock.writeLock().lock();
 			try {
 				if (this.xserver != null) {
 					this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(this.xserver));
 					this.xserver = null;
 				}
 			} finally {
-				xserverLock.readLock().unlock();
-			}
-			
-			if(!sending.isDisconnectHalt()) {
-				sending.disconnectHalt();
-				sending.interrupt();
-			}
-			if(!receiving.isDisconnectHalt()) {
-				receiving.disconnectHalt();
-				receiving.interrupt();
+				xserverLock.writeLock().unlock();
+				
+				if(!sending.isDisconnectHalt()) {
+					sending.disconnectHalt();
+					sending.interrupt();
+				}
+				if(!receiving.isDisconnectHalt()) {
+					receiving.disconnectHalt();
+					receiving.interrupt();
+				}
 			}
 		
 		}

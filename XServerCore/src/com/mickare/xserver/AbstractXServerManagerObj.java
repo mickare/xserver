@@ -191,7 +191,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	 */
 	@Override
 	public void stop() throws IOException {
-		serversLock.readLock().lock();
+		serversLock.writeLock().lock();
 		try {
 			reconnectClockRunning.set(false);
 			mainserver.close();
@@ -200,7 +200,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 			}
 			stpool.shutDown();
 		} finally {
-			serversLock.readLock().unlock();
+			serversLock.writeLock().unlock();
 		}
 	}
 
