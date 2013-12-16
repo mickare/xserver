@@ -4,16 +4,17 @@ import net.md_5.bungee.api.plugin.Plugin;
 
 public class BungeeEventHandler extends EventHandlerObj<Plugin> {
 
-	private final Plugin plugin;
+	private final BungeeXServerPlugin plugin;
 
-	protected BungeeEventHandler(Plugin plugin) {
+	protected BungeeEventHandler(BungeeXServerPlugin plugin) {
 		super(plugin.getLogger());
 		this.plugin = plugin;
 	}
 
 	@Override
 	public void runTask(Boolean sync, XServerListenerPlugin<Plugin> plugin, Runnable run) {
-		plugin.getPlugin().getProxy().getScheduler().runAsync(plugin.getPlugin(), run);
+		//plugin.getPlugin().getProxy().getScheduler().runAsync(plugin.getPlugin(), run);
+		this.plugin.getManager().getThreadPool().runTask(run);
 	}
 
 	public Plugin getPlugin() {
