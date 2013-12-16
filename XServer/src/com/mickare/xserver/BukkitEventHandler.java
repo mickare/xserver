@@ -45,25 +45,19 @@ public class BukkitEventHandler extends EventHandlerObj<JavaPlugin>
 		if (plugin.getPlugin().isEnabled())
 		{
 
-			int st = syncTasksCount.incrementAndGet();
-			if (st < SYNCTASK_SPRAY)
+			if (s)
 			{
-				if (s)
+				int st = syncTasksCount.incrementAndGet();
+				if (st < SYNCTASK_SPRAY)
 				{
 					plugin.getPlugin().getServer().getScheduler().runTask(plugin.getPlugin(), run);
 				} else
 				{
-					plugin.getPlugin().getServer().getScheduler().runTaskAsynchronously(plugin.getPlugin(), run);
+					plugin.getPlugin().getServer().getScheduler().runTaskLater(plugin.getPlugin(), run, st / SYNCTASK_SPRAY);
 				}
 			} else
 			{
-				if (s)
-				{
-					plugin.getPlugin().getServer().getScheduler().runTaskLater(plugin.getPlugin(), run, st / SYNCTASK_SPRAY);
-				} else
-				{
-					plugin.getPlugin().getServer().getScheduler().runTaskLaterAsynchronously(plugin.getPlugin(), run, st / SYNCTASK_SPRAY);
-				}
+				plugin.getPlugin().getServer().getScheduler().runTaskAsynchronously(plugin.getPlugin(), run);
 			}
 		}
 	}
