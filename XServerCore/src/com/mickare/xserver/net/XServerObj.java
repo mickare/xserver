@@ -16,8 +16,10 @@ import com.mickare.xserver.util.Encryption;
 
 public class XServerObj implements XServer {
 
-	private final static long NEXT_CONNECT_TIMEOUT = 300;
+	private final static long NEXT_CONNECT_TIMEOUT = 500;
 
+	private final AtomicLong blockConnectUntil = new AtomicLong(0);
+	
 	private final String name;
 	private final String host;
 	private final int port;
@@ -50,6 +52,12 @@ public class XServerObj implements XServer {
 		this.manager = manager;
 	}
 
+	
+
+	protected void blockNextConnect() {
+		blockConnectUntil.set(System.currentTimeMillis() + NEXT_CONNECT_TIMEOUT);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -346,10 +354,6 @@ public class XServerObj implements XServer {
 		return 0;
 	}
 
-	private final AtomicLong blockConnectUntil = new AtomicLong(0);
-
-	protected void blockNextConnect() {
-		blockConnectUntil.set(System.currentTimeMillis() + NEXT_CONNECT_TIMEOUT);
-	}
+	
 
 }

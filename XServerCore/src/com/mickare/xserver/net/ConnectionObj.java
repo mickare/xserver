@@ -331,6 +331,7 @@ public class ConnectionObj implements Connection {
 						if (isLoggedIn()) {
 							new Packet(PacketType.KeepAlive, new byte[0]).writeToStream(output);
 							tickPacket();
+							Thread.sleep(0, 500);
 						} else {
 							errorDisconnect();
 						}
