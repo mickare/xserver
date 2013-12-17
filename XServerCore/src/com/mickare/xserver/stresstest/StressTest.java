@@ -184,6 +184,11 @@ public class StressTest {
 								
 							}
 						}
+						try {
+							Thread.sleep(0, 500);
+						} catch (InterruptedException e) {
+
+						}
 					}
 					
 					check();

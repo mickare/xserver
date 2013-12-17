@@ -2,6 +2,7 @@ package com.mickare.xserver;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,12 +17,14 @@ public class BukkitEventHandler extends EventHandlerObj<JavaPlugin>
 
 	private final JavaPlugin plugin;
 
-	private static final int SYNCED_EVENTS_CAPACITY = 16384;
-	private static final int SYNCED_EVENTS_MAX = 2048;
+	private static final int SYNCED_EVENTS_CAPACITY = 4096;
+	private static final int SYNCED_EVENTS_MAX = 256;
 	private final SyncRunHandler syncRun;
 	
+	private final AtomicLong lastError = new AtomicLong(0);
+	
 	// in ms
-	private static final long SYNCED_EVENTS_OFFER_TIMEOUT = 20;
+	private static final long SYNCED_EVENTS_OFFER_TIMEOUT = 1;
 
 	protected BukkitEventHandler(JavaPlugin plugin)
 	{
@@ -55,6 +58,7 @@ public class BukkitEventHandler extends EventHandlerObj<JavaPlugin>
 	}
 	
 	
+	
 	@Override
 	public void runTask(Boolean sync, XServerListenerPlugin<JavaPlugin> plugin, Runnable run)
 	{
@@ -70,7 +74,13 @@ public class BukkitEventHandler extends EventHandlerObj<JavaPlugin>
 			{
 				try {
 					if(!this.syncRun.pendingEvents.offer(run, SYNCED_EVENTS_OFFER_TIMEOUT, TimeUnit.MILLISECONDS)) {
-						plugin.getPlugin().getLogger().warning("Event chain is full and event processing timed out!\n");
+						
+						if(lastError.get() + 1000 < System.currentTimeMillis()) {
+							lastError.set(System.currentTimeMillis());
+							plugin.getPlugin().getLogger().warning("Event chain is full and event processing timed out!");
+						}
+						
+						//plugin.getPlugin().getLogger().warning("Event chain is full and event processing timed out!");
 					}
 				} catch (InterruptedException e) {
 					plugin.getPlugin().getLogger().warning("Event Interrupt Exception " + e.getMessage());
