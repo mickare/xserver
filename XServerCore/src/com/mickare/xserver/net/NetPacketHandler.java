@@ -111,6 +111,7 @@ public class NetPacketHandler //extends Thread
 
 					s.blockNextConnect();
 					
+					s.getManager().getLogger().info("Login Request from " + name + " accepted!");
 					sendLogin_AcceptedRequest();
 
 				} else
@@ -148,12 +149,14 @@ public class NetPacketHandler //extends Thread
 					
 					approved_loginProcedure = true;
 					
-					s.setType(xtype);
 					sendLogin_AcceptedAnswer();
+					
+					s.setType(xtype);
+					
 					con.setXserver(s);
 					con.setStatus(Connection.STATS.connected);
 					s.getManager().getLogger().info("Login Reply accepted from " + s.getName());
-					s.flushCache();
+					
 					s.getManager().getEventHandler().callEvent(new XServerLoggedInEvent(s));
 				} else
 				{
@@ -182,8 +185,8 @@ public class NetPacketHandler //extends Thread
 					con.setReloginXserver(s);
 					con.setStatus(Connection.STATS.connected);
 
-					s.getManager().getLogger().info("Login Request from " + name + " accepted!");
-					s.flushCache();
+					s.getManager().getLogger().info("Connection to " + name + " accepted!");
+					
 					s.getManager().getEventHandler().callEvent(new XServerLoggedInEvent(s));
 
 				} else

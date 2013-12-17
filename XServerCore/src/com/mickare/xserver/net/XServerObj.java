@@ -12,14 +12,12 @@ import com.mickare.xserver.Message;
 import com.mickare.xserver.XType;
 import com.mickare.xserver.events.XServerMessageOutgoingEvent;
 import com.mickare.xserver.exceptions.NotInitializedException;
-import com.mickare.xserver.util.CacheList;
 import com.mickare.xserver.util.Encryption;
 
 public class XServerObj implements XServer {
 
-	private final static int MESSAGE_CACHE_SIZE = 8192;
-	private final static long CONNECT_TIMEOUT = 300;
-	
+	private final static long NEXT_CONNECT_TIMEOUT = 300;
+
 	private final String name;
 	private final String host;
 	private final int port;
@@ -32,9 +30,7 @@ public class XServerObj implements XServer {
 
 	private ReadWriteLock typeLock = new ReentrantReadWriteLock();
 	private XType type = XType.Other;
-
-	private final CacheList<Packet> pendingPackets = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
-
+	
 	private final AbstractXServerManagerObj manager;
 
 	public XServerObj(String name, String host, int port, String password, AbstractXServerManagerObj manager) {
@@ -54,25 +50,27 @@ public class XServerObj implements XServer {
 		this.manager = manager;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#connect()
 	 */
 	@Override
 	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
 
-		if(blockConnectUntil.get() > System.currentTimeMillis()) {
+		if (blockConnectUntil.get() > System.currentTimeMillis()) {
 			return;
 		}
 		blockNextConnect();
-		
+
 		if (isConnected()) {
 			this.disconnect();
 		}
 
-		if(this.manager.isShutdown()) {
+		if (this.manager.isShutdown()) {
 			return;
 		}
-		
+
 		new ConnectionObj(manager.getSocketFactory(), host, port, manager);
 	}
 
@@ -88,8 +86,12 @@ public class XServerObj implements XServer {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#setReloginConnection(com.mickare.xserver.net.Connection)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.mickare.xserver.net.XServer#setReloginConnection(com.mickare.xserver
+	 * .net.Connection)
 	 */
 	@Override
 	public void setReloginConnection(Connection con) {
@@ -108,7 +110,9 @@ public class XServerObj implements XServer {
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#isConnected()
 	 */
 	@Override
@@ -121,7 +125,9 @@ public class XServerObj implements XServer {
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#disconnect()
 	 */
 	@Override
@@ -130,13 +136,6 @@ public class XServerObj implements XServer {
 		try {
 			if (connection != null) {
 				connection.disconnect();
-				synchronized (pendingPackets) {
-					for (Packet p : this.connection.getPendingPackets()) {
-						if (p.getPacketID() == PacketType.Message.packetID) {
-							this.pendingPackets.push(p);
-						}
-					}
-				}
 				connection = null;
 				connection2 = null;
 			}
@@ -145,7 +144,9 @@ public class XServerObj implements XServer {
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#getName()
 	 */
 	@Override
@@ -153,7 +154,9 @@ public class XServerObj implements XServer {
 		return name;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#getHost()
 	 */
 	@Override
@@ -161,7 +164,9 @@ public class XServerObj implements XServer {
 		return host;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#getPort()
 	 */
 	@Override
@@ -169,7 +174,9 @@ public class XServerObj implements XServer {
 		return port;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#getPassword()
 	 */
 	@Override
@@ -177,27 +184,25 @@ public class XServerObj implements XServer {
 		return password;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#sendMessage(com.mickare.xserver.Message)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.mickare.xserver.net.XServer#sendMessage(com.mickare.xserver.Message)
 	 */
 	@Override
 	public boolean sendMessage(Message message) throws IOException {
 		boolean result = false;
 
-		if (!isConnected()) {
-			synchronized (pendingPackets) {
-				pendingPackets.push(new Packet(PacketType.Message, message.getData()));
-			}
-			// throw new NotConnectedException("Not Connected to this server!");
-		} else {
-			conLock.readLock().lock();
-			try {
+		conLock.readLock().lock();
+		try {
+			if(this.isConnected()) {
 				if (connection.send(new Packet(PacketType.Message, message.getData()))) {
 					result = true;
 				}
-			} finally {
-				conLock.readLock().unlock();
 			}
+		} finally {
+			conLock.readLock().unlock();
 		}
 
 		manager.getEventHandler().callEvent(new XServerMessageOutgoingEvent(this, message));
@@ -205,7 +210,9 @@ public class XServerObj implements XServer {
 
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#ping(com.mickare.xserver.net.Ping)
 	 */
 	@Override
@@ -220,28 +227,9 @@ public class XServerObj implements XServer {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#flushCache()
-	 */
-	@Override
-	public void flushCache() {
-		conLock.readLock().lock();
-		try {
-			if (isConnected()) {
-				synchronized (pendingPackets) {
-					Packet p = pendingPackets.pollLast();
-					while (p != null) {
-						connection.send(p);
-						p = pendingPackets.pollLast();
-					}
-				}
-			}
-		} finally {
-			conLock.readLock().unlock();
-		}
-	}
-
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#getType()
 	 */
 	@Override
@@ -263,7 +251,9 @@ public class XServerObj implements XServer {
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#getManager()
 	 */
 	@Override
@@ -271,7 +261,9 @@ public class XServerObj implements XServer {
 		return manager;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#getSendingRecordSecondPackageCount()
 	 */
 	@Override
@@ -280,8 +272,7 @@ public class XServerObj implements XServer {
 		try {
 			if (isConnected()) {
 				if (this.connection2 != null) {
-					return this.connection.getSendingRecordSecondPackageCount()
-							+ this.connection2.getSendingRecordSecondPackageCount();
+					return this.connection.getSendingRecordSecondPackageCount() + this.connection2.getSendingRecordSecondPackageCount();
 				}
 				return this.connection.getSendingRecordSecondPackageCount();
 			}
@@ -291,7 +282,9 @@ public class XServerObj implements XServer {
 		return 0;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#getSendinglastSecondPackageCount()
 	 */
 	@Override
@@ -300,8 +293,7 @@ public class XServerObj implements XServer {
 		try {
 			if (isConnected()) {
 				if (this.connection2 != null) {
-					return this.connection.getSendinglastSecondPackageCount()
-							+ this.connection2.getSendinglastSecondPackageCount();
+					return this.connection.getSendinglastSecondPackageCount() + this.connection2.getSendinglastSecondPackageCount();
 				}
 				return this.connection.getSendinglastSecondPackageCount();
 			}
@@ -311,8 +303,11 @@ public class XServerObj implements XServer {
 		return 0;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getReceivingRecordSecondPackageCount()
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.mickare.xserver.net.XServer#getReceivingRecordSecondPackageCount()
 	 */
 	@Override
 	public long getReceivingRecordSecondPackageCount() {
@@ -320,8 +315,7 @@ public class XServerObj implements XServer {
 		try {
 			if (isConnected()) {
 				if (this.connection2 != null) {
-					return this.connection.getReceivingRecordSecondPackageCount()
-							+ this.connection2.getReceivingRecordSecondPackageCount();
+					return this.connection.getReceivingRecordSecondPackageCount() + this.connection2.getReceivingRecordSecondPackageCount();
 				}
 				return this.connection.getReceivingRecordSecondPackageCount();
 			}
@@ -331,7 +325,9 @@ public class XServerObj implements XServer {
 		return 0;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mickare.xserver.net.XServer#getReceivinglastSecondPackageCount()
 	 */
 	@Override
@@ -340,8 +336,7 @@ public class XServerObj implements XServer {
 		try {
 			if (isConnected()) {
 				if (this.connection2 != null) {
-					return this.connection.getReceivinglastSecondPackageCount()
-							+ this.connection2.getReceivinglastSecondPackageCount();
+					return this.connection.getReceivinglastSecondPackageCount() + this.connection2.getReceivinglastSecondPackageCount();
 				}
 				return this.connection.getReceivinglastSecondPackageCount();
 			}
@@ -352,9 +347,9 @@ public class XServerObj implements XServer {
 	}
 
 	private final AtomicLong blockConnectUntil = new AtomicLong(0);
-	
-	public void blockNextConnect() {
-		blockConnectUntil.set(System.currentTimeMillis() + CONNECT_TIMEOUT);
+
+	protected void blockNextConnect() {
+		blockConnectUntil.set(System.currentTimeMillis() + NEXT_CONNECT_TIMEOUT);
 	}
 
 }

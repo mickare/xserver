@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Collection;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,7 +40,7 @@ public class ConnectionObj implements Connection {
 	private final DataInputStream input;
 	private final DataOutputStream output;
 
-	private final ArrayBlockingQueue<Packet> pendingSendingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, false);
+	private final ArrayBlockingQueue<Packet> pendingSendingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
 
 	private Receiving receiving;
 	private Sending sending;
@@ -182,17 +181,17 @@ public class ConnectionObj implements Connection {
 				}
 			} finally {
 				xserverLock.writeLock().unlock();
-				
-				if(!sending.isDisconnectHalt()) {
-					sending.disconnectHalt();
-					sending.interrupt();
-				}
-				if(!receiving.isDisconnectHalt()) {
-					receiving.disconnectHalt();
-					receiving.interrupt();
-				}
-				
 			}
+			
+			if(!sending.isDisconnectHalt()) {
+				sending.disconnectHalt();
+				sending.interrupt();
+			}
+			if(!receiving.isDisconnectHalt()) {
+				receiving.disconnectHalt();
+				receiving.interrupt();
+			}
+			
 		}
 	}
 
@@ -225,17 +224,17 @@ public class ConnectionObj implements Connection {
 				}
 			} finally {
 				xserverLock.writeLock().unlock();
-				
-				if(!sending.isDisconnectHalt()) {
-					sending.disconnectHalt();
-					sending.interrupt();
-				}
-				if(!receiving.isDisconnectHalt()) {
-					receiving.disconnectHalt();
-					receiving.interrupt();
-				}
 			}
 		
+			if(!sending.isDisconnectHalt()) {
+				sending.disconnectHalt();
+				sending.interrupt();
+			}
+			if(!receiving.isDisconnectHalt()) {
+				receiving.disconnectHalt();
+				receiving.interrupt();
+			}
+			
 		}
 	}
 
@@ -466,16 +465,6 @@ public class ConnectionObj implements Connection {
 		} finally {
 			xserverLock.writeLock().unlock();
 		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.mickare.xserver.net.Connection#getPendingPackets()
-	 */
-	@Override
-	public Queue<Packet> getPendingPackets() {
-		return new ArrayBlockingQueue<Packet>(CAPACITY, false, pendingSendingPackets);
 	}
 
 	/*

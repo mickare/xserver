@@ -85,11 +85,6 @@ public interface XServer {
 		IOException;
 	
 	/**
-	 * Send cached packets = queue packets into connection
-	 */
-	public abstract void flushCache();
-	
-	/**
 	 * Get the type of this server
 	 * @return Server Type
 	 */

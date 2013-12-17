@@ -8,7 +8,7 @@ public class BukkitEventHandler extends EventHandlerObj<JavaPlugin>
 {
 
 	// Spray those tasks over some ticks...
-	private static final int SYNCTASK_SPRAY = 100;
+	private static final int SYNCTASK_SPRAY = 50;
 
 	private final JavaPlugin plugin;
 
@@ -57,7 +57,8 @@ public class BukkitEventHandler extends EventHandlerObj<JavaPlugin>
 				}
 			} else
 			{
-				plugin.getPlugin().getServer().getScheduler().runTaskAsynchronously(plugin.getPlugin(), run);
+				//plugin.getPlugin().getServer().getScheduler().runTaskAsynchronously(plugin.getPlugin(), run);
+				run.run();
 			}
 		}
 	}

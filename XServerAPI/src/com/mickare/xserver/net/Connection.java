@@ -2,7 +2,6 @@ package com.mickare.xserver.net;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Queue;
 
 public interface Connection {
 
@@ -33,8 +32,6 @@ public interface Connection {
 	public abstract STATS getStatus();
 
 	public abstract XServer getXserver();
-
-	public abstract Queue<Packet> getPendingPackets();
 
 	public abstract boolean isLoggedIn();
 

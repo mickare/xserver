@@ -13,8 +13,9 @@ public class BungeeEventHandler extends EventHandlerObj<Plugin> {
 
 	@Override
 	public void runTask(Boolean sync, XServerListenerPlugin<Plugin> plugin, Runnable run) {
-		plugin.getPlugin().getProxy().getScheduler().runAsync(plugin.getPlugin(), run);
+		//plugin.getPlugin().getProxy().getScheduler().runAsync(plugin.getPlugin(), run);
 		//this.plugin.getManager().getThreadPool().runTask(run);
+		run.run();
 	}
 
 	public Plugin getPlugin() {
