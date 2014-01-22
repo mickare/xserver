@@ -80,17 +80,18 @@ public class StressTest {
 	}
 	
 	private static Message createMessage(AbstractXServerManager manager, StressTest st) throws IOException {
-		ByteArrayOutputStream b = null;
+		
+		DataOutputStream out = null;
 		try {
-			b = new ByteArrayOutputStream();
-			DataOutputStream out = new DataOutputStream(b);
+			ByteArrayOutputStream b = new ByteArrayOutputStream();
+			out = new DataOutputStream(b);
 			out.writeUTF(st.key);
 			out.writeLong(System.currentTimeMillis());
 
 			return manager.createMessage(st.getChannelPing(), b.toByteArray());
 		} finally {
-			if (b != null) {
-				b.close();
+			if (out != null) {
+				out.close();
 			}
 		}
 	}
