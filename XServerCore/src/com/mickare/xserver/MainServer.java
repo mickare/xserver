@@ -39,6 +39,10 @@ public class MainServer extends Thread
 			} catch (IOException e)
 			{
 				manager.getLogger().warning("Exception while connecting: " + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
+				try {
+					Thread.sleep(20);
+				} catch (InterruptedException e1) {
+				}
 			}
 		}
 	}
