@@ -1,0 +1,124 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>de.mickare.xserver</groupId>
+	<artifactId>XServer-Bungee</artifactId>
+	<version>2.0.0-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>XServer-Bungee</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>LATEST</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.md-5</groupId>
+			<artifactId>bungeecord-api</artifactId>
+			<version>LATEST</version>
+		</dependency>
+		<dependency>
+			<groupId>de.mickare.xserver</groupId>
+			<artifactId>XServer-API</artifactId>
+			<version>LATEST</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>de.mickare.xserver</groupId>
+			<artifactId>XServer-Core</artifactId>
+			<version>LATEST</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>oss-sonatype</id>
+			<name>Sonatype Repository</name>
+			<url>https://oss.sonatype.org/content/groups/public/</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>rs-public</id>
+			<name>Rennschnitzel Public Repository</name>
+			<url>http://repo.rennschnitzel.de:8081/nexus/content/groups/public/</url>
+		</repository>
+	</repositories>
+
+	<distributionManagement>
+		<repository>
+			<id>rs-public</id>
+			<name>Internal Releases</name>
+			<url>http://repo.rennschnitzel.de:8081/nexus/content/repositories/rs-public/</url>
+		</repository>
+		<snapshotRepository>
+			<id>rs-public</id>
+			<name>Internal Releases</name>
+			<url>http://repo.rennschnitzel.de:8081/nexus/content/repositories/rs-public/</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+	<build>
+		<defaultGoal>install</defaultGoal>
+		<finalName>${artifactId}</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.1</version>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.2</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<minimizeJar>true</minimizeJar>
+							<artifactSet>
+								<excludes>
+									<exclude>junit:junit</exclude>
+									<exclude>com.*:*</exclude>
+									<exclude>net.*:*</exclude>
+									<exclude>io.*:*</exclude>
+									<exclude>org.*:*</exclude>
+								</excludes>
+							</artifactSet>
+						</configuration>
+					</execution>
+				</executions>
+				<configuration>
+					<finalName>${artifactId}</finalName>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
