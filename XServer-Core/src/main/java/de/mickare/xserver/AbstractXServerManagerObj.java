@@ -62,7 +62,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#start()
+	 * @see de.mickare.xserver.AbstractXServerManager#start()
 	 */
 	@Override
 	public void start() throws IOException {
@@ -90,7 +90,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#start_async()
+	 * @see de.mickare.xserver.AbstractXServerManager#start_async()
 	 */
 	@Override
 	public void start_async() {
@@ -127,7 +127,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#reconnectAll_soft()
+	 * @see de.mickare.xserver.AbstractXServerManager#reconnectAll_soft()
 	 */
 	@Override
 	public void reconnectAll_soft() {
@@ -156,7 +156,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#reconnectAll_forced()
+	 * @see de.mickare.xserver.AbstractXServerManager#reconnectAll_forced()
 	 */
 	@Override
 	public void reconnectAll_forced() {
@@ -183,7 +183,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#stop()
+	 * @see de.mickare.xserver.AbstractXServerManager#stop()
 	 */
 	@Override
 	public void stop() throws IOException {
@@ -203,7 +203,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#reload()
+	 * @see de.mickare.xserver.AbstractXServerManager#reload()
 	 */
 	@Override
 	public void reload() throws IOException {
@@ -284,7 +284,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getHomeServer()
+	 * @see de.mickare.xserver.AbstractXServerManager#getHomeServer()
 	 */
 	@Override
 	public XServerObj getHomeServer() {
@@ -297,7 +297,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getServer(java.lang.String)
+	 * @see de.mickare.xserver.AbstractXServerManager#getServer(java.lang.String)
 	 */
 	@Override
 	public XServerObj getServer(String servername) {
@@ -310,7 +310,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getPlugin()
+	 * @see de.mickare.xserver.AbstractXServerManager#getPlugin()
 	 */
 	@Override
 	public XServerPlugin getPlugin() {
@@ -318,7 +318,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getLogger()
+	 * @see de.mickare.xserver.AbstractXServerManager#getLogger()
 	 */
 	@Override
 	public Logger getLogger() {
@@ -326,7 +326,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getThreadPool()
+	 * @see de.mickare.xserver.AbstractXServerManager#getThreadPool()
 	 */
 	@Override
 	public ServerThreadPoolExecutor getThreadPool() {
@@ -334,7 +334,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getSocketFactory()
+	 * @see de.mickare.xserver.AbstractXServerManager#getSocketFactory()
 	 */
 	@Override
 	public SocketFactory getSocketFactory() {
@@ -342,7 +342,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getXServer(java.lang.String)
+	 * @see de.mickare.xserver.AbstractXServerManager#getXServer(java.lang.String)
 	 */
 	@Override
 	public XServerObj getXServer(String name) {
@@ -355,7 +355,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getServers()
+	 * @see de.mickare.xserver.AbstractXServerManager#getServers()
 	 */
 	@Override
 	public Set<XServer> getServers() {
@@ -368,7 +368,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getServernames()
+	 * @see de.mickare.xserver.AbstractXServerManager#getServernames()
 	 */
 	@Override
 	public String[] getServernames() {
@@ -381,7 +381,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getServerIgnoreCase(java.lang.String)
+	 * @see de.mickare.xserver.AbstractXServerManager#getServerIgnoreCase(java.lang.String)
 	 */
 	@Override
 	public XServerObj getServerIgnoreCase(String name) {
@@ -399,7 +399,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getServer(java.lang.String, int)
+	 * @see de.mickare.xserver.AbstractXServerManager#getServer(java.lang.String, int)
 	 */
 	@Override
 	public XServerObj getServer(String host, int port) {
@@ -419,7 +419,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getHomeServerName()
+	 * @see de.mickare.xserver.AbstractXServerManager#getHomeServerName()
 	 */
 	@Override
 	public String getHomeServerName() {
@@ -427,7 +427,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#createMessage(java.lang.String, byte[])
+	 * @see de.mickare.xserver.AbstractXServerManager#createMessage(java.lang.String, byte[])
 	 */
 	@Override
 	public Message createMessage(String subChannel, byte[] content) {
@@ -435,7 +435,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#readMessage(com.mickare.xserver.net.XServer, byte[])
+	 * @see de.mickare.xserver.AbstractXServerManager#readMessage(de.mickare.xserver.net.XServer, byte[])
 	 */
 	@Override
 	public Message readMessage(XServer sender, byte[] data) throws IOException {
@@ -443,13 +443,13 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#getEventHandler()
+	 * @see de.mickare.xserver.AbstractXServerManager#getEventHandler()
 	 */
 	@Override
 	public abstract EventHandler<?> getEventHandler();
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.AbstractXServerManager#registerOwnListeners()
+	 * @see de.mickare.xserver.AbstractXServerManager#registerOwnListeners()
 	 */
 	@Override
 	public abstract void registerOwnListeners();

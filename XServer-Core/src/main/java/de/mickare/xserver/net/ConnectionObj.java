@@ -113,7 +113,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#ping(com.mickare.xserver.net.Ping)
+	 * @see de.mickare.xserver.net.Connection#ping(de.mickare.xserver.net.Ping)
 	 */
 	@Override
 	public void ping(Ping ping) throws InterruptedException, IOException
@@ -136,7 +136,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#isConnected()
+	 * @see de.mickare.xserver.net.Connection#isConnected()
 	 */
 	@Override
 	public boolean isConnected()
@@ -145,7 +145,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#disconnect()
+	 * @see de.mickare.xserver.net.Connection#disconnect()
 	 */
 	@Override
 	public void disconnect()
@@ -173,7 +173,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#errorDisconnect()
+	 * @see de.mickare.xserver.net.Connection#errorDisconnect()
 	 */
 	@Override
 	public void errorDisconnect()
@@ -201,7 +201,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getHost()
+	 * @see de.mickare.xserver.net.Connection#getHost()
 	 */
 	@Override
 	public String getHost()
@@ -210,7 +210,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getPort()
+	 * @see de.mickare.xserver.net.Connection#getPort()
 	 */
 	@Override
 	public int getPort()
@@ -219,7 +219,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#send(com.mickare.xserver.net.Packet)
+	 * @see de.mickare.xserver.net.Connection#send(de.mickare.xserver.net.Packet)
 	 */
 	@Override
 	public boolean send(Packet packet)
@@ -228,7 +228,7 @@ public class ConnectionObj implements Connection
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#sendAll(java.util.Collection)
+	 * @see de.mickare.xserver.net.Connection#sendAll(java.util.Collection)
 	 */
 	@Override
 	public boolean sendAll(Collection<Packet> packets)
@@ -358,7 +358,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getStatus()
+	 * @see de.mickare.xserver.net.Connection#getStatus()
 	 */
 	@Override
 	public stats getStatus()
@@ -386,7 +386,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getXserver()
+	 * @see de.mickare.xserver.net.Connection#getXserver()
 	 */
 	@Override
 	public XServer getXserver()
@@ -428,7 +428,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getPendingPackets()
+	 * @see de.mickare.xserver.net.Connection#getPendingPackets()
 	 */
 	@Override
 	public Queue<Packet> getPendingPackets()
@@ -437,7 +437,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#isLoggedIn()
+	 * @see de.mickare.xserver.net.Connection#isLoggedIn()
 	 */
 	@Override
 	public boolean isLoggedIn()
@@ -446,7 +446,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#isLoggingIn()
+	 * @see de.mickare.xserver.net.Connection#isLoggingIn()
 	 */
 	@Override
 	public boolean isLoggingIn()
@@ -455,7 +455,7 @@ public class ConnectionObj implements Connection
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#toString()
+	 * @see de.mickare.xserver.net.Connection#toString()
 	 */
 	@Override
 	public String toString() {
@@ -466,14 +466,14 @@ public class ConnectionObj implements Connection
 	//lastSecondPackageCount
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getSendingRecordSecondPackageCount()
+	 * @see de.mickare.xserver.net.Connection#getSendingRecordSecondPackageCount()
 	 */
 	@Override
 	public long getSendingRecordSecondPackageCount() {
 		return this.sending.recordSecondPackageCount.get();
 	}
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getSendinglastSecondPackageCount()
+	 * @see de.mickare.xserver.net.Connection#getSendinglastSecondPackageCount()
 	 */
 	@Override
 	public long getSendinglastSecondPackageCount() {
@@ -481,7 +481,7 @@ public class ConnectionObj implements Connection
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getReceivingRecordSecondPackageCount()
+	 * @see de.mickare.xserver.net.Connection#getReceivingRecordSecondPackageCount()
 	 */
 	@Override
 	public long getReceivingRecordSecondPackageCount() {
@@ -489,7 +489,7 @@ public class ConnectionObj implements Connection
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Connection#getReceivinglastSecondPackageCount()
+	 * @see de.mickare.xserver.net.Connection#getReceivinglastSecondPackageCount()
 	 */
 	@Override
 	public long getReceivinglastSecondPackageCount() {

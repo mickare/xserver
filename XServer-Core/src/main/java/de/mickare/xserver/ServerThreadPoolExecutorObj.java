@@ -27,7 +27,7 @@ public class ServerThreadPoolExecutorObj implements ServerThreadPoolExecutor {
     
 
     /* (non-Javadoc)
-	 * @see com.mickare.xserver.ServerThreadPoolExecutor#runTask(java.lang.Runnable)
+	 * @see de.mickare.xserver.ServerThreadPoolExecutor#runTask(java.lang.Runnable)
 	 */
     @Override
 	public void runTask(Runnable task) { 
@@ -36,7 +36,7 @@ public class ServerThreadPoolExecutorObj implements ServerThreadPoolExecutor {
     }
  
     /* (non-Javadoc)
-	 * @see com.mickare.xserver.ServerThreadPoolExecutor#shutDown()
+	 * @see de.mickare.xserver.ServerThreadPoolExecutor#shutDown()
 	 */
     @Override
 	public void shutDown() {

@@ -78,7 +78,7 @@ public class PingObj implements Ping {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Ping#start()
+	 * @see de.mickare.xserver.net.Ping#start()
 	 */
 	@Override
 	public boolean start() {
@@ -115,7 +115,7 @@ public class PingObj implements Ping {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Ping#add(com.mickare.xserver.net.XServer)
+	 * @see de.mickare.xserver.net.Ping#add(de.mickare.xserver.net.XServer)
 	 */
 	@Override
 	public void add(XServer server) {
@@ -124,7 +124,7 @@ public class PingObj implements Ping {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Ping#addAll(java.util.Collection)
+	 * @see de.mickare.xserver.net.Ping#addAll(java.util.Collection)
 	 */
 	@Override
 	public void addAll(Collection<XServer> servers) {
@@ -134,7 +134,7 @@ public class PingObj implements Ping {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Ping#receive(com.mickare.xserver.net.XServer)
+	 * @see de.mickare.xserver.net.Ping#receive(de.mickare.xserver.net.XServer)
 	 */
 	@Override
 	public void receive(XServer server) {
@@ -159,7 +159,7 @@ public class PingObj implements Ping {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Ping#isPending()
+	 * @see de.mickare.xserver.net.Ping#isPending()
 	 */
 	@Override
 	public boolean isPending() {
@@ -168,7 +168,7 @@ public class PingObj implements Ping {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Ping#getFormatedString()
+	 * @see de.mickare.xserver.net.Ping#getFormatedString()
 	 */
 	@Override
 	public String getFormatedString() {
@@ -220,7 +220,7 @@ public class PingObj implements Ping {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Ping#getSender()
+	 * @see de.mickare.xserver.net.Ping#getSender()
 	 */
 	@Override
 	public ComSender getSender() {
@@ -228,7 +228,7 @@ public class PingObj implements Ping {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.Ping#getKey()
+	 * @see de.mickare.xserver.net.Ping#getKey()
 	 */
 	@Override
 	public String getKey() {

@@ -53,7 +53,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#connect()
+	 * @see de.mickare.xserver.net.XServer#connect()
 	 */
 	@Override
 	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
@@ -78,7 +78,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#setReloginConnection(com.mickare.xserver.net.Connection)
+	 * @see de.mickare.xserver.net.XServer#setReloginConnection(de.mickare.xserver.net.Connection)
 	 */
 	@Override
 	public void setReloginConnection(Connection con) {
@@ -98,7 +98,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#isConnected()
+	 * @see de.mickare.xserver.net.XServer#isConnected()
 	 */
 	@Override
 	public boolean isConnected() {
@@ -111,7 +111,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#disconnect()
+	 * @see de.mickare.xserver.net.XServer#disconnect()
 	 */
 	@Override
 	public void disconnect() {
@@ -135,7 +135,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getName()
+	 * @see de.mickare.xserver.net.XServer#getName()
 	 */
 	@Override
 	public String getName() {
@@ -143,7 +143,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getHost()
+	 * @see de.mickare.xserver.net.XServer#getHost()
 	 */
 	@Override
 	public String getHost() {
@@ -151,7 +151,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getPort()
+	 * @see de.mickare.xserver.net.XServer#getPort()
 	 */
 	@Override
 	public int getPort() {
@@ -159,7 +159,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getPassword()
+	 * @see de.mickare.xserver.net.XServer#getPassword()
 	 */
 	@Override
 	public String getPassword() {
@@ -167,7 +167,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#sendMessage(com.mickare.xserver.Message)
+	 * @see de.mickare.xserver.net.XServer#sendMessage(de.mickare.xserver.Message)
 	 */
 	@Override
 	public boolean sendMessage(Message message) throws IOException {
@@ -195,7 +195,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#ping(com.mickare.xserver.net.Ping)
+	 * @see de.mickare.xserver.net.XServer#ping(de.mickare.xserver.net.Ping)
 	 */
 	@Override
 	public void ping(Ping ping) throws InterruptedException, IOException {
@@ -210,7 +210,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#flushCache()
+	 * @see de.mickare.xserver.net.XServer#flushCache()
 	 */
 	@Override
 	public void flushCache() {
@@ -231,7 +231,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getType()
+	 * @see de.mickare.xserver.net.XServer#getType()
 	 */
 	@Override
 	public XType getType() {
@@ -253,7 +253,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getManager()
+	 * @see de.mickare.xserver.net.XServer#getManager()
 	 */
 	@Override
 	public AbstractXServerManager getManager() {
@@ -261,7 +261,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getSendingRecordSecondPackageCount()
+	 * @see de.mickare.xserver.net.XServer#getSendingRecordSecondPackageCount()
 	 */
 	@Override
 	public long getSendingRecordSecondPackageCount() {
@@ -281,7 +281,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getSendinglastSecondPackageCount()
+	 * @see de.mickare.xserver.net.XServer#getSendinglastSecondPackageCount()
 	 */
 	@Override
 	public long getSendinglastSecondPackageCount() {
@@ -301,7 +301,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getReceivingRecordSecondPackageCount()
+	 * @see de.mickare.xserver.net.XServer#getReceivingRecordSecondPackageCount()
 	 */
 	@Override
 	public long getReceivingRecordSecondPackageCount() {
@@ -321,7 +321,7 @@ public class XServerObj implements XServer {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.net.XServer#getReceivinglastSecondPackageCount()
+	 * @see de.mickare.xserver.net.XServer#getReceivinglastSecondPackageCount()
 	 */
 	@Override
 	public long getReceivinglastSecondPackageCount() {

@@ -31,7 +31,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.EventHandler#getListeners()
+	 * @see de.mickare.xserver.EventHandler#getListeners()
 	 */
 	@Override
 	public Map<XServerListener, XServerListenerPlugin<T>> getListeners() {
@@ -39,7 +39,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.EventHandler#registerListener(T, com.mickare.xserver.XServerListener)
+	 * @see de.mickare.xserver.EventHandler#registerListener(T, de.mickare.xserver.XServerListener)
 	 */
 	@Override
 	public abstract void registerListener(T plugin, XServerListener lis);
@@ -50,7 +50,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.EventHandler#unregisterListener(com.mickare.xserver.XServerListener)
+	 * @see de.mickare.xserver.EventHandler#unregisterListener(de.mickare.xserver.XServerListener)
 	 */
 	@Override
 	public synchronized void unregisterListener(XServerListener lis) {
@@ -59,7 +59,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.EventHandler#unregisterAll(T)
+	 * @see de.mickare.xserver.EventHandler#unregisterAll(T)
 	 */
 	@Override
 	public synchronized void unregisterAll(T plugin) {
@@ -70,7 +70,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.EventHandler#unregisterAll(com.mickare.xserver.XServerListenerPlugin)
+	 * @see de.mickare.xserver.EventHandler#unregisterAll(de.mickare.xserver.XServerListenerPlugin)
 	 */
 	@Override
 	public synchronized void unregisterAll(XServerListenerPlugin<T> plugin) {
@@ -83,7 +83,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.EventHandler#unregisterAll()
+	 * @see de.mickare.xserver.EventHandler#unregisterAll()
 	 */
 	@Override
 	public synchronized void unregisterAll() {
@@ -94,7 +94,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.EventHandler#callEvent(com.mickare.xserver.events.XServerEvent)
+	 * @see de.mickare.xserver.EventHandler#callEvent(de.mickare.xserver.events.XServerEvent)
 	 */
 	@Override
 	public synchronized XServerEvent callEvent(final XServerEvent event) {

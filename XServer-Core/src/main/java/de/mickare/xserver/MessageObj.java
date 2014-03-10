@@ -41,7 +41,7 @@ public class MessageObj implements Message {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.Message#getSender()
+	 * @see de.mickare.xserver.Message#getSender()
 	 */
 	@Override
 	public XServer getSender() {
@@ -49,7 +49,7 @@ public class MessageObj implements Message {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.Message#getSubChannel()
+	 * @see de.mickare.xserver.Message#getSubChannel()
 	 */
 	@Override
 	public String getSubChannel() {
@@ -57,7 +57,7 @@ public class MessageObj implements Message {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.Message#getContent()
+	 * @see de.mickare.xserver.Message#getContent()
 	 */
 	@Override
 	public byte[] getContent() {
@@ -65,7 +65,7 @@ public class MessageObj implements Message {
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.mickare.xserver.Message#getData()
+	 * @see de.mickare.xserver.Message#getData()
 	 */
 	@Override
 	public byte[] getData() throws IOException {
