@@ -51,12 +51,15 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
 		log.info("------------ XServer ------------");
 		log.info("----------  enabling   ----------");
 		
+		this.saveDefaultConfig();
+		
 		servername = this.getServer().getMotd();
 		if (servername == null) {
 			servername = this.getServer().getServerName();
 		}
-		
-		this.saveDefaultConfig();
+		if(this.getConfig().getBoolean("useMotdForServername", false)) {
+			servername = this.getConfig().getString("servername", servername);
+		}
 		
 		String user = this.getConfig().getString("mysql.User");
 		String pass = this.getConfig().getString("mysql.Pass");

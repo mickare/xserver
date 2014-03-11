@@ -9,6 +9,9 @@
 #  KEY `ID_2` (`ID`)
 #) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=33 ;
 
+useMotdForServername: false
+servername: 'proxy'
+
 mysql:
    User: user
    Pass: pass
