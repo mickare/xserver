@@ -57,7 +57,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
 		if (servername == null) {
 			servername = this.getServer().getServerName();
 		}
-		if(this.getConfig().getBoolean("useMotdForServername", false)) {
+		if(!this.getConfig().getBoolean("useMotdForServername", true)) {
 			servername = this.getConfig().getString("servername", servername);
 		}
 		
