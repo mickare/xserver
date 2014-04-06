@@ -17,3 +17,4 @@ mysql:
    Pass: pass
    Data: database
    Host: host
+   Port: port

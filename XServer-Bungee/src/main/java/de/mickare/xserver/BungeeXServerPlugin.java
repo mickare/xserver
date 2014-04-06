@@ -60,10 +60,11 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
                 String pass = this.getConfig().getString("mysql.Pass");
                 String data = this.getConfig().getString("mysql.Data");
                 String host = this.getConfig().getString("mysql.Host");
+                int port = this.getConfig().getInt("mysql.Host", 3306);
 
                 log.info("Connecting to Database " + host + "/" + data + " with user: " + user);
                 
-                cfgconnection = new MySQL(log, user, pass, data, host, "config");
+                cfgconnection = new MySQL(log, user, pass, data, host, port, "config");
                 cfgconnection.connect();
 
                 try {

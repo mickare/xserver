@@ -58,164 +58,169 @@ import net.md_5.bungee.api.plugin.Plugin;
 
 public class ConfigAccessor {
 
-        private final Plugin plugin;
+	private final Plugin plugin;
 
-        private final String fileName;
-        private File configFile;
+	private final String fileName;
+	private File configFile;
 
-        private final Yaml yaml;
+	private final Yaml yaml;
 
-        @SuppressWarnings("rawtypes")
-        private Map config;
+	@SuppressWarnings("rawtypes")
+	private Map config;
 
-        public ConfigAccessor(Plugin plugin, String fileName) {
+	public ConfigAccessor(Plugin plugin, String fileName) {
 
-                if (plugin == null)
+		if (plugin == null)
 
-                        throw new IllegalArgumentException("plugin cannot be null");
+			throw new IllegalArgumentException("plugin cannot be null");
 
-                this.plugin = plugin;
+		this.plugin = plugin;
 
-                this.fileName = fileName;
+		this.fileName = fileName;
 
-                DumperOptions options = new DumperOptions();
-                options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-                yaml = new Yaml(options);
+		DumperOptions options = new DumperOptions();
+		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+		yaml = new Yaml(options);
 
-                reloadConfig();
-        }
+		reloadConfig();
+	}
 
-        @SuppressWarnings("rawtypes")
-        public void reloadConfig() {
+	@SuppressWarnings("rawtypes")
+	public void reloadConfig() {
 
-                if (configFile == null) {
-                        File dataFolder = plugin.getDataFolder();
-                        if (dataFolder == null) {
-                                throw new IllegalStateException();
-                        }
-                        configFile = new File(dataFolder, fileName);
-                }
+		if (configFile == null) {
+			File dataFolder = plugin.getDataFolder();
+			if (dataFolder == null) {
+				throw new IllegalStateException();
+			}
+			configFile = new File(dataFolder, fileName);
+		}
 
-                InputStream defConfigStream = null;
+		InputStream defConfigStream = null;
 
-                try {
-                        if (configFile.exists()) {
-                                defConfigStream = new FileInputStream(configFile);
-                        } else {
-                                // Look for defaults in the jar
-                                defConfigStream = plugin.getResourceAsStream(fileName);
-                        }
+		try {
+			if (configFile.exists()) {
+				defConfigStream = new FileInputStream(configFile);
+			} else {
+				// Look for defaults in the jar
+				defConfigStream = plugin.getResourceAsStream(fileName);
+			}
 
-                        if (defConfigStream != null) {
-                                config = (Map) yaml.load(defConfigStream);
-                                if (config == null) {
-                                        config = new HashMap();
-                                }
+			if (defConfigStream != null) {
+				config = (Map) yaml.load(defConfigStream);
+				if (config == null) {
+					config = new HashMap();
+				}
 
-                        }
+			}
 
-                } catch (IOException e) {
-                        // Never happens... i think...
-                        e.printStackTrace();
-                } finally {
-                        if (defConfigStream != null) {
-                                try {
-                                        defConfigStream.close();
-                                } catch (IOException e) {
-                                        e.printStackTrace();
-                                }
-                        }
-                }
+		} catch (IOException e) {
+			// Never happens... i think...
+			e.printStackTrace();
+		} finally {
+			if (defConfigStream != null) {
+				try {
+					defConfigStream.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 
-        }
+	}
 
-    private <T> T get(String path, T def)
-    {
-        return get( path, def, config );
-    }
+	private <T> T get(String path, T def) {
+		return get(path, def, config);
+	}
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private <T> T get(String path, T def, Map submap)
-    {
-        int index = path.indexOf( '.' );
-        if ( index == -1 )
-        {
-            Object val = submap.get( path );
-            if ( val == null && def != null )
-            {
-                val = def;
-                submap.put( path, def );
-            }
-            return (T) val;
-        } else
-        {
-            String first = path.substring( 0, index );
-            String second = path.substring( index + 1, path.length() );
-            Map sub = (Map) submap.get( first );
-            if ( sub == null )
-            {
-                sub = new LinkedHashMap();
-                submap.put( first, sub );
-            }
-            return get( second, def, sub );
-        }
-    }
-        
-        public int getInt(String path) {
-                return get( path, null );
-        }
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private <T> T get(String path, T def, Map submap) {
+		int index = path.indexOf('.');
+		if (index == -1) {
+			Object val = submap.get(path);
+			if (val == null && def != null) {
+				val = def;
+				submap.put(path, def);
+			}
+			return (T) val;
+		} else {
+			String first = path.substring(0, index);
+			String second = path.substring(index + 1, path.length());
+			Map sub = (Map) submap.get(first);
+			if (sub == null) {
+				sub = new LinkedHashMap();
+				submap.put(first, sub);
+			}
+			return get(second, def, sub);
+		}
+	}
 
-        public String getString(String path) {
-                return get( path, null );
-        }
+	public int getInt(String path, int def) {
+		return get(path, def);
+	}
+	
+	public int getInt(String path) {
+		return get(path, null);
+	}
 
-        public boolean getBoolean(String path)
-    {
-        return get( path, null );
-    }
-        
-        public void saveDefaultConfig() {
+	public String getString(String path, String def) {
+		return get(path, def);
+	}
+	
+	public String getString(String path) {
+		return get(path, null);
+	}
 
-                if (!configFile.exists()) {
-                        InputStream inputStream = null;
-                        OutputStream outputStream = null;
-                        try {
-                                
-                                configFile.getParentFile().mkdirs();
-                                configFile.createNewFile();
-                                
-                                inputStream = plugin.getResourceAsStream("config.yml");
-                                outputStream = new FileOutputStream(configFile);
+	public boolean getBoolean(String path, boolean def) {
+		return get(path, def);
+	}
+	
+	public boolean getBoolean(String path) {
+		return get(path, null);
+	}
 
-                                int read = 0;
-                                byte[] bytes = new byte[1024];
+	public void saveDefaultConfig() {
 
-                                while ((read = inputStream.read(bytes)) != -1) {
-                                        outputStream.write(bytes, 0, read);
-                                }
+		if (!configFile.exists()) {
+			InputStream inputStream = null;
+			OutputStream outputStream = null;
+			try {
 
-                        } catch (IOException e) {
-                                e.printStackTrace();
-                        } finally {
-                                if (inputStream != null) {
-                                        try {
-                                                inputStream.close();
-                                        } catch (IOException e) {
-                                                e.printStackTrace();
-                                        }
-                                }
-                                if (outputStream != null) {
-                                        try {
-                                                // outputStream.flush();
-                                                outputStream.close();
-                                        } catch (IOException e) {
-                                                e.printStackTrace();
-                                        }
+				configFile.getParentFile().mkdirs();
+				configFile.createNewFile();
 
-                                }
-                        }
-                }
+				inputStream = plugin.getResourceAsStream("config.yml");
+				outputStream = new FileOutputStream(configFile);
 
-        }
+				int read = 0;
+				byte[] bytes = new byte[1024];
+
+				while ((read = inputStream.read(bytes)) != -1) {
+					outputStream.write(bytes, 0, read);
+				}
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				if (inputStream != null) {
+					try {
+						inputStream.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				if (outputStream != null) {
+					try {
+						// outputStream.flush();
+						outputStream.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+
+				}
+			}
+		}
+
+	}
 
 }
