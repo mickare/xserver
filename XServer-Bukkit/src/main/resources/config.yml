@@ -18,3 +18,4 @@ mysql:
    Data: database
    Host: host
    Port: port
+   Table: xserver

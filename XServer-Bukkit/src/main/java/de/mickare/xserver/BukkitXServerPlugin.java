@@ -66,6 +66,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
 		String data = this.getConfig().getString("mysql.Data");
 		String host = this.getConfig().getString("mysql.Host");
         int port = this.getConfig().getInt("mysql.Port", 3306);
+        String table = this.getConfig().getString("mysql.Table", "xserver");
 
 		log.info("Connecting to Database " + host + "/" + data + " with user: " + user);
 		
@@ -75,7 +76,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
 		
 		try {
 			log.info("Starting XServer async.");
-			xmanager = new XServerManager(servername, this, cfgconnection);
+			xmanager = new XServerManager(servername, this, cfgconnection, table);
 		} catch (IOException | InvalidConfigurationException e) {
 			log.severe("XServerManager not initialized correctly!\n" + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
 			this.getServer().shutdown();

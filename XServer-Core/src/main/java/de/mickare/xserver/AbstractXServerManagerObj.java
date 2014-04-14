@@ -24,6 +24,8 @@ import de.mickare.xserver.util.MyStringUtils;
 
 public abstract class AbstractXServerManagerObj implements AbstractXServerManager {
 
+	private final String sql_table;
+	
 	private final XServerPlugin plugin;
 	private ServerThreadPoolExecutor stpool;
 	private SocketFactory sf;
@@ -42,12 +44,13 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
 	private boolean reconnectClockRunning = false;
 
-	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection)
+	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection, String sql_table)
 			throws InvalidConfigurationException, IOException {
 		this.plugin = plugin;
-		stpool = new ServerThreadPoolExecutorObj();
-		sf = SocketFactory.getDefault();
+		this.stpool = new ServerThreadPoolExecutorObj();
+		this.sf = SocketFactory.getDefault();
 		this.connection = connection;
+		this.sql_table = sql_table;
 		this.homeServerName = servername;
 		this.reload();
 		if (homeServer == null) {
@@ -226,7 +229,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 			ResultSet rs = null;
 
 			synchronized (connection) {
-				rs = connection.query("SELECT * FROM xserver");
+				rs = connection.query("SELECT * FROM " + sql_table);
 			}
 
 			if (rs != null) {

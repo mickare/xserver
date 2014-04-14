@@ -23,8 +23,8 @@ public class XServerManager extends AbstractXServerManagerObj {
 	private final StressTestListener stressListener;
 	
 	protected XServerManager(String servername, BungeeXServerPlugin bungeePlugin,
-			MySQL connection) throws InvalidConfigurationException, IOException {
-		super(servername, bungeePlugin, connection);
+			MySQL connection, String sql_table) throws InvalidConfigurationException, IOException {
+		super(servername, bungeePlugin, connection, sql_table);
 		instance = this;
 		this.eventhandler = new BungeeEventHandler(bungeePlugin);
 		this.bungeePlugin = bungeePlugin;
