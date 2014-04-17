@@ -6,7 +6,7 @@ import java.io.IOException;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 
-import de.mickare.xserver.XServerManager;
+import de.mickare.xserver.BungeeXServerManager;
 import de.mickare.xserver.XServerPlugin;
 import de.mickare.xserver.commands.SubCommand;
 import de.mickare.xserver.exceptions.NotInitializedException;
@@ -27,7 +27,7 @@ public class Reload extends SubCommand {
                         getPlugin().getManager().getThreadPool().runTask(new Runnable() {
                                 public void run() {
                                         try {
-                                                XServerManager.getInstance().reconnectAll_forced();
+                                                BungeeXServerManager.getInstance().reconnectAll_forced();
                                         } catch (NotInitializedException e) {
                                                 getPlugin().getLogger().severe(e.getMessage());
                                         }
