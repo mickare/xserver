@@ -25,7 +25,7 @@ public class BungeeComSender implements ComSender {
 		return sender.hasPermission(perm);
 	}
 
-	@SuppressWarnings("deprecation")
+	
 	@Override
 	public void sendMessage(String message) {
 		sender.sendMessage(message);

@@ -19,7 +19,7 @@ public class Status extends SubCommand {
                 // TODO Auto-generated constructor stub
         }
 
-        @SuppressWarnings("deprecation")
+        
 		@Override
         public void execute(CommandSender sender, String[] args) {
                 StringBuilder sb = new StringBuilder();

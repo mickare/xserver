@@ -18,7 +18,7 @@ public class PingCommand extends SubCommand {
                 // TODO Auto-generated constructor stub
         }
 
-        @SuppressWarnings("deprecation")
+        
 		@Override
         public void execute(CommandSender sender, String[] args) {
                         if(args.length > 0) {

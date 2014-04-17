@@ -13,7 +13,7 @@ public class Reconnect extends SubCommand {
                 super(plugin, "reconnect", "[s]", "Reconnects all servers. It accepts one flag (s) for softly reconnect only those not connected servers.");
         }
 
-        @SuppressWarnings("deprecation")
+        
 		@Override
         public void execute(CommandSender sender, String[] args) {
                 boolean soft = false;

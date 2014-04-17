@@ -23,7 +23,7 @@ public class XServerCommands extends Command {
                 initialize();
         }
         
-        @SuppressWarnings("deprecation")
+        
 		public void  execute(CommandSender sender, String[] args) {
                 if (args.length > 0) {
                         if (args[0].equalsIgnoreCase("help") || args[0].equalsIgnoreCase("hilfe") || args[0].equals("?")) {
