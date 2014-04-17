@@ -3,11 +3,16 @@ package de.mickare.xserver;
 import java.io.IOException;
 
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
+import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.listener.StressTestListener;
 import de.mickare.xserver.util.MySQL;
 
 public class BungeeXServerManager extends XServerManager {
 
+	public static BungeeXServerManager getInstance() throws NotInitializedException {
+		return (BungeeXServerManager)XServerManager.getInstance();
+	}
+	
 	private final BungeeEventHandler eventhandler;
 	private final BungeeXServerPlugin bungeePlugin;
 	private final StressTestListener stressListener;

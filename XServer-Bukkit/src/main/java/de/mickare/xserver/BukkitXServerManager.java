@@ -3,11 +3,16 @@ package de.mickare.xserver;
 import java.io.IOException;
 
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
+import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.listener.StressTestListener;
 import de.mickare.xserver.util.MySQL;
 
 public class BukkitXServerManager extends XServerManager {
 
+	public static BukkitXServerManager getInstance() throws NotInitializedException {
+		return (BukkitXServerManager)XServerManager.getInstance();
+	}
+	
 	private final BukkitEventHandler eventhandler;
 	private final BukkitXServerPlugin bukkitPlugin;
 	private final StressTestListener stressListener;
