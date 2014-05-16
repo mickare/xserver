@@ -44,6 +44,15 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 	@Override
 	public abstract void registerListener(T plugin, XServerListener lis);
 	
+	@Override
+	public void registerListenerUnsafe(Object o, XServerListener lis)
+			throws IllegalArgumentException {
+		registerListener(checkPluginType(o), lis);
+		
+	}
+	
+	public abstract T checkPluginType(Object plugin) throws IllegalArgumentException;
+	
 	protected synchronized void registerListener(XServerListenerPlugin<T> plugin, XServerListener lis) {
 		listeners.put(lis, plugin);
 		bus.register(lis, plugin);

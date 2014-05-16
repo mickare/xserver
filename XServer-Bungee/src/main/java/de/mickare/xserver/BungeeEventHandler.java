@@ -30,5 +30,15 @@ public class BungeeEventHandler extends EventHandlerObj<Plugin> {
 		this.registerListener(lp, lis);
 	}
 
+	@Override
+	public Plugin checkPluginType(Object o)
+			throws IllegalArgumentException {
+		if(!(o instanceof Plugin)) {
+			throw new IllegalArgumentException("object is not instance of net.md_5.bungee.api.plugin.Plugin");
+		}
+		return (Plugin)plugin;
+	}
+
+
 
 }

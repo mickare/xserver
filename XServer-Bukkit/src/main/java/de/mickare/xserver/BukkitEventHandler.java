@@ -59,5 +59,13 @@ public class BukkitEventHandler extends EventHandlerObj<JavaPlugin> {
 		this.registerListener(lp, lis);
 	}
 
-
+	@Override
+	public JavaPlugin checkPluginType(Object o)
+			throws IllegalArgumentException {
+		if(!(o instanceof JavaPlugin)) {
+			throw new IllegalArgumentException("object is not instance of org.bukkit.plugin.java.JavaPlugin");
+		}
+		return (JavaPlugin)plugin;
+	}
+	
 }

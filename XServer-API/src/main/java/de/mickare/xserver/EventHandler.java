@@ -20,6 +20,14 @@ public interface EventHandler<T> {
 	public abstract void registerListener(T plugin, XServerListener lis);
 
 	/**
+	 * Register a new listener and will throw an Exception if it fails
+	 * @param plugin
+	 * @param lis
+	 * @throws IllegalArgumentException
+	 */
+	public abstract void registerListenerUnsafe(Object plugin, XServerListener lis) throws IllegalArgumentException;
+	
+	/**
 	 * Unregister a old listener...
 	 * @param lis
 	 */
