@@ -34,7 +34,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	private final MySQL connection;
 	private final String homeServerName;
 	private ReadWriteLock homeLock = new ReentrantReadWriteLock();
-	public XServerObj homeServer;
+	private XServerObj homeServer;
 	private ReadWriteLock serversLock = new ReentrantReadWriteLock();
 
 	private final HashMap<String, XServerObj> servers = new HashMap<String, XServerObj>();

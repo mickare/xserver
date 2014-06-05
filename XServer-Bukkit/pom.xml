@@ -22,13 +22,8 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.spigotmc</groupId>
-			<artifactId>spigot-api</artifactId>
-			<version>LATEST</version>
-		</dependency>
-		<dependency>
-			<groupId>org.spigotmc</groupId>
-			<artifactId>spigot</artifactId>
+			<groupId>org.bukkit</groupId>
+			<artifactId>craftbukkit</artifactId>
 			<version>LATEST</version>
 		</dependency>
 		<dependency>
@@ -48,9 +43,9 @@
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
-			<id>spigot-repo</id>
-			<name>Spigot Repository</name>
-			<url>http://repo.md-5.net/content/groups/public/</url>
+			<id>bukkit-repo</id>
+			<name>Bukkit Repository</name>
+			<url>http:/repo.bukkit.org/content/groups/public/</url>
 		</repository>
 		<repository>
 			<snapshots>
