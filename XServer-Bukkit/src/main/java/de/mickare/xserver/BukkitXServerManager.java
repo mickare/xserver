@@ -19,7 +19,7 @@ public class BukkitXServerManager extends XServerManager {
 
 	protected BukkitXServerManager(String servername, BukkitXServerPlugin bukkitPlugin,
 			MySQL connection, String sql_table) throws InvalidConfigurationException, IOException {
-		super(servername, bukkitPlugin, connection, sql_table);
+		super(servername, bukkitPlugin, connection, sql_table, new BukkitServerThreadPool());
 		this.eventhandler = new BukkitEventHandler(bukkitPlugin);
 		this.bukkitPlugin = bukkitPlugin;
 		this.stressListener = new StressTestListener(this);

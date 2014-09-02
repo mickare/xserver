@@ -17,9 +17,9 @@ public abstract class XServerManager extends AbstractXServerManagerObj {
 		return instance;
 	}
 	
-	protected XServerManager(String servername, XServerPlugin plugin, MySQL connection, String sql_table)
+	protected XServerManager(String servername, XServerPlugin plugin, MySQL connection, String sql_table, ServerThreadPoolExecutor stpool)
 			throws InvalidConfigurationException, IOException {
-		super( servername, plugin, connection, sql_table );
+		super( servername, plugin, connection, sql_table, stpool );
 		instance = this;
 	}
 

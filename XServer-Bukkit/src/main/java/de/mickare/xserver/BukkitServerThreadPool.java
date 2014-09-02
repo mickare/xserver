@@ -1,11 +1,10 @@
 package de.mickare.xserver;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
-// OLD
-
-@Deprecated
-public class ServerThreadPoolExecutorObj implements ServerThreadPoolExecutor {
+public class BukkitServerThreadPool implements ServerThreadPoolExecutor {
 
 	// Parallel running Threads(Executor) on System
 
@@ -21,21 +20,23 @@ public class ServerThreadPoolExecutorObj implements ServerThreadPoolExecutor {
 	ThreadPoolExecutor threadPool = null;
 
 	// Working queue for jobs (Runnable). We add them finally here
-	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>( 1024 );
+	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(
+			1024);
 
-	@Deprecated
-	public ServerThreadPoolExecutorObj() {
-		threadPool = new ThreadPoolExecutor( corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.MILLISECONDS, workQueue );
+	public BukkitServerThreadPool() {
+		threadPool = new ThreadPoolExecutor(corePoolSize, maxPoolSize,
+				keepAliveTime, TimeUnit.MILLISECONDS, workQueue);
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see de.mickare.xserver.ServerThreadPoolExecutor#runTask(java.lang.Runnable)
+	 * @see
+	 * de.mickare.xserver.ServerThreadPoolExecutor#runTask(java.lang.Runnable)
 	 */
 	@Override
-	public void runTask( Runnable task ) {
-		threadPool.execute( task );
+	public void runTask(Runnable task) {
+		threadPool.execute(task);
 		// System.out.println("Tasks in workQueue.." + workQueue.size());
 	}
 

@@ -44,10 +44,11 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
 	private boolean reconnectClockRunning = false;
 
-	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection, String sql_table)
+	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection, String sql_table, ServerThreadPoolExecutor stpool)
 			throws InvalidConfigurationException, IOException {
 		this.plugin = plugin;
-		this.stpool = new ServerThreadPoolExecutorObj();
+		this.stpool = stpool;
+		//this.stpool = new ServerThreadPoolExecutorObj();
 		this.sf = SocketFactory.getDefault();
 		this.connection = connection;
 		this.sql_table = sql_table;
