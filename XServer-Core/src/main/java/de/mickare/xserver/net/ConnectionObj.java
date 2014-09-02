@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -75,8 +76,8 @@ public class ConnectionObj implements Connection
 
 		this.packetHandler.sendFirstLoginRequest();
 
-		this.receiving.start();
-		this.sending.start();
+		this.receiving.start(manager);
+		this.sending.start(manager);
 		//this.packetHandler.start();
 	}
 
@@ -104,8 +105,8 @@ public class ConnectionObj implements Connection
 		this.receiving = new Receiving();
 		this.sending = new Sending();
 
-		this.receiving.start();
-		this.sending.start();
+		this.receiving.start(manager);
+		this.sending.start(manager);
 		//this.packetHandler.start();
 		
 		
@@ -241,7 +242,33 @@ public class ConnectionObj implements Connection
 		return result;
 	}
 
-	private class Sending extends Thread
+	private abstract class InterruptableRunnable implements Runnable {
+		private final AtomicBoolean interrupted = new AtomicBoolean(false);
+		private final String name;
+		
+		private InterruptableRunnable(String name) {
+			this.name = name;
+		}
+
+		public void start(AbstractXServerManagerObj manager) {
+			manager.getThreadPool().runTask( this );
+		}
+		
+		public boolean isInterrupted() {
+			return interrupted.get();
+		}
+		
+		public void interrupt() {
+			this.interrupted.set( true );
+		}
+
+		public String getName() {
+			return name;
+		}
+		
+	}
+	
+	private class Sending extends InterruptableRunnable
 	{
 
 		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
@@ -311,7 +338,7 @@ public class ConnectionObj implements Connection
 
 	}
 
-	private class Receiving extends Thread
+	private class Receiving extends InterruptableRunnable
 	{
 
 		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
