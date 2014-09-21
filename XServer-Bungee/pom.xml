@@ -20,11 +20,13 @@
 			<artifactId>junit</artifactId>
 			<version>LATEST</version>
 			<scope>test</scope>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>net.md-5</groupId>
 			<artifactId>bungeecord-api</artifactId>
 			<version>LATEST</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>de.mickare.xserver</groupId>

@@ -20,11 +20,7 @@
 			<artifactId>junit</artifactId>
 			<version>LATEST</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.bukkit</groupId>
-			<artifactId>craftbukkit</artifactId>
-			<version>LATEST</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>de.mickare.xserver</groupId>
@@ -35,6 +31,12 @@
 			<groupId>de.mickare.xserver</groupId>
 			<artifactId>XServer-Core</artifactId>
 			<version>2.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.bukkit</groupId>
+			<artifactId>bukkit</artifactId>
+			<version>LATEST</version>
+			<optional>true</optional>
 		</dependency>
 	</dependencies>
 
