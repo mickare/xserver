@@ -40,7 +40,11 @@ public class BukkitXServerManager extends XServerManager {
 
 	@Override
 	public void stop() throws IOException {
-		super.stop();
+		try {
+			this.getExecutorService().shutdown();
+		} finally {
+			super.stop();
+		}
 	}
 
 }
