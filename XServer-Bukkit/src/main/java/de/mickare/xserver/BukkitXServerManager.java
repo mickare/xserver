@@ -9,16 +9,18 @@ import de.mickare.xserver.util.MySQL;
 
 public class BukkitXServerManager extends XServerManager {
 
-	public static BukkitXServerManager getInstance() throws NotInitializedException {
-		return (BukkitXServerManager)XServerManager.getInstance();
+	public static BukkitXServerManager getInstance()
+			throws NotInitializedException {
+		return (BukkitXServerManager) XServerManager.getInstance();
 	}
-	
+
 	private final BukkitEventHandler eventhandler;
 	private final BukkitXServerPlugin bukkitPlugin;
 	private final StressTestListener stressListener;
 
-	protected BukkitXServerManager(String servername, BukkitXServerPlugin bukkitPlugin,
-			MySQL connection, String sql_table) throws InvalidConfigurationException, IOException {
+	protected BukkitXServerManager(String servername,
+			BukkitXServerPlugin bukkitPlugin, MySQL connection, String sql_table)
+			throws InvalidConfigurationException, IOException {
 		super(servername, bukkitPlugin, connection, sql_table, new BukkitServerThreadPool());
 		this.eventhandler = new BukkitEventHandler(bukkitPlugin);
 		this.bukkitPlugin = bukkitPlugin;
@@ -33,7 +35,12 @@ public class BukkitXServerManager extends XServerManager {
 
 	@Override
 	public void registerOwnListeners() {
-		this.getEventHandler().registerListener(bukkitPlugin, stressListener);	
+		this.getEventHandler().registerListener(bukkitPlugin, stressListener);
+	}
+
+	@Override
+	public void stop() throws IOException {
+		super.stop();
 	}
 
 }

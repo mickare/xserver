@@ -4,50 +4,19 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class BukkitServerThreadPool implements ServerThreadPoolExecutor {
+public class BukkitServerThreadPool extends ThreadPoolExecutor {
 
 	// Parallel running Threads(Executor) on System
-
-	private int corePoolSize = 32;
+	private static int corePoolSize = 32;
 
 	// Maximum Threads allowed in Pool
-	private int maxPoolSize = 1024;
+	private static int maxPoolSize = 1024;
 
 	// Keep alive time for waiting threads for jobs(Runnable)
-	private long keepAliveTime = 30000;
-
-	// This is the one who manages and start the work
-	ThreadPoolExecutor threadPool = null;
-
-	// Working queue for jobs (Runnable). We add them finally here
-	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(
-			1024);
+	private static long keepAliveTime = 30000;
 
 	public BukkitServerThreadPool() {
-		threadPool = new ThreadPoolExecutor(corePoolSize, maxPoolSize,
-				keepAliveTime, TimeUnit.MILLISECONDS, workQueue);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * de.mickare.xserver.ServerThreadPoolExecutor#runTask(java.lang.Runnable)
-	 */
-	@Override
-	public void runTask(Runnable task) {
-		threadPool.execute(task);
-		// System.out.println("Tasks in workQueue.." + workQueue.size());
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see de.mickare.xserver.ServerThreadPoolExecutor#shutDown()
-	 */
-	@Override
-	public void shutDown() {
-		threadPool.shutdown();
+		super(corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(1024));
 	}
 
 }

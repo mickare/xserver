@@ -19,7 +19,7 @@ public class BungeeXServerManager extends XServerManager {
 	
 	protected BungeeXServerManager(String servername, BungeeXServerPlugin bungeePlugin,
 			MySQL connection, String sql_table) throws InvalidConfigurationException, IOException {
-		super(servername, bungeePlugin, connection, sql_table, new BungeeServerThreadPool(bungeePlugin));
+		super(servername, bungeePlugin, connection, sql_table, bungeePlugin.getProxy().getScheduler().unsafe().getExecutorService(bungeePlugin));
 		this.eventhandler = new BungeeEventHandler(bungeePlugin);
 		this.bungeePlugin = bungeePlugin;
 		this.stressListener = new StressTestListener(this);

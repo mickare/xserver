@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
@@ -27,7 +28,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	private final String sql_table;
 	
 	private final XServerPlugin plugin;
-	private ServerThreadPoolExecutor stpool;
+	private ExecutorService executorService;
 	private SocketFactory sf;
 	private MainServer mainserver;
 
@@ -44,10 +45,10 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
 	private boolean reconnectClockRunning = false;
 
-	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection, String sql_table, ServerThreadPoolExecutor stpool)
+	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection, String sql_table, ExecutorService executorService)
 			throws InvalidConfigurationException, IOException {
 		this.plugin = plugin;
-		this.stpool = stpool;
+		this.executorService = executorService;
 		//this.stpool = new ServerThreadPoolExecutorObj();
 		this.sf = SocketFactory.getDefault();
 		this.connection = connection;
@@ -75,7 +76,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 			reconnectAll_soft();
 			if (!isReconnectClockRunning()) {
 				reconnectClockRunning = true;
-				stpool.runTask(new Runnable() {
+				executorService.execute(new Runnable() {
 					@Override
 					public void run() {
 						try {
@@ -98,7 +99,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	 */
 	@Override
 	public void start_async() {
-		stpool.runTask(new Runnable() {
+		executorService.execute(new Runnable() {
 			public void run() {
 				try {
 					start();
@@ -138,7 +139,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 		serversLock.readLock().lock();
 		try {
 			for (final XServerObj s : servers.values()) {
-				stpool.runTask(new Runnable() {
+				executorService.execute(new Runnable() {
 					public void run() {
 						if (!s.isConnected()) {
 							try {
@@ -167,7 +168,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 		serversLock.readLock().lock();
 		try {
 			for (final XServerObj s : servers.values()) {
-				stpool.runTask(new Runnable() {
+				executorService.execute(new Runnable() {
 					public void run() {
 						try {
 							s.connect();
@@ -194,7 +195,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 		serversLock.readLock().lock();
 		try {
 			mainserver.close();
-			stpool.shutDown();
+			//executorService.shutDown();
 			reconnectClockRunning = false;
 
 			for (XServerObj s : servers.values()) {
@@ -278,7 +279,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 			mainserver = new MainServer(ServerSocketFactory.getDefault()
 					.createServerSocket(homeServer.getPort(), 100), this);
 			mainserver.start();
-
+			
 			start_async();
 
 		} finally {
@@ -330,11 +331,11 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	}
 
 	/* (non-Javadoc)
-	 * @see de.mickare.xserver.AbstractXServerManager#getThreadPool()
+	 * @see de.mickare.xserver.AbstractXServerManager#getExecutorService()
 	 */
 	@Override
-	public ServerThreadPoolExecutor getThreadPool() {
-		return stpool;
+	public ExecutorService getExecutorService() {
+		return executorService;
 	}
 
 	/* (non-Javadoc)

@@ -189,7 +189,7 @@ public class StressTest {
 					
 					check();
 					
-					manager.getThreadPool().runTask(new Runnable() {
+					manager.getExecutorService().submit(new Runnable() {
 						public void run() {
 							try {
 								Thread.sleep(TIMEOUT + 10);
@@ -206,7 +206,7 @@ public class StressTest {
 			if(sync) {
 				startRun.run();
 			} else {
-				manager.getThreadPool().runTask(startRun);
+				manager.getExecutorService().submit(startRun);
 			}
 			
 		

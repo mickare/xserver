@@ -1,6 +1,7 @@
 package de.mickare.xserver;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
 import de.mickare.xserver.exceptions.NotInitializedException;
@@ -17,9 +18,9 @@ public abstract class XServerManager extends AbstractXServerManagerObj {
 		return instance;
 	}
 	
-	protected XServerManager(String servername, XServerPlugin plugin, MySQL connection, String sql_table, ServerThreadPoolExecutor stpool)
+	protected XServerManager(String servername, XServerPlugin plugin, MySQL connection, String sql_table, ExecutorService executorService)
 			throws InvalidConfigurationException, IOException {
-		super( servername, plugin, connection, sql_table, stpool );
+		super( servername, plugin, connection, sql_table, executorService );
 		instance = this;
 	}
 

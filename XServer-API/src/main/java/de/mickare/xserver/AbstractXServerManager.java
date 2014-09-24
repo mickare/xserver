@@ -2,6 +2,7 @@ package de.mickare.xserver;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 import javax.net.SocketFactory;
@@ -38,7 +39,7 @@ public interface AbstractXServerManager {
 
 	public abstract Logger getLogger();
 
-	public abstract ServerThreadPoolExecutor getThreadPool();
+	public abstract ExecutorService getExecutorService();
 
 	public abstract SocketFactory getSocketFactory();
 
