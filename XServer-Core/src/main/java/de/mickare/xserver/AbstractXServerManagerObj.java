@@ -278,7 +278,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 			
 			mainserver = new MainServer(ServerSocketFactory.getDefault()
 					.createServerSocket(homeServer.getPort(), 100), this);
-			mainserver.start();
+			mainserver.start(this.getExecutorService());
 			
 			start_async();
 
