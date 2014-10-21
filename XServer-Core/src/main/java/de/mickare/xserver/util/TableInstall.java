@@ -8,23 +8,23 @@ import de.mickare.xserver.XServerPlugin;
 
 public class TableInstall {
 
-	private static final String sql_createGroups = "CREATE TABLE IF NOT EXISTS `{table}` ("
-			+ " `groupID` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(32) NOT NULL, PRIMARY KEY (`groupID`),"
-			+ "UNIQUE KEY `name` (`name`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-
-	private static final String sql_createServers = "CREATE TABLE IF NOT EXISTS `{table}` ("
+	private static final String sql_createServers = "CREATE TABLE IF NOT EXISTS `{table_servers}` ("
 			+ " `ID` int(10) unsigned NOT NULL AUTO_INCREMENT," + " `NAME` varchar(64) COLLATE utf8_bin NOT NULL,"
 			+ " `ADRESS` varchar(128) COLLATE utf8_bin NOT NULL," + " `PW` varchar(20) COLLATE utf8_bin NOT NULL," + " PRIMARY KEY (`ID`),"
 			+ " UNIQUE KEY `ID` (`ID`)," + " UNIQUE KEY `ADRESS` (`ADRESS`)," + " KEY `ID_2` (`ID`)"
 			+ " ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_bin;";
 
-	private static final String sql_createServersGroups = "CREATE TABLE IF NOT EXISTS `{table}` ("
+	private static final String sql_createGroups = "CREATE TABLE IF NOT EXISTS `{table_groups}` ("
+			+ " `groupID` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(32) NOT NULL, PRIMARY KEY (`groupID`),"
+			+ "UNIQUE KEY `name` (`name`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+
+	private static final String sql_createServersGroups = "CREATE TABLE IF NOT EXISTS `{table_relations}` ("
 			+ " `serverID` int(10) unsigned NOT NULL," + " `groupID` int(10) unsigned NOT NULL," + " PRIMARY KEY (`serverID`,`groupID`),"
 			+ " KEY `groupID` (`groupID`)" + " ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
 
-	private static final String sql_alterServersGroups = "ALTER TABLE `{table}`"
-			+ " ADD CONSTRAINT `xservers_xgroups_ibfk_2` FOREIGN KEY (`groupID`) REFERENCES `xgroups` (`groupID`) ON DELETE CASCADE ON UPDATE CASCADE,"
-			+ " ADD CONSTRAINT `xservers_xgroups_ibfk_3` FOREIGN KEY (`serverID`) REFERENCES `xservers` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;";
+	private static final String sql_alterServersGroups = "ALTER TABLE `{table_relations}`"
+			+ " ADD CONSTRAINT `xservers_xgroups_ibfk_1` FOREIGN KEY (`groupID`) REFERENCES `{table_groups}` (`groupID`) ON DELETE CASCADE ON UPDATE CASCADE,"
+			+ " ADD CONSTRAINT `xservers_xgroups_ibfk_2` FOREIGN KEY (`serverID`) REFERENCES `{table_servers}` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;";
 
 	private final XServerPlugin plugin;
 	private final MySQL connection;
@@ -45,7 +45,7 @@ public class TableInstall {
 	}
 
 	private void log( Throwable e ) {
-		this.plugin.getLogger().info( e.getMessage() );
+		this.plugin.getLogger().info( e.getMessage() + "\n" + MyStringUtils.stackTraceToString( e ) );
 	}
 
 	public void install() {
@@ -59,10 +59,13 @@ public class TableInstall {
 			while (rs.next()) {
 				String name = rs.getString( 1 );
 				if (name.equals( this.sql_table_xservers )) {
+					info( "Table \"" + this.sql_table_xservers + "\" found" );
 					existing_servers = true;
 				} else if (name.equals( this.sql_table_xgroups )) {
+					info( "Table \"" + this.sql_table_xgroups + "\" found" );
 					existing_groups = true;
 				} else if (name.equals( this.sql_table_xserversxgroups )) {
+					info( "Table \"" + this.sql_table_xserversxgroups + "\" found" );
 					existing_relation = true;
 				}
 			}
@@ -71,34 +74,35 @@ public class TableInstall {
 		}
 
 		if (!existing_servers) {
-			info("Table " + sql_table_xservers + " is missing and automatically creating it.");
+			info( "Table " + sql_table_xservers + " is missing and automatically creating it." );
 			try (Statement stmt = connection.getConnection().createStatement()) {
-				stmt.executeUpdate( sql_createGroups.replace( "{table}", sql_table_xservers ) );
+				stmt.executeUpdate( sql_createServers.replace( "{table_servers}", sql_table_xservers ) );
 			} catch (SQLException e) {
 				log( e );
 			}
 		}
 
 		if (!existing_groups) {
-			info("Table " + sql_table_xgroups + " is missing and automatically creating it.");
+			info( "Table " + sql_table_xgroups + " is missing and automatically creating it." );
 			try (Statement stmt = connection.getConnection().createStatement()) {
-				stmt.executeUpdate( sql_createServers.replace( "{table}", sql_table_xgroups ) );
+				stmt.executeUpdate( sql_createGroups.replace( "{table_groups}", sql_table_xgroups ) );
 			} catch (SQLException e) {
 				log( e );
 			}
 		}
 
 		if (!existing_relation) {
-			info("Table " + sql_table_xserversxgroups + " is missing and automatically creating it.");
+			info( "Table " + sql_table_xserversxgroups + " is missing and automatically creating it." );
 			try (Statement stmt = connection.getConnection().createStatement()) {
-				stmt.executeUpdate( sql_createServersGroups.replace( "{table}", sql_table_xserversxgroups ) );
+				stmt.executeUpdate( sql_createServersGroups.replace( "{table_relations}", sql_table_xserversxgroups ) );
 			} catch (SQLException e) {
 				log( e );
 			}
 
-			info("Table " + sql_table_xserversxgroups + " was missing and adding relations.");
+			info( "Table " + sql_table_xserversxgroups + " was missing and adding relations." );
 			try (Statement stmt = connection.getConnection().createStatement()) {
-				stmt.executeUpdate( sql_alterServersGroups.replace( "{table}", sql_table_xserversxgroups ) );
+				stmt.executeUpdate( sql_alterServersGroups.replace( "{table_relations}", sql_table_xserversxgroups )
+						.replace( "{table_servers}", sql_table_xservers ).replace( "{table_groups}", sql_table_xgroups ) );
 			} catch (SQLException e) {
 				log( e );
 			}

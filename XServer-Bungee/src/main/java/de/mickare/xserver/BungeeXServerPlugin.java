@@ -64,7 +64,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
     			String sql_table_xgroups = this.getConfig().getString("mysql.TableXGroups", "xgroups");
     			String sql_table_xserversxgroups = this.getConfig().getString("mysql.TableXServersGroups", "xservers_xgroups");
 
-                log.info("Connecting to Database " + host + "/" + data + " with user: " + user);
+    			log.info( "Connecting to Database " + host + ":" + port + "/" + data + " with user: " + user );
                 
                 cfgconnection = new MySQL(log, user, pass, data, host, port, "config");
                 cfgconnection.connect();

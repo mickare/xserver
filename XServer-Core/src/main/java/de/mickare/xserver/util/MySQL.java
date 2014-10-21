@@ -27,6 +27,10 @@ public class MySQL {
 		this.name = name;
 	}
 
+	public String getDatabase() {
+		return db;
+	}
+	
 	public void reconnect() {
 		try {
 			if (connection != null) {
