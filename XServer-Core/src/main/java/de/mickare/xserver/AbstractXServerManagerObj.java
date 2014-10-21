@@ -19,6 +19,7 @@ import de.mickare.xserver.net.XServer;
 import de.mickare.xserver.net.XServerObj;
 import de.mickare.xserver.util.MySQL;
 import de.mickare.xserver.util.MyStringUtils;
+import de.mickare.xserver.util.TableInstall;
 import de.mickare.xserver.util.concurrent.CloseableLock;
 import de.mickare.xserver.util.concurrent.CloseableReadWriteLock;
 import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
@@ -57,6 +58,15 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 		this.sql_table_xgroups = sql_table_xgroups;
 		this.sql_table_xserversxgroups = sql_table_xserversxgroups;
 		this.homeServerName = servername;
+		
+
+		// Installation
+		
+		TableInstall ti = new TableInstall(plugin, connection,  sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups);
+		ti.install();
+		
+		// Loading
+		
 		this.reload();
 		if (homeServer == null) {
 			throw new InvalidConfigurationException( "Server information for \"" + servername + "\" was not found!" );

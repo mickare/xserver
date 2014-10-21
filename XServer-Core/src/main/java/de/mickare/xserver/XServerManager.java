@@ -25,10 +25,6 @@ public abstract class XServerManager extends AbstractXServerManagerObj {
 		super( servername, plugin, connection, sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups, executorService );
 		instance = this;
 		
-		// Installation
-		
-		TableInstall ti = new TableInstall(plugin, connection,  sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups);
-		ti.install();
 		
 	}
 
