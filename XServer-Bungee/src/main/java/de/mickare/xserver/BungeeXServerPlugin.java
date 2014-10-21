@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import net.md_5.bungee.api.plugin.Plugin;
-
 import de.mickare.xserver.commands.XServerCommands;
 import de.mickare.xserver.config.ConfigAccessor;
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
@@ -61,7 +60,9 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
                 String data = this.getConfig().getString("mysql.Data");
                 String host = this.getConfig().getString("mysql.Host");
                 int port = this.getConfig().getInt("mysql.Port", 3306);
-                String table = this.getConfig().getString("mysql.Table", "xserver");
+                String sql_table_xservers = this.getConfig().getString("mysql.TableXServers", "xservers");
+    			String sql_table_xgroups = this.getConfig().getString("mysql.TableXGroups", "xgroups");
+    			String sql_table_xserversxgroups = this.getConfig().getString("mysql.TableXServersGroups", "xservers_xgroups");
 
                 log.info("Connecting to Database " + host + "/" + data + " with user: " + user);
                 
@@ -71,7 +72,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin{
                 try {
                         log.info("Starting XServer async.");
                         xmanager = new BungeeXServerManager(servername, this,
-                                        cfgconnection, table);
+                                        cfgconnection, sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups);
                         
                         
                 } catch (InvalidConfigurationException | IOException e) {

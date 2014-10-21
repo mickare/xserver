@@ -19,6 +19,9 @@ import javax.net.SocketFactory;
 import de.mickare.xserver.AbstractXServerManagerObj;
 import de.mickare.xserver.events.XServerDisconnectEvent;
 import de.mickare.xserver.exceptions.NotInitializedException;
+import de.mickare.xserver.util.concurrent.CloseableLock;
+import de.mickare.xserver.util.concurrent.CloseableReadWriteLock;
+import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
 public class ConnectionObj implements Connection
 {
@@ -32,7 +35,7 @@ public class ConnectionObj implements Connection
 	private final String host;
 	private final int port;
 
-	private ReentrantReadWriteLock xserverLock = new ReentrantReadWriteLock();
+	private CloseableReadWriteLock xserverLock = new CloseableReentrantReadWriteLock();
 	private XServer xserver;
 
 	private final Socket socket;
@@ -418,39 +421,24 @@ public class ConnectionObj implements Connection
 	@Override
 	public XServer getXserver()
 	{
-		xserverLock.readLock().lock();
-		try
-		{
+		try(CloseableLock c = xserverLock.readLock().open()) {
 			return xserver;
-		} finally
-		{
-			xserverLock.readLock().unlock();
 		}
 	}
 
 	protected void setXserver(XServer xserver)
 	{
-		xserverLock.writeLock().lock();
-		try
-		{
+		try(CloseableLock c = xserverLock.writeLock().open()) {
 			this.xserver = xserver;
 			xserver.setConnection(this);
-		} finally
-		{
-			xserverLock.writeLock().unlock();
 		}
 	}
 
 	protected void setReloginXserver(XServer xserver)
 	{
-		xserverLock.writeLock().lock();
-		try
-		{
+		try(CloseableLock c = xserverLock.writeLock().open()) {
 			this.xserver = xserver;
 			xserver.setReloginConnection(this);
-		} finally
-		{
-			xserverLock.writeLock().unlock();
 		}
 	}
 

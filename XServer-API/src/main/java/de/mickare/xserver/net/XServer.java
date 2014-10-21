@@ -2,9 +2,11 @@ package de.mickare.xserver.net;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.Set;
 
 import de.mickare.xserver.AbstractXServerManager;
 import de.mickare.xserver.Message;
+import de.mickare.xserver.XGroup;
 import de.mickare.xserver.XType;
 import de.mickare.xserver.exceptions.NotInitializedException;
 
@@ -124,5 +126,9 @@ public interface XServer {
 	 * @return number of packages
 	 */
 	public abstract long getReceivinglastSecondPackageCount();
+	
+	public abstract Set<XGroup> getGroups();
+
+	boolean hasGroup( XGroup group );
 	
 }

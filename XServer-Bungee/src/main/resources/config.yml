@@ -17,4 +17,6 @@ mysql:
    Data: database
    Host: host
    Port: port
-   Table: xserver
+   TableXServers: xservers
+   TableXGroups: xgroups
+   TableXServersGroups: xservers_xgroups
