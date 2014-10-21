@@ -1,5 +1,5 @@
 name: XServerProxy
 main: de.mickare.xserver.BungeeXServerPlugin
-version: 2.0.1
+version: 2.0.2
 author: mickare
 depends: []

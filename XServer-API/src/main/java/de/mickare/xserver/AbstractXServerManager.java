@@ -88,7 +88,7 @@ public interface AbstractXServerManager {
 
 	public abstract void registerOwnListeners();
 
-	Set<? extends XServer> getServers( XGroup group );
+	Set<XServer> getServers( XGroup group );
 
 	Set<? extends XGroup> getGroups();
 
