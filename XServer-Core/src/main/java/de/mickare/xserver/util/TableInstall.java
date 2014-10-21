@@ -40,6 +40,10 @@ public class TableInstall {
 		this.sql_table_xserversxgroups = sql_table_xserversxgroups;
 	}
 
+	private void info( String msg ) {
+		this.plugin.getLogger().info( msg );
+	}
+
 	private void log( Throwable e ) {
 		this.plugin.getLogger().info( e.getMessage() );
 	}
@@ -67,6 +71,7 @@ public class TableInstall {
 		}
 
 		if (!existing_servers) {
+			info("Table " + sql_table_xservers + " is missing and automatically creating it.");
 			try (Statement stmt = connection.getConnection().createStatement()) {
 				stmt.executeUpdate( sql_createGroups.replace( "{table}", sql_table_xservers ) );
 			} catch (SQLException e) {
@@ -75,6 +80,7 @@ public class TableInstall {
 		}
 
 		if (!existing_groups) {
+			info("Table " + sql_table_xgroups + " is missing and automatically creating it.");
 			try (Statement stmt = connection.getConnection().createStatement()) {
 				stmt.executeUpdate( sql_createServers.replace( "{table}", sql_table_xgroups ) );
 			} catch (SQLException e) {
@@ -83,12 +89,14 @@ public class TableInstall {
 		}
 
 		if (!existing_relation) {
+			info("Table " + sql_table_xserversxgroups + " is missing and automatically creating it.");
 			try (Statement stmt = connection.getConnection().createStatement()) {
 				stmt.executeUpdate( sql_createServersGroups.replace( "{table}", sql_table_xserversxgroups ) );
 			} catch (SQLException e) {
 				log( e );
 			}
 
+			info("Table " + sql_table_xserversxgroups + " was missing and adding relations.");
 			try (Statement stmt = connection.getConnection().createStatement()) {
 				stmt.executeUpdate( sql_alterServersGroups.replace( "{table}", sql_table_xserversxgroups ) );
 			} catch (SQLException e) {

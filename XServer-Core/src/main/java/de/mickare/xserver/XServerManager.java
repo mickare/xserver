@@ -6,7 +6,6 @@ import java.util.concurrent.ExecutorService;
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
 import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.util.MySQL;
-import de.mickare.xserver.util.TableInstall;
 
 public abstract class XServerManager extends AbstractXServerManagerObj {
 

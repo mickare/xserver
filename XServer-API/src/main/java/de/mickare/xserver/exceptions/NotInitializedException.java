@@ -1,7 +1,7 @@
 package de.mickare.xserver.exceptions;
 
 @SuppressWarnings("serial")
-public class NotInitializedException extends Exception {
+public class NotInitializedException extends RuntimeException {
 
 	public NotInitializedException() {
 	}
