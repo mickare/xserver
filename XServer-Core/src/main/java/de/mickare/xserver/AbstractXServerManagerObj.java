@@ -133,7 +133,8 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 			}
 
 			if (n++ % 100 == 0) {
-				plugin.getLogger().info( "Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}" );
+				plugin.getLogger().info( "Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}");
+				//plugin.getLogger().info( "Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}" + "\n" + MyStringUtils.stackTraceToString( e ) );
 			}
 
 			// logger.warning("Connection to " + s.getName() + " failed!\n" +
@@ -227,7 +228,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 					try {
 						mainserver.close();
 					} catch (IOException e) {
-
+						//this.plugin.getLogger().info( e.getClass().getName() + ": " + e.getMessage() + "\n" + MyStringUtils.stackTraceToString( e ) );
 					}
 				}
 				for (XServerObj s : servers.values()) {

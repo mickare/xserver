@@ -35,10 +35,10 @@ public class XServerObj implements XServer {
 
 	private CloseableReadWriteLock typeLock = new CloseableReentrantReadWriteLock();
 	private XType type = XType.Other;
-	
+
 	private final Set<XGroup> groups = new HashSet<XGroup>();
 
-	private final CacheList<Packet> pendingPackets = new CacheList<Packet>(MESSAGE_CACHE_SIZE);
+	private final CacheList<Packet> pendingPackets = new CacheList<Packet>( MESSAGE_CACHE_SIZE );
 
 	private final AbstractXServerManagerObj manager;
 
@@ -46,7 +46,7 @@ public class XServerObj implements XServer {
 		this.name = name;
 		this.host = host;
 		this.port = port;
-		this.password = Encryption.MD5(password);
+		this.password = Encryption.MD5( password );
 		this.manager = manager;
 	}
 
@@ -54,26 +54,28 @@ public class XServerObj implements XServer {
 		this.name = name;
 		this.host = host;
 		this.port = port;
-		this.password = Encryption.MD5(password);
+		this.password = Encryption.MD5( password );
 		this.type = type;
 		this.manager = manager;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#connect()
 	 */
 	@Override
 	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
-
-		if (isConnected()) {
-			this.disconnect();
+		try (CloseableLock c = conLock.writeLock().open()) {
+			if (isConnected()) {
+				this.disconnect();
+			}
+			new ConnectionObj( manager.getSocketFactory(), host, port, manager );
 		}
-
-		new ConnectionObj(manager.getSocketFactory(), host, port, manager);
 	}
 
-	public void setConnection(Connection con) {
-		try(CloseableLock c = conLock.writeLock().open()) {
+	public void setConnection( Connection con ) {
+		try (CloseableLock c = conLock.writeLock().open()) {
 			if (this.connection != con) {
 				this.disconnect();
 			}
@@ -81,45 +83,51 @@ public class XServerObj implements XServer {
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#setReloginConnection(de.mickare.xserver.net.Connection)
 	 */
 	@Override
-	public void setReloginConnection(Connection con) {
+	public void setReloginConnection( Connection con ) {
 		if (manager.getHomeServer() == this) {
-			try(CloseableLock c = conLock.writeLock().open()) {
+			try (CloseableLock c = conLock.writeLock().open()) {
 				if (this.connection2 != con && (this.connection2 != null ? this.connection2.isConnected() : false)) {
 					this.disconnect();
 				}
 				this.connection2 = con;
 			}
 		} else {
-			setConnection(con);
+			setConnection( con );
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#isConnected()
 	 */
 	@Override
 	public boolean isConnected() {
-		try(CloseableLock c = conLock.readLock().open()) {
+		try (CloseableLock c = conLock.readLock().open()) {
 			return connection != null ? connection.isLoggedIn() : false;
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#disconnect()
 	 */
 	@Override
 	public void disconnect() {
-		try(CloseableLock c = conLock.writeLock().open()) {
+		try (CloseableLock c = conLock.writeLock().open()) {
 			if (connection != null) {
 				connection.disconnect();
 				synchronized (pendingPackets) {
 					for (Packet p : this.connection.getPendingPackets()) {
 						if (p.getPacketID() == PacketType.Message.packetID) {
-							this.pendingPackets.push(p);
+							this.pendingPackets.push( p );
 						}
 					}
 				}
@@ -129,7 +137,9 @@ public class XServerObj implements XServer {
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getName()
 	 */
 	@Override
@@ -137,7 +147,9 @@ public class XServerObj implements XServer {
 		return name;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getHost()
 	 */
 	@Override
@@ -145,7 +157,9 @@ public class XServerObj implements XServer {
 		return host;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getPort()
 	 */
 	@Override
@@ -153,7 +167,9 @@ public class XServerObj implements XServer {
 		return port;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getPassword()
 	 */
 	@Override
@@ -161,54 +177,60 @@ public class XServerObj implements XServer {
 		return password;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#sendMessage(de.mickare.xserver.Message)
 	 */
 	@Override
-	public boolean sendMessage(Message message) throws IOException {
+	public boolean sendMessage( Message message ) throws IOException {
 		boolean result = false;
 
 		if (!isConnected()) {
 			synchronized (pendingPackets) {
-				pendingPackets.push(new Packet(PacketType.Message, message.getData()));
+				pendingPackets.push( new Packet( PacketType.Message, message.getData() ) );
 			}
 			// throw new NotConnectedException("Not Connected to this server!");
 		} else {
-			try(CloseableLock c = conLock.readLock().open()) {
-				if (connection.send(new Packet(PacketType.Message, message.getData()))) {
+			try (CloseableLock c = conLock.readLock().open()) {
+				if (connection.send( new Packet( PacketType.Message, message.getData() ) )) {
 					result = true;
 				}
 			}
 		}
 
-		manager.getEventHandler().callEvent(new XServerMessageOutgoingEvent(this, message));
+		manager.getEventHandler().callEvent( new XServerMessageOutgoingEvent( this, message ) );
 		return result;
 
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#ping(de.mickare.xserver.net.Ping)
 	 */
 	@Override
-	public void ping(Ping ping) throws InterruptedException, IOException {
-		try(CloseableLock c = conLock.readLock().open()) {
+	public void ping( Ping ping ) throws InterruptedException, IOException {
+		try (CloseableLock c = conLock.readLock().open()) {
 			if (isConnected()) {
-				connection.ping(ping);
+				connection.ping( ping );
 			}
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#flushCache()
 	 */
 	@Override
 	public void flushCache() {
-		try(CloseableLock c = conLock.readLock().open()) {
+		try (CloseableLock c = conLock.readLock().open()) {
 			if (isConnected()) {
 				synchronized (pendingPackets) {
 					Packet p = pendingPackets.pollLast();
 					while (p != null) {
-						connection.send(p);
+						connection.send( p );
 						p = pendingPackets.pollLast();
 					}
 				}
@@ -216,23 +238,27 @@ public class XServerObj implements XServer {
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getType()
 	 */
 	@Override
 	public XType getType() {
-		try(CloseableLock c = typeLock.readLock().open()) {
+		try (CloseableLock c = typeLock.readLock().open()) {
 			return type;
 		}
 	}
 
-	protected void setType(XType type) {
-		try(CloseableLock c = typeLock.writeLock().open()) {
+	protected void setType( XType type ) {
+		try (CloseableLock c = typeLock.writeLock().open()) {
 			this.type = type;
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getManager()
 	 */
 	@Override
@@ -240,16 +266,17 @@ public class XServerObj implements XServer {
 		return manager;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getSendingRecordSecondPackageCount()
 	 */
 	@Override
 	public long getSendingRecordSecondPackageCount() {
-		try(CloseableLock c = conLock.readLock().open()) {
+		try (CloseableLock c = conLock.readLock().open()) {
 			if (isConnected()) {
 				if (this.connection2 != null) {
-					return this.connection.getSendingRecordSecondPackageCount()
-							+ this.connection2.getSendingRecordSecondPackageCount();
+					return this.connection.getSendingRecordSecondPackageCount() + this.connection2.getSendingRecordSecondPackageCount();
 				}
 				return this.connection.getSendingRecordSecondPackageCount();
 			}
@@ -257,16 +284,17 @@ public class XServerObj implements XServer {
 		return 0;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getSendinglastSecondPackageCount()
 	 */
 	@Override
 	public long getSendinglastSecondPackageCount() {
-		try(CloseableLock c = conLock.readLock().open()) {
+		try (CloseableLock c = conLock.readLock().open()) {
 			if (isConnected()) {
 				if (this.connection2 != null) {
-					return this.connection.getSendinglastSecondPackageCount()
-							+ this.connection2.getSendinglastSecondPackageCount();
+					return this.connection.getSendinglastSecondPackageCount() + this.connection2.getSendinglastSecondPackageCount();
 				}
 				return this.connection.getSendinglastSecondPackageCount();
 			}
@@ -274,16 +302,17 @@ public class XServerObj implements XServer {
 		return 0;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getReceivingRecordSecondPackageCount()
 	 */
 	@Override
 	public long getReceivingRecordSecondPackageCount() {
-		try(CloseableLock c = conLock.readLock().open()) {
+		try (CloseableLock c = conLock.readLock().open()) {
 			if (isConnected()) {
 				if (this.connection2 != null) {
-					return this.connection.getReceivingRecordSecondPackageCount()
-							+ this.connection2.getReceivingRecordSecondPackageCount();
+					return this.connection.getReceivingRecordSecondPackageCount() + this.connection2.getReceivingRecordSecondPackageCount();
 				}
 				return this.connection.getReceivingRecordSecondPackageCount();
 			}
@@ -291,16 +320,17 @@ public class XServerObj implements XServer {
 		return 0;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.XServer#getReceivinglastSecondPackageCount()
 	 */
 	@Override
 	public long getReceivinglastSecondPackageCount() {
-		try(CloseableLock c = conLock.readLock().open()) {
+		try (CloseableLock c = conLock.readLock().open()) {
 			if (isConnected()) {
 				if (this.connection2 != null) {
-					return this.connection.getReceivinglastSecondPackageCount()
-							+ this.connection2.getReceivinglastSecondPackageCount();
+					return this.connection.getReceivinglastSecondPackageCount() + this.connection2.getReceivinglastSecondPackageCount();
 				}
 				return this.connection.getReceivinglastSecondPackageCount();
 			}
@@ -309,7 +339,7 @@ public class XServerObj implements XServer {
 	}
 
 	public void addGroup( XGroup g ) {
-		this.groups.add(g);
+		this.groups.add( g );
 	}
 
 	@Override

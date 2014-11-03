@@ -51,7 +51,7 @@ public class MainServer implements Runnable {
 
 	public void start( ExecutorService executorService ) {
 		synchronized (task) {
-			if (task.get() != null) {
+			if (task.get() == null) {
 				task.set( executorService.submit( this ) );
 			}
 		}
