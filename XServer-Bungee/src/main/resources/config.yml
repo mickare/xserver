@@ -16,7 +16,7 @@ mysql:
    Pass: pass
    Data: database
    Host: host
-   Port: port
+   Port: 3306
    TableXServers: xservers
    TableXGroups: xgroups
    TableXServersGroups: xservers_xgroups
