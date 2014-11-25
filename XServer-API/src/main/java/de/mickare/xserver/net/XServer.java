@@ -131,4 +131,6 @@ public interface XServer {
 
 	boolean hasGroup( XGroup group );
 	
+	boolean isDeprecated();
+	
 }

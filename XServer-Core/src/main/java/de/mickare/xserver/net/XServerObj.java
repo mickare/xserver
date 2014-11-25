@@ -15,6 +15,7 @@ import de.mickare.xserver.events.XServerMessageOutgoingEvent;
 import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.util.CacheList;
 import de.mickare.xserver.util.Encryption;
+import de.mickare.xserver.util.MyStringUtils;
 import de.mickare.xserver.util.concurrent.CloseableLock;
 import de.mickare.xserver.util.concurrent.CloseableReadWriteLock;
 import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
@@ -27,6 +28,8 @@ public class XServerObj implements XServer {
 	private final String host;
 	private final int port;
 	private final String password;
+
+	private volatile boolean deprecated = false;
 
 	private Connection connection = null;
 	private Connection connection2 = null; // Fix for HomeServer that is not
@@ -67,6 +70,9 @@ public class XServerObj implements XServer {
 	@Override
 	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
 		try (CloseableLock c = conLock.writeLock().open()) {
+			if (!valid()) {
+				return;
+			}
 			if (isConnected()) {
 				this.disconnect();
 			}
@@ -76,6 +82,9 @@ public class XServerObj implements XServer {
 
 	public void setConnection( Connection con ) {
 		try (CloseableLock c = conLock.writeLock().open()) {
+			if (!validSilent()) {
+				return;
+			}
 			if (this.connection != con) {
 				this.disconnect();
 			}
@@ -92,6 +101,9 @@ public class XServerObj implements XServer {
 	public void setReloginConnection( Connection con ) {
 		if (manager.getHomeServer() == this) {
 			try (CloseableLock c = conLock.writeLock().open()) {
+				if (!validSilent()) {
+					return;
+				}
 				if (this.connection2 != con && (this.connection2 != null ? this.connection2.isConnected() : false)) {
 					this.disconnect();
 				}
@@ -185,7 +197,9 @@ public class XServerObj implements XServer {
 	@Override
 	public boolean sendMessage( Message message ) throws IOException {
 		boolean result = false;
-
+		if (!valid()) {
+			return false;
+		}
 		if (!isConnected()) {
 			synchronized (pendingPackets) {
 				pendingPackets.push( new Packet( PacketType.Message, message.getData() ) );
@@ -350,6 +364,34 @@ public class XServerObj implements XServer {
 	@Override
 	public boolean hasGroup( XGroup group ) {
 		return this.groups.contains( group );
+	}
+
+	private boolean validSilent() {
+		if (deprecated) {
+			return false;
+		}
+
+		return true;
+	}
+
+	private boolean valid() {
+		if (deprecated) {
+			this.manager.getLogger().warning(
+					"This XServer Object \"" + this.name + "\" is deprecated!\n"
+							+ MyStringUtils.stackTraceToString( Thread.currentThread().getStackTrace() ) );
+			return false;
+		}
+
+		return true;
+	}
+
+	@Override
+	public boolean isDeprecated() {
+		return this.deprecated;
+	}
+
+	public void setDeprecated() {
+		this.deprecated = true;
 	}
 
 }

@@ -232,6 +232,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 					}
 				}
 				for (XServerObj s : servers.values()) {
+					s.setDeprecated();
 					s.disconnect();
 				}
 				servers.clear();
