@@ -394,4 +394,9 @@ public class XServerObj implements XServer {
 		this.deprecated = true;
 	}
 
+	@Override
+	public XServer getCurrentXServer() {
+		return this.manager.getXServer( name );
+	}
+
 }
