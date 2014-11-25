@@ -7,7 +7,12 @@
 	<packaging>pom</packaging>
 	<name>XServer-parent</name>
 
-
+	<modules>
+		<module>XServer-API</module>
+		<module>XServer-Core</module>
+		<module>XServer-Bukkit</module>
+		<module>XServer-Bungee</module>
+	</modules>
 
 	<distributionManagement>
 		<repository>
