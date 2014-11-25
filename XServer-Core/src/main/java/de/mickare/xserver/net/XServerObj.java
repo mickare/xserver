@@ -82,9 +82,6 @@ public class XServerObj implements XServer {
 
 	public void setConnection( Connection con ) {
 		try (CloseableLock c = conLock.writeLock().open()) {
-			if (!validSilent()) {
-				return;
-			}
 			if (this.connection != con) {
 				this.disconnect();
 			}
@@ -101,9 +98,6 @@ public class XServerObj implements XServer {
 	public void setReloginConnection( Connection con ) {
 		if (manager.getHomeServer() == this) {
 			try (CloseableLock c = conLock.writeLock().open()) {
-				if (!validSilent()) {
-					return;
-				}
 				if (this.connection2 != con && (this.connection2 != null ? this.connection2.isConnected() : false)) {
 					this.disconnect();
 				}
@@ -364,14 +358,6 @@ public class XServerObj implements XServer {
 	@Override
 	public boolean hasGroup( XGroup group ) {
 		return this.groups.contains( group );
-	}
-
-	private boolean validSilent() {
-		if (deprecated) {
-			return false;
-		}
-
-		return true;
 	}
 
 	private boolean valid() {
