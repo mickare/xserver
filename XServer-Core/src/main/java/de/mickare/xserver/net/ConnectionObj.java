@@ -26,7 +26,7 @@ import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 public class ConnectionObj implements Connection
 {
 
-	private final static int CAPACITY = 8192;
+	private final static int CAPACITY = 16384;
 	private final static int SOCKET_TIMEOUT = 5000;
 
 	private ReentrantReadWriteLock statusLock = new ReentrantReadWriteLock();
