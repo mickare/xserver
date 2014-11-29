@@ -164,7 +164,7 @@ public class NetPacketHandler // extends Thread
 			
 			con.errorDisconnect();
 		}
-		
+		p.destroy();
 	}
 	
 	protected void sendFirstLoginRequest() throws IOException, InterruptedException, NotInitializedException {
