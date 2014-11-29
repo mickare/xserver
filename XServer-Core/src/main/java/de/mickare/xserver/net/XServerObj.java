@@ -13,7 +13,6 @@ import de.mickare.xserver.XGroup;
 import de.mickare.xserver.XType;
 import de.mickare.xserver.events.XServerMessageOutgoingEvent;
 import de.mickare.xserver.exceptions.NotInitializedException;
-import de.mickare.xserver.util.CacheList;
 import de.mickare.xserver.util.Encryption;
 import de.mickare.xserver.util.MyStringUtils;
 import de.mickare.xserver.util.concurrent.CloseableLock;
@@ -22,7 +21,7 @@ import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
 public class XServerObj implements XServer {
 
-	private final static int MESSAGE_CACHE_SIZE = 8192;
+	//private final static int MESSAGE_CACHE_SIZE = 8192;
 
 	private final String name;
 	private final String host;
@@ -41,7 +40,7 @@ public class XServerObj implements XServer {
 
 	private final Set<XGroup> groups = new HashSet<XGroup>();
 
-	private final CacheList<Packet> pendingPackets = new CacheList<Packet>( MESSAGE_CACHE_SIZE );
+	//private final CacheList<Packet> pendingPackets = new CacheList<Packet>( MESSAGE_CACHE_SIZE );
 
 	private final AbstractXServerManagerObj manager;
 
@@ -130,13 +129,14 @@ public class XServerObj implements XServer {
 		try (CloseableLock c = conLock.writeLock().open()) {
 			if (connection != null) {
 				connection.disconnect();
+				/*
 				synchronized (pendingPackets) {
 					for (Packet p : this.connection.getPendingPackets()) {
 						if (p.getPacketID() == PacketType.Message.packetID) {
 							this.pendingPackets.push( p );
 						}
 					}
-				}
+				}*/
 				connection = null;
 				connection2 = null;
 			}
@@ -195,9 +195,11 @@ public class XServerObj implements XServer {
 			return false;
 		}
 		if (!isConnected()) {
+			/*
 			synchronized (pendingPackets) {
 				pendingPackets.push( new Packet( PacketType.Message, message.getData() ) );
 			}
+			*/
 			// throw new NotConnectedException("Not Connected to this server!");
 		} else {
 			try (CloseableLock c = conLock.readLock().open()) {
@@ -233,8 +235,10 @@ public class XServerObj implements XServer {
 	 */
 	@Override
 	public void flushCache() {
+		/*
 		try (CloseableLock c = conLock.readLock().open()) {
 			if (isConnected()) {
+				
 				synchronized (pendingPackets) {
 					Packet p = pendingPackets.pollLast();
 					while (p != null) {
@@ -242,8 +246,9 @@ public class XServerObj implements XServer {
 						p = pendingPackets.pollLast();
 					}
 				}
+				
 			}
-		}
+		}*/
 	}
 
 	/*
