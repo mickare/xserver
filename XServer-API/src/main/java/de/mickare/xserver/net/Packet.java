@@ -27,11 +27,12 @@ public class Packet {
 			this.data = data;
 		}
 
-		public void writeToStream(DataOutputStream output) throws IOException {
+		public Packet writeToStream(DataOutputStream output) throws IOException {
 			output.writeInt(packetID);
 			output.writeInt(data.length);
 			output.write(data);
 			output.flush();
+			return this;
 		}
 
 		public int getPacketID() {
@@ -41,4 +42,13 @@ public class Packet {
 		public byte[] getData() {
 			return data;
 		}
+		
+		public void destroy() {
+			try {
+				this.finalize();
+			} catch ( Throwable e ) {
+				
+			}
+		}
+		
 }

@@ -316,7 +316,7 @@ public class ConnectionObj implements Connection
 					{
 						if (isLoggedIn())
 						{
-							new Packet(PacketType.KeepAlive, new byte[0]).writeToStream(output);
+							new Packet(PacketType.KeepAlive, new byte[0]).writeToStream(output).destroy();;
 							tickPacket();
 						} else
 						{
