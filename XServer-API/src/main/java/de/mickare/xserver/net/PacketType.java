@@ -3,8 +3,11 @@ package de.mickare.xserver.net;
 public enum PacketType
 {
 
-	BadPacket(1), KeepAlive(100), Disconnect(200), Error(400), LoginDenied(401), LoginRequest(500), LoginAccepted(501), PingRequest(
-			600), PingAnswer(601), Message(800);
+	BAD_PACKET(1), KEEP_ALIVE(100), DISCONNECT(200), 
+	Error(400), 
+	LOGIN_CLIENT(500), LOGIN_SERVER(501), LOGIN_DENIED(502), LOGIN_ACCEPTED(503), LOGIN_END(504),
+	
+	PING_REQUEST(600), PING_ANSWER(601), MESSAGE(800);
 
 	public final int packetID;
 
@@ -22,7 +25,7 @@ public enum PacketType
 				return t;
 			}
 		}
-		return BadPacket;
+		return BAD_PACKET;
 	}
 	
 }

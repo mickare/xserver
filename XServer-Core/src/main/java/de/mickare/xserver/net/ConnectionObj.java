@@ -12,253 +12,293 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.net.SocketFactory;
 
-import de.mickare.xserver.AbstractXServerManagerObj;
+import de.mickare.xserver.AbstractXServerManager;
+import de.mickare.xserver.XType;
+import de.mickare.xserver.events.XServerConnectionDenied;
 import de.mickare.xserver.events.XServerDisconnectEvent;
-import de.mickare.xserver.exceptions.NotInitializedException;
-import de.mickare.xserver.util.concurrent.CloseableLock;
-import de.mickare.xserver.util.concurrent.CloseableReadWriteLock;
-import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
+import de.mickare.xserver.events.XServerLoggedInEvent;
 
-public class ConnectionObj implements Connection
-{
-
+public class ConnectionObj implements Connection {
+	
 	private final static int CAPACITY = 16384;
 	private final static int SOCKET_TIMEOUT = 5000;
-
-	private ReentrantReadWriteLock statusLock = new ReentrantReadWriteLock();
-	private volatile STATE status;
-
+	
+	public static final ConnectionObj connectToServer( final AbstractXServerManager manager, final SocketFactory sf,
+			final XServerObj xserver ) throws UnknownHostException, IOException {
+		
+		Socket socket = sf.createSocket( xserver.getHost(), xserver.getPort() );
+		socket.setSoTimeout( SOCKET_TIMEOUT );
+		
+		final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
+		final DataOutputStream outputStream = new DataOutputStream( socket.getOutputStream() );
+		
+		/*
+		 * Send own Login
+		 */
+		
+		outputStream.writeInt( PacketType.LOGIN_CLIENT.packetID );
+		outputStream.writeUTF( manager.getHomeServer().getName() );
+		outputStream.writeUTF( manager.getHomeServer().getPassword() );
+		outputStream.writeInt( manager.getPlugin().getHomeType().getNumber() );
+		
+		if ( inputStream.readInt() != PacketType.LOGIN_ACCEPTED.packetID ) {
+			manager.getLogger().info( "Login denied from " + socket.getInetAddress().getHostAddress() + ":"
+					+ socket.getPort() );
+			socket.close();
+			throw new IOException( "Self wrong Login" );
+		}
+		
+		/*
+		 * Check other Login
+		 */
+		
+		if ( inputStream.readInt() != PacketType.LOGIN_SERVER.packetID ) {
+			// Packet Error
+			outputStream.writeInt( PacketType.Error.packetID );
+			socket.close();
+			throw new IOException( "Other wrong Login (Packet Error)" );
+		}
+		final String name = inputStream.readUTF();
+		final String password = inputStream.readUTF();
+		final XType xtype = XType.getByNumber( inputStream.readInt() );
+		final XServerObj other = manager.getServer( name );
+		
+		if ( other == null || other.getPassword().equals( password ) ) {
+			// Wrong Login
+			outputStream.writeInt( PacketType.LOGIN_DENIED.packetID );
+			manager.getLogger().info( "Client Login from " + name + " denied! ("
+					+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
+			manager.getEventHandler().callEvent( new XServerConnectionDenied( name, password, socket.getInetAddress()
+					.getHostAddress(), socket.getPort() ) );
+			socket.close();
+			throw new IOException( "Other wrong Login" );
+		}
+		
+		// Accept
+		outputStream.writeInt( PacketType.LOGIN_ACCEPTED.packetID );
+		manager.getLogger().info( "Server Login from " + name + " accepted!" );
+		
+		// End Handshake
+		outputStream.writeInt( PacketType.LOGIN_END.packetID );
+		
+		if ( inputStream.readInt() != PacketType.LOGIN_END.packetID ) {
+			manager.getLogger().info( "Handshake failed with " + socket.getInetAddress().getHostAddress() + ":"
+					+ socket.getPort() );
+			socket.close();
+			throw new IOException( "Handshake failed" );
+		}
+		
+		xserver.setType( xtype );
+		ConnectionObj con = new ConnectionObj( manager, socket, inputStream, outputStream, xserver );
+		xserver.addConnection( con );
+		manager.getExecutorService().submit( new Runnable() {
+			@Override
+			public void run() {
+				manager.getEventHandler().callEvent( new XServerLoggedInEvent( other ) );
+			}
+		} );
+		
+		return con;
+	}
+	
+	public static final ConnectionObj handleClient( final AbstractXServerManager manager, final Socket socket )
+			throws IOException {
+		
+		socket.setSoTimeout( SOCKET_TIMEOUT );
+		
+		final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
+		final DataOutputStream outputStream = new DataOutputStream( socket.getOutputStream() );
+		
+		// Check other Login
+		
+		if ( inputStream.readInt() != PacketType.LOGIN_CLIENT.packetID ) {
+			// Packet Error
+			outputStream.writeInt( PacketType.Error.packetID );
+			socket.close();
+			throw new IOException( "Other wrong Login (Packet Error)" );
+		}
+		final String name = inputStream.readUTF();
+		final String password = inputStream.readUTF();
+		final XType xtype = XType.getByNumber( inputStream.readInt() );
+		final XServerObj other = manager.getServer( name );
+		
+		if ( other == null || other.getPassword().equals( password ) ) {
+			// Wrong Login
+			outputStream.writeInt( PacketType.LOGIN_DENIED.packetID );
+			manager.getLogger().info( "Client Login from " + name + " denied! ("
+					+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
+			manager.getEventHandler().callEvent( new XServerConnectionDenied( name, password, socket.getInetAddress()
+					.getHostAddress(), socket.getPort() ) );
+			socket.close();
+			throw new IOException( "Other wrong Login" );
+		}
+		
+		// Accept
+		outputStream.writeInt( PacketType.LOGIN_ACCEPTED.packetID );
+		manager.getLogger().info( "Client Login from " + name + " accepted!" );
+		
+		// Send own Login
+		outputStream.writeInt( PacketType.LOGIN_SERVER.packetID );
+		outputStream.writeUTF( manager.getHomeServer().getName() );
+		outputStream.writeUTF( manager.getHomeServer().getPassword() );
+		outputStream.writeInt( manager.getPlugin().getHomeType().getNumber() );
+		
+		if ( inputStream.readInt() != PacketType.LOGIN_ACCEPTED.packetID ) {
+			manager.getLogger().info( "Login denied from " + socket.getInetAddress().getHostAddress() + ":"
+					+ socket.getPort() );
+			socket.close();
+			throw new IOException( "Self wrong Login" );
+		}
+		
+		// End Handshake
+		outputStream.writeInt( PacketType.LOGIN_END.packetID );
+		
+		if ( inputStream.readInt() != PacketType.LOGIN_END.packetID ) {
+			manager.getLogger().info( "Handshake failed with " + socket.getInetAddress().getHostAddress() + ":"
+					+ socket.getPort() );
+			socket.close();
+			throw new IOException( "Handshake failed" );
+		}
+		
+		other.setType( xtype );
+		ConnectionObj con = new ConnectionObj( manager, socket, inputStream, outputStream, other );
+		other.addConnection( con );
+		manager.getExecutorService().submit( new Runnable() {
+			@Override
+			public void run() {
+				manager.getEventHandler().callEvent( new XServerLoggedInEvent( other ) );
+			}
+		} );
+		
+		return con;
+	}
+	
+	private volatile boolean closed = false;
+	
+	private final AbstractXServerManager manager;
+	private final XServerObj xserver;
 	private final String host;
 	private final int port;
-
-	private CloseableReadWriteLock xserverLock = new CloseableReentrantReadWriteLock();
-	private XServer xserver;
-
+	
 	private final Socket socket;
 	private final DataInputStream input;
 	private final DataOutputStream output;
-
-	private final ArrayBlockingQueue<Packet> pendingSendingPackets = new ArrayBlockingQueue<Packet>(CAPACITY, true);
-
-	private Receiving receiving;
-	private Sending sending;
+	
+	private final ArrayBlockingQueue<Packet> pendingSendingPackets = new ArrayBlockingQueue<Packet>( CAPACITY, true );
+	
+	private final Receiving receiving;
+	private final Sending sending;
 	private final NetPacketHandler packetHandler;
 	
-	
-
-	/**
-	 * Create a new Connection to another Server (sends a Login Request)
-	 * 
-	 * @param sf
-	 * @param host
-	 * @param port
-	 * @throws UnknownHostException
-	 * @throws IOException
-	 * @throws InterruptedException
-	 * @throws NotInitializedException
-	 */
-	public ConnectionObj(SocketFactory sf, String host, int port, XServer xserver, AbstractXServerManagerObj manager) throws UnknownHostException, IOException, InterruptedException,
-			NotInitializedException
-	{
-
+	public ConnectionObj( AbstractXServerManager manager, Socket socket, DataInputStream inputStream,
+			DataOutputStream outputStream, XServerObj xserver ) {
+		
+		this.manager = manager;
 		this.xserver = xserver;
 		
-		
-		this.host = host;
-		this.port = port;
-		this.socket = sf.createSocket(host, port);
-		this.socket.setSoTimeout(SOCKET_TIMEOUT);
-
-		this.input = new DataInputStream(socket.getInputStream());
-		this.output = new DataOutputStream(socket.getOutputStream());
-
-		this.packetHandler = new NetPacketHandler(this, manager);
-		
-		this.receiving = new Receiving();
-		this.receiving.start(manager);
-		
-		this.sending = new Sending();
-		this.sending.start(manager);
-		
-		this.packetHandler.sendFirstLoginRequest();
-
-		//this.packetHandler.start();
-	}
-
-	/**
-	 * Receive a new Connection from another Server (response to a Login
-	 * Request)
-	 * 
-	 * @param socket
-	 * @throws IOException
-	 * @throws NotInitializedException
-	 */
-	public ConnectionObj(Socket socket, AbstractXServerManagerObj manager) throws IOException
-	{
-
-
+		this.socket = socket;
 		this.host = socket.getInetAddress().getHostAddress();
 		this.port = socket.getPort();
-		this.socket = socket;
-		this.socket.setSoTimeout(SOCKET_TIMEOUT);
-
-		this.input = new DataInputStream(socket.getInputStream());
-		this.output = new DataOutputStream(socket.getOutputStream());
-
-		this.packetHandler = new NetPacketHandler(this, manager);
+		
+		this.input = inputStream;
+		this.output = outputStream;
+		
+		this.packetHandler = new NetPacketHandler( this, manager );
+		
 		this.receiving = new Receiving();
+		this.receiving.start( manager );
+		
 		this.sending = new Sending();
-
-		this.receiving.start(manager);
-		this.sending.start(manager);
-		//this.packetHandler.start();
+		this.sending.start( manager );
 		
-		
-		//manager.getLogger().info("New Connection from: " + host + ":" + port);
 	}
-
-	/* (non-Javadoc)
+	
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.mickare.xserver.net.Connection#ping(de.mickare.xserver.net.Ping)
 	 */
 	@Override
-	public void ping(Ping ping) throws InterruptedException, IOException
-	{
+	public void ping( Ping ping ) throws InterruptedException, IOException {
 		ByteArrayOutputStream b = null;
 		DataOutputStream out = null;
-		try
-		{
+		try {
 			b = new ByteArrayOutputStream();
-			out = new DataOutputStream(b);
-			out.writeUTF(ping.getKey());
-			pendingSendingPackets.put(new Packet(PacketType.PingRequest, b.toByteArray()));
-		} finally
-		{
-			if (out != null)
-			{
+			out = new DataOutputStream( b );
+			out.writeUTF( ping.getKey() );
+			pendingSendingPackets.put( new Packet( PacketType.PING_REQUEST, b.toByteArray() ) );
+		} finally {
+			if ( out != null ) {
 				out.close();
 			}
 		}
 	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#isConnected()
-	 */
+	
 	@Override
-	public boolean isConnected()
-	{
-		return socket != null ? !socket.isClosed() : false;
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#disconnect()
-	 */
-	@Override
-	public void disconnect()
-	{
-		setStatus(stats.disconnected);
-		sending.interrupt();
-		receiving.interrupt();
-		//packetHandler.interrupt();
-
-		try
-		{
-			socket.close();
-			input.close();
-			output.close();
-		} catch (IOException e)
-		{
-
-		} finally
-		{
-			if (this.xserver != null)
-			{
-				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
-			}
-		}
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#errorDisconnect()
-	 */
-	@Override
-	public void errorDisconnect()
-	{
-		setStatus(stats.error);
-		sending.interrupt();
-		receiving.interrupt();
-		//packetHandler.interrupt();
-
-		try
-		{
-			socket.close();
-			input.close();
-			output.close();
-		} catch (IOException e)
-		{
-
-		} finally
-		{
-			if (this.xserver != null)
-			{
-				this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
-			}
-		}
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#getHost()
-	 */
-	@Override
-	public String getHost()
-	{
-		return host;
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#getPort()
-	 */
-	@Override
-	public int getPort()
-	{
-		return port;
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#send(de.mickare.xserver.net.Packet)
-	 */
-	@Override
-	public boolean send(Packet packet)
-	{
-		return pendingSendingPackets.offer(packet);
+	public void close() throws Exception {
+		this.xserver.addConnection( this );
 	}
 	
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#sendAll(java.util.Collection)
-	 */
+	protected void closeForReal() throws Exception {
+		disconnect();
+	}
+	
 	@Override
-	public boolean sendAll(Collection<Packet> packets)
-	{
+	public boolean isClosed() {
+		return closed ? closed : ( socket != null ? !socket.isClosed() : false );
+	}
+	
+	public void disconnect() throws IOException {
+		closed = true;
+		sending.interrupt();
+		receiving.interrupt();
+		try {
+			socket.close();
+			input.close();
+			output.close();
+		} finally {
+			if ( this.xserver != null ) {
+				this.manager.getEventHandler().callEvent( new XServerDisconnectEvent( xserver ) );
+			}
+		}
+	}
+	
+	@Override
+	public String getHost() {
+		return host;
+	}
+	
+	@Override
+	public int getPort() {
+		return port;
+	}
+	
+	@Override
+	public boolean send( Packet packet ) {
+		return pendingSendingPackets.offer( packet );
+	}
+	
+	@Override
+	public boolean sendAll( Collection<Packet> packets ) {
 		boolean result = true;
-		for (Packet p : packets)
-		{
-			result &= send(p);
+		for ( Packet p : packets ) {
+			result &= send( p );
 		}
 		return result;
 	}
-
+	
 	private abstract class InterruptableRunnable implements Runnable {
-		private final AtomicBoolean interrupted = new AtomicBoolean(false);
+		private final AtomicBoolean interrupted = new AtomicBoolean( false );
 		private final String name;
 		
-		private InterruptableRunnable(String name) {
+		private InterruptableRunnable( String name ) {
 			this.name = name;
 		}
-
-		public void start(AbstractXServerManagerObj manager) {
+		
+		public void start( AbstractXServerManager manager ) {
 			manager.getExecutorService().submit( this );
 		}
 		
@@ -269,32 +309,30 @@ public class ConnectionObj implements Connection
 		public void interrupt() {
 			this.interrupted.set( true );
 		}
-
+		
 		public String getName() {
 			return name;
 		}
 		
 	}
 	
-	private class Sending extends InterruptableRunnable
-	{
-
-		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
-		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
+	private class Sending extends InterruptableRunnable {
+		
+		private final AtomicLong recordSecondPackageCount = new AtomicLong( 0 );
+		private final AtomicLong lastSecondPackageCount = new AtomicLong( 0 );
 		
 		private long lastSecond = 0;
 		private long packageCount = 0;
 		
-		public Sending()
-		{
-			super("Sending Thread to (" + host + ":" + port + ")");
+		public Sending() {
+			super( "Sending Thread to (" + host + ":" + port + ")" );
 		}
-
+		
 		private void tickPacket() {
-			if(System.currentTimeMillis() - lastSecond > 1000) {
-				lastSecondPackageCount.set(packageCount);
-				if(packageCount > recordSecondPackageCount.get()) {
-					recordSecondPackageCount.set(packageCount);
+			if ( System.currentTimeMillis() - lastSecond > 1000 ) {
+				lastSecondPackageCount.set( packageCount );
+				if ( packageCount > recordSecondPackageCount.get() ) {
+					recordSecondPackageCount.set( packageCount );
 				}
 				packageCount = 0;
 				lastSecond = System.currentTimeMillis();
@@ -303,68 +341,60 @@ public class ConnectionObj implements Connection
 		}
 		
 		@Override
-		public void run()
-		{
-			try
-			{
-				while (!isInterrupted() && isConnected())
-				{
-
-					Packet p = pendingSendingPackets.poll(1000, TimeUnit.MILLISECONDS);
-
-					if (isInterrupted())
-					{
+		public void run() {
+			try {
+				while ( !isInterrupted() && !isClosed() ) {
+					
+					Packet p = pendingSendingPackets.poll( 1000, TimeUnit.MILLISECONDS );
+					
+					if ( isInterrupted() ) {
 						return;
 					}
-
-					if (p == null)
-					{
-						if (isLoggedIn())
-						{
-							new Packet(PacketType.KeepAlive, new byte[0]).writeToStream(output).destroy();;
+					
+					if ( p == null ) {
+						if ( !isClosed() ) {
+							new Packet( PacketType.KEEP_ALIVE, new byte[0] ).writeToStream( output ).destroy();
+							;
 							tickPacket();
-						} else
-						{
-							errorDisconnect();
+						} else {
+							disconnect();
+							this.interrupt();
 						}
-					} else
-					{
-						p.writeToStream(output);
+					} else {
+						p.writeToStream( output );
 						tickPacket();
 					}
 					p = null;
-
+					
 				}
-			} catch (IOException | InterruptedException e)
-			{
-				//TODO
-				//manager.getLogger().warning("Error Disconnect (" + host + ":" + port + "): " + e.getMessage() + "\n" +  MyStringUtils.stackTraceToString(e));
-				errorDisconnect();
+			} catch ( IOException | InterruptedException e ) {
+				try {
+					disconnect();
+				} catch ( IOException e1 ) {
+				}
+				this.interrupt();
 			}
-			this.interrupt();
 		}
-
+		
 	}
-
-	private class Receiving extends InterruptableRunnable
-	{
-
-		private final AtomicLong recordSecondPackageCount = new AtomicLong(0);
-		private final AtomicLong lastSecondPackageCount = new AtomicLong(0);
+	
+	private class Receiving extends InterruptableRunnable {
+		
+		private final AtomicLong recordSecondPackageCount = new AtomicLong( 0 );
+		private final AtomicLong lastSecondPackageCount = new AtomicLong( 0 );
 		
 		private long lastSecond = 0;
 		private long packageCount = 0;
 		
-		public Receiving()
-		{
-			super("Receiving Thread to (" + host + ":" + port + ")");
+		public Receiving() {
+			super( "Receiving Thread to (" + host + ":" + port + ")" );
 		}
-
+		
 		private void tickPacket() {
-			if(System.currentTimeMillis() - lastSecond > 1000) {
-				lastSecondPackageCount.set(packageCount);
-				if(packageCount > recordSecondPackageCount.get()) {
-					recordSecondPackageCount.set(packageCount);
+			if ( System.currentTimeMillis() - lastSecond > 1000 ) {
+				lastSecondPackageCount.set( packageCount );
+				if ( packageCount > recordSecondPackageCount.get() ) {
+					recordSecondPackageCount.set( packageCount );
 				}
 				packageCount = 0;
 				lastSecond = System.currentTimeMillis();
@@ -373,165 +403,55 @@ public class ConnectionObj implements Connection
 		}
 		
 		@Override
-		public void run()
-		{
-			try
-			{
-				while (!isInterrupted() && isConnected())
-				{
-					packetHandler.handle(Packet.readFromSteam(input));
+		public void run() {
+			try {
+				while ( !isInterrupted() && !isClosed() ) {
+					packetHandler.handle( Packet.readFromSteam( input ) );
 					tickPacket();
 				}
-			} catch (IOException e)
-			{
-				//TODO
-				//manager.getLogger().warning("Error Disconnect (" + host + ":" + port + "): " + e.getMessage() + "\n" +  MyStringUtils.stackTraceToString(e));
-				errorDisconnect();
+			} catch ( IOException e ) {
+				try {
+					disconnect();
+				} catch ( IOException e1 ) {
+				}
+				this.interrupt();
 			}
-			this.interrupt();
 		}
 	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#getStatus()
-	 */
+	
 	@Override
-	public STATE getStatus()
-	{
-		statusLock.readLock().lock();
-		try
-		{
-			return status;
-		} finally
-		{
-			statusLock.readLock().unlock();
-		}
+	public XServerObj getXServer() {
+		return this.xserver;
 	}
-
-	protected void setStatus(stats status)
-	{
-		statusLock.writeLock().lock();
-		try
-		{
-			this.status = status;
-		} finally
-		{
-			statusLock.writeLock().unlock();
-		}
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#getXserver()
-	 */
+	
 	@Override
-	public XServer getXserver()
-	{
-		try(CloseableLock c = xserverLock.readLock().open()) {
-			return xserver;
-		}
+	public Queue<Packet> getPendingPackets() {
+		return new ArrayBlockingQueue<Packet>( CAPACITY, false, pendingSendingPackets );
 	}
-
-	protected void setXserver(XServerObj xserver)
-	{
-		try(CloseableLock c = xserverLock.writeLock().open()) {
-			this.xserver = xserver;
-			xserver.setConnection(this);
-		}
-	}
-
-	protected boolean setReloginXserver(XServerObj xserver)
-	{
-		try(CloseableLock c = xserverLock.writeLock().open()) {
-			this.xserver = xserver;
-			return xserver.setReloginConnection(this);
-		}
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#getPendingPackets()
-	 */
-	@Override
-	public Queue<Packet> getPendingPackets()
-	{
-		return new ArrayBlockingQueue<Packet>(CAPACITY, false, pendingSendingPackets);
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#isLoggedIn()
-	 */
-	@Override
-	public boolean isLoggedIn()
-	{
-		return isConnected() ? stats.connected.equals(getStatus()) : false;
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#isLoggingIn()
-	 */
-	@Override
-	public boolean isLoggingIn()
-	{
-		return isConnected() ? stats.connecting.equals(getStatus()) : false;
-	}
-
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#toString()
-	 */
+	
 	@Override
 	public String toString() {
 		return host + ":" + port;
 	}
 	
-	//recordSecondPackageCount
-	//lastSecondPackageCount
-	
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#getSendingRecordSecondPackageCount()
-	 */
 	@Override
 	public long getSendingRecordSecondPackageCount() {
 		return this.sending.recordSecondPackageCount.get();
 	}
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#getSendinglastSecondPackageCount()
-	 */
+	
 	@Override
 	public long getSendinglastSecondPackageCount() {
 		return this.sending.lastSecondPackageCount.get();
 	}
 	
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#getReceivingRecordSecondPackageCount()
-	 */
 	@Override
 	public long getReceivingRecordSecondPackageCount() {
 		return this.receiving.recordSecondPackageCount.get();
 	}
 	
-	/* (non-Javadoc)
-	 * @see de.mickare.xserver.net.Connection#getReceivinglastSecondPackageCount()
-	 */
 	@Override
 	public long getReceivinglastSecondPackageCount() {
 		return this.receiving.lastSecondPackageCount.get();
-	}
-
-	@Override
-	public void close() throws Exception {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean isOpened() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public XServer getXServer() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 	
 }

@@ -7,7 +7,7 @@ import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.listener.StressTestListener;
 import de.mickare.xserver.util.MySQL;
 
-public class BukkitXServerManager extends XServerManager {
+public class BukkitXServerManager extends AbstractXServerManager {
 
 	public static BukkitXServerManager getInstance()
 			throws NotInitializedException {

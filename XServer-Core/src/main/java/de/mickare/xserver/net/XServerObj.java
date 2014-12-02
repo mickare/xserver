@@ -5,15 +5,17 @@ import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
 
-import de.mickare.xserver.AbstractXServerManagerObj;
+import de.mickare.xserver.AbstractXServerManager;
 import de.mickare.xserver.Message;
 import de.mickare.xserver.XGroup;
+import de.mickare.xserver.XServerManager;
 import de.mickare.xserver.XType;
 import de.mickare.xserver.events.XServerMessageOutgoingEvent;
 import de.mickare.xserver.exceptions.NotInitializedException;
-import de.mickare.xserver.net.Connection.STATE;
 import de.mickare.xserver.util.Encryption;
 import de.mickare.xserver.util.MyStringUtils;
 import de.mickare.xserver.util.concurrent.CloseableLock;
@@ -22,6 +24,7 @@ import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
 public class XServerObj implements XServer {
 	
+	private final static int MAX_CONNECTIONS = 4;
 	// private final static int MESSAGE_CACHE_SIZE = 8192;
 	
 	private final String name;
@@ -32,8 +35,9 @@ public class XServerObj implements XServer {
 	private volatile boolean deprecated = false;
 	
 	private CloseableReadWriteLock connectionLock = new CloseableReentrantReadWriteLock();
-	private final ConcurrentLinkedQueue<ConnectionObj> connectionPool = new ConcurrentLinkedQueue<ConnectionObj>();
-	
+	private final Set<ConnectionObj> connectionOpened = Collections
+			.newSetFromMap( new ConcurrentHashMap<ConnectionObj, Boolean>() );
+	private final LinkedBlockingQueue<ConnectionObj> connectionPool = new LinkedBlockingQueue<ConnectionObj>();
 	
 	private volatile XType type = XType.Other;
 	
@@ -41,9 +45,9 @@ public class XServerObj implements XServer {
 	
 	// private final CacheList<Packet> pendingPackets = new CacheList<Packet>( MESSAGE_CACHE_SIZE );
 	
-	private final AbstractXServerManagerObj manager;
+	private final AbstractXServerManager manager;
 	
-	public XServerObj( String name, String host, int port, String password, AbstractXServerManagerObj manager ) {
+	public XServerObj( String name, String host, int port, String password, AbstractXServerManager manager ) {
 		this.name = name;
 		this.host = host;
 		this.port = port;
@@ -52,7 +56,7 @@ public class XServerObj implements XServer {
 	}
 	
 	public XServerObj( String name, String host, int port, String password, XType type,
-			AbstractXServerManagerObj manager ) {
+			AbstractXServerManager manager ) {
 		this.name = name;
 		this.host = host;
 		this.port = port;
@@ -61,101 +65,90 @@ public class XServerObj implements XServer {
 		this.manager = manager;
 	}
 	
-	private ConnectionObj createConnection() throws UnknownHostException, NotInitializedException, IOException,
-			InterruptedException {
-		ConnectionObj con = new ConnectionObj( manager.getSocketFactory(), host, port, this, manager );
-		
-		con.connect();
-		
-		return con;
+	protected void addConnection( ConnectionObj con ) {
+		try ( CloseableLock c = connectionLock.writeLock().open() ) {
+			if ( con != null && !con.isClosed() && deprecated ) {
+				this.connectionPool.add( con );
+			}
+		}
+	}
+	
+	private ConnectionObj createConnection() throws UnknownHostException, IOException, InterruptedException {
+		if ( connectionOpened.size() >= MAX_CONNECTIONS ) {
+			return connectionPool.take();
+		}
+		try ( CloseableLock c = connectionLock.writeLock().open() ) {
+			final ConnectionObj con = ConnectionObj.connectToServer( manager, manager.getSocketFactory(), this );
+			connectionOpened.add( con );
+			return con;
+		}
+	}
+	
+	private void closeConnection( final ConnectionObj con ) throws Exception {
+		try ( CloseableLock c = connectionLock.writeLock().open() ) {
+			try {
+				if ( !con.isClosed() ) {
+					con.closeForReal();
+				}
+			} catch ( Exception e ) {
+				throw e;
+			} finally {
+				this.connectionOpened.remove( con );
+				this.connectionPool.remove( con );
+				
+				if ( !deprecated ) {
+					connect();
+				}
+			}
+		}
 	}
 	
 	public ConnectionObj getConnection() {
-		try ( CloseableLock c = connectionLock.writeLock().open() ) {
-			ConnectionObj con = connectionPool.poll();
-			if(con != null && con.getStatus() == STATE.CONNECTED) {
+		try ( CloseableLock c = connectionLock.readLock().open() ) {
+			ConnectionObj con = connectionPool.take();
+			if ( con != null && !con.isClosed() ) {
 				return con;
 			} else {
-				return this.createConnection();
+				return createConnection();
 			}
 		} catch ( NotInitializedException | IOException | InterruptedException e ) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			manager.getLogger().log( Level.SEVERE, "No Connection due an Exception", e );
 		}
 		return null;
 	}
 	
-	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see de.mickare.xserver.net.XServer#connect()
-	 */
-	@Override
 	public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
-		try ( CloseableLock c = conLock.writeLock().open() ) {
+		try ( CloseableLock c = connectionLock.writeLock().open() ) {
 			if ( !valid() ) {
 				return;
 			}
-			if ( isConnected() ) {
-				this.disconnect();
+			if ( this.connectionOpened.size() == 0 ) {
+				this.createConnection();
 			}
-			new ConnectionObj( manager.getSocketFactory(), host, port, this, manager );
 		}
 	}
 	
-	public void setConnection( Connection con ) {
-		try ( CloseableLock c = conLock.writeLock().open() ) {
-			if ( this.connection != con ) {
-				this.disconnect();
-			}
-			this.connection = con;
-		}
-	}
-	
-	public boolean setReloginConnection( Connection con ) {
-		if ( manager.getHomeServer() == this ) {
-			try ( CloseableLock c = conLock.writeLock().open() ) {
-				if ( this.connection2 != con && ( this.connection2 != null ? this.connection2.isConnected() : false ) ) {
-					this.disconnect();
-					return false;
-				}
-				this.connection2 = con;
-			}
-		} else {
-			setConnection( con );
-		}
-		return true;
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see de.mickare.xserver.net.XServer#isConnected()
-	 */
 	@Override
 	public boolean isConnected() {
-		try ( CloseableLock c = conLock.readLock().open() ) {
-			return connection != null ? connection.isLoggedIn() : false;
+		try ( CloseableLock c = this.connectionLock.readLock().open() ) {
+			return this.deprecated ? false : ( this.connectionOpened.size() > 0 );
 		}
 	}
 	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see de.mickare.xserver.net.XServer#disconnect()
-	 */
 	@Override
 	public void disconnect() {
-		try ( CloseableLock c = conLock.writeLock().open() ) {
-			if ( connection != null ) {
-				connection.disconnect();
-				/*
-				 * synchronized (pendingPackets) { for (Packet p : this.connection.getPendingPackets()) { if
-				 * (p.getPacketID() == PacketType.Message.packetID) { this.pendingPackets.push( p ); } } }
-				 */
-				connection = null;
-				connection2 = null;
+		try ( CloseableLock c = this.connectionLock.writeLock().open() ) {
+			for ( ConnectionObj o : new HashSet<ConnectionObj>( this.connectionOpened ) ) {
+				try {
+					o.closeForReal();
+				} catch ( Exception e ) {
+				}
+			}
+			if ( !deprecated ) {
+				try {
+					connect();
+				} catch ( NotInitializedException | IOException | InterruptedException e ) {
+				}
 			}
 		}
 	}
@@ -212,10 +205,12 @@ public class XServerObj implements XServer {
 			return false;
 		}
 		if ( isConnected() ) {
-			try ( CloseableLock c = conLock.readLock().open() ) {
-				if ( connection.send( new Packet( PacketType.Message, message.getData() ) ) ) {
+			try ( ConnectionObj con = this.getConnection() ) {
+				if ( con.send( new Packet( PacketType.MESSAGE, message.getData() ) ) ) {
 					result = true;
 				}
+			} catch ( Exception e ) {
+				throw new RuntimeException( e );
 			}
 		}
 		
@@ -231,28 +226,11 @@ public class XServerObj implements XServer {
 	 */
 	@Override
 	public void ping( Ping ping ) throws InterruptedException, IOException {
-		try ( CloseableLock c = conLock.readLock().open() ) {
-			if ( isConnected() ) {
-				connection.ping( ping );
-			}
+		try ( ConnectionObj con = this.getConnection() ) {
+			con.ping( ping );
+		} catch ( Exception e ) {
+			throw new RuntimeException( e );
 		}
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see de.mickare.xserver.net.XServer#flushCache()
-	 */
-	@Override
-	public void flushCache() {
-		/*
-		 * try (CloseableLock c = conLock.readLock().open()) { if (isConnected()) {
-		 * 
-		 * synchronized (pendingPackets) { Packet p = pendingPackets.pollLast(); while (p != null) { connection.send( p
-		 * ); p = pendingPackets.pollLast(); } }
-		 * 
-		 * } }
-		 */
 	}
 	
 	/*
@@ -262,15 +240,11 @@ public class XServerObj implements XServer {
 	 */
 	@Override
 	public XType getType() {
-		try ( CloseableLock c = typeLock.readLock().open() ) {
-			return type;
-		}
+		return type;
 	}
 	
 	protected void setType( XType type ) {
-		try ( CloseableLock c = typeLock.writeLock().open() ) {
-			this.type = type;
-		}
+		this.type = type;
 	}
 	
 	public XServerManager getManager() {
@@ -284,16 +258,13 @@ public class XServerObj implements XServer {
 	 */
 	@Override
 	public long getSendingRecordSecondPackageCount() {
-		try ( CloseableLock c = conLock.readLock().open() ) {
-			if ( isConnected() ) {
-				if ( this.connection2 != null ) {
-					return this.connection.getSendingRecordSecondPackageCount()
-							+ this.connection2.getSendingRecordSecondPackageCount();
-				}
-				return this.connection.getSendingRecordSecondPackageCount();
+		try ( CloseableLock c = this.connectionLock.readLock().open() ) {
+			long result = 0;
+			for ( ConnectionObj o : this.connectionOpened ) {
+				result += o.getSendingRecordSecondPackageCount();
 			}
+			return result;
 		}
-		return 0;
 	}
 	
 	/*
@@ -303,16 +274,13 @@ public class XServerObj implements XServer {
 	 */
 	@Override
 	public long getSendinglastSecondPackageCount() {
-		try ( CloseableLock c = conLock.readLock().open() ) {
-			if ( isConnected() ) {
-				if ( this.connection2 != null ) {
-					return this.connection.getSendinglastSecondPackageCount()
-							+ this.connection2.getSendinglastSecondPackageCount();
-				}
-				return this.connection.getSendinglastSecondPackageCount();
+		try ( CloseableLock c = this.connectionLock.readLock().open() ) {
+			long result = 0;
+			for ( ConnectionObj o : this.connectionOpened ) {
+				result += o.getSendinglastSecondPackageCount();
 			}
+			return result;
 		}
-		return 0;
 	}
 	
 	/*
@@ -322,16 +290,13 @@ public class XServerObj implements XServer {
 	 */
 	@Override
 	public long getReceivingRecordSecondPackageCount() {
-		try ( CloseableLock c = conLock.readLock().open() ) {
-			if ( isConnected() ) {
-				if ( this.connection2 != null ) {
-					return this.connection.getReceivingRecordSecondPackageCount()
-							+ this.connection2.getReceivingRecordSecondPackageCount();
-				}
-				return this.connection.getReceivingRecordSecondPackageCount();
+		try ( CloseableLock c = this.connectionLock.readLock().open() ) {
+			long result = 0;
+			for ( ConnectionObj o : this.connectionOpened ) {
+				result += o.getReceivingRecordSecondPackageCount();
 			}
+			return result;
 		}
-		return 0;
 	}
 	
 	/*
@@ -341,16 +306,14 @@ public class XServerObj implements XServer {
 	 */
 	@Override
 	public long getReceivinglastSecondPackageCount() {
-		try ( CloseableLock c = conLock.readLock().open() ) {
-			if ( isConnected() ) {
-				if ( this.connection2 != null ) {
-					return this.connection.getReceivinglastSecondPackageCount()
-							+ this.connection2.getReceivinglastSecondPackageCount();
-				}
-				return this.connection.getReceivinglastSecondPackageCount();
+		
+		try ( CloseableLock c = this.connectionLock.readLock().open() ) {
+			long result = 0;
+			for ( ConnectionObj o : this.connectionOpened ) {
+				result += o.getReceivinglastSecondPackageCount();
 			}
+			return result;
 		}
-		return 0;
 	}
 	
 	public void addGroup( XGroup g ) {

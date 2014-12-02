@@ -24,7 +24,7 @@ import de.mickare.xserver.util.concurrent.CloseableLock;
 import de.mickare.xserver.util.concurrent.CloseableReadWriteLock;
 import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
-public abstract class AbstractXServerManagerObj extends XServerManager {
+public abstract class AbstractXServerManager extends XServerManager {
 
 	private final String sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups;
 
@@ -46,7 +46,7 @@ public abstract class AbstractXServerManagerObj extends XServerManager {
 
 	private boolean reconnectClockRunning = false;
 
-	protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection, String sql_table_xservers,
+	protected AbstractXServerManager(String servername, XServerPlugin plugin, MySQL connection, String sql_table_xservers,
 			String sql_table_xgroups, String sql_table_xserversxgroups, ExecutorService executorService)
 			throws InvalidConfigurationException, IOException {
 		this.plugin = plugin;

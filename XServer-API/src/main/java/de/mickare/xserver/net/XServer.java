@@ -1,14 +1,12 @@
 package de.mickare.xserver.net;
 
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.Set;
 
 import de.mickare.xserver.XServerManager;
 import de.mickare.xserver.Message;
 import de.mickare.xserver.XGroup;
 import de.mickare.xserver.XType;
-import de.mickare.xserver.exceptions.NotInitializedException;
 
 public interface XServer {
 	
@@ -64,10 +62,6 @@ public interface XServer {
 	public abstract void ping(Ping ping) throws InterruptedException,
 		IOException;
 	
-	/**
-	 * Send cached packets = queue packets into connection
-	 */
-	public abstract void flushCache();
 	
 	/**
 	 * Get the type of this server
