@@ -14,7 +14,6 @@ import javax.net.ServerSocketFactory;
 import javax.net.SocketFactory;
 
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
-import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.net.XServer;
 import de.mickare.xserver.net.XServerObj;
 import de.mickare.xserver.util.MySQL;
@@ -162,7 +161,9 @@ public abstract class AbstractXServerManager extends XServerManager {
 								synchronized ( notConnectedServers ) {
 									notConnectedServers.remove( s );
 								}
-							} catch ( IOException | InterruptedException | NotInitializedException e ) {
+							} catch ( InterruptedException e ) {
+								
+							} catch ( Exception e ) {
 								notifyNotConnected( s, e );
 							}
 						}
@@ -188,7 +189,9 @@ public abstract class AbstractXServerManager extends XServerManager {
 							synchronized ( notConnectedServers ) {
 								notConnectedServers.remove( s );
 							}
-						} catch ( IOException | InterruptedException | NotInitializedException e ) {
+						} catch ( InterruptedException e ) {
+							
+						} catch ( Exception e ) {
 							notifyNotConnected( s, e );
 						}
 					}

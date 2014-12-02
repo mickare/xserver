@@ -40,22 +40,26 @@ public class MainServer implements Runnable {
 	
 	@Override
 	public void run() {
-		Socket socket = null;
-		while ( !isClosed() ) {
-			try {
-				socket = server.accept();
-				ConnectionObj.handleClient( manager, socket );
-			} catch ( IOException e ) {
-				manager.getLogger().warning( "Exception while connecting: " + e.getMessage() + "\n"
-						+ MyStringUtils.stackTraceToString( e ) );
-				if ( socket != null ) {
-					try {
-						socket.close();
-					} catch ( IOException e1 ) {
+		try {
+			Socket socket = null;
+			while ( !isClosed() ) {
+				try {
+					socket = server.accept();
+					ConnectionObj.handleClient( manager, socket );
+				} catch ( IOException e ) {
+					manager.getLogger().warning( "Exception while connecting: " + e.getMessage() + "\n"
+							+ MyStringUtils.stackTraceToString( e ) );
+					if ( socket != null ) {
+						try {
+							socket.close();
+						} catch ( IOException e1 ) {
+						}
 					}
 				}
+				socket = null;
 			}
-			socket = null;
+		} catch ( InterruptedException e ) {
+			
 		}
 	}
 	

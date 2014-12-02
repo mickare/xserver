@@ -106,5 +106,7 @@ public interface XServer {
 	boolean isDeprecated();
 	
 	XServer getCurrentXServer();
+
+	int countConnections();
 	
 }

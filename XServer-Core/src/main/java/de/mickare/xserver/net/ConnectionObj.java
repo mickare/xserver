@@ -96,7 +96,7 @@ public class ConnectionObj implements Connection {
 	
 	public static ConnectionObj endHandshake( final AbstractXServerManager manager, final Socket socket,
 			final DataInputStream inputStream, final DataOutputStream outputStream, final XServerObj other,
-			final XType otherType ) throws IOException {
+			final XType otherType ) throws IOException, InterruptedException {
 		/*
 		 * End Handshake
 		 */
@@ -123,11 +123,11 @@ public class ConnectionObj implements Connection {
 	}
 	
 	public static final ConnectionObj connectToServer( final AbstractXServerManager manager, final SocketFactory sf,
-			final XServerObj xserver ) throws UnknownHostException, IOException {
+			final XServerObj other ) throws UnknownHostException, IOException, InterruptedException {
 		
-		manager.getLogger().info( "connectToServer" );
+		// manager.getLogger().info( "connectToServer" );
 		
-		Socket socket = sf.createSocket( xserver.getHost(), xserver.getPort() );
+		Socket socket = sf.createSocket( other.getHost(), other.getPort() );
 		socket.setSoTimeout( SOCKET_TIMEOUT );
 		
 		final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
@@ -136,25 +136,25 @@ public class ConnectionObj implements Connection {
 		/*
 		 * Send own Login
 		 */
-		sendOwnLogin( manager, socket, inputStream, outputStream, xserver, PacketType.LOGIN_CLIENT );
+		sendOwnLogin( manager, socket, inputStream, outputStream, other, PacketType.LOGIN_CLIENT );
 		
 		/*
 		 * Check other Login
 		 */
 		Object[] o = receiveOtherLogin( manager, socket, inputStream, outputStream, PacketType.LOGIN_SERVER );
-		XServerObj other = ( XServerObj ) o[0];
+		XServerObj other2 = ( XServerObj ) o[0];
 		XType otherType = ( XType ) o[1];
 		
 		/*
 		 * End Handshake
 		 */
-		return endHandshake( manager, socket, inputStream, outputStream, other, otherType );
+		return endHandshake( manager, socket, inputStream, outputStream, other2, otherType );
 	}
 	
 	public static final ConnectionObj handleClient( final AbstractXServerManager manager, final Socket socket )
-			throws IOException {
+			throws IOException, InterruptedException {
 		
-		manager.getLogger().info( "handleClient" );
+		// manager.getLogger().info( "handleClient" );
 		
 		socket.setSoTimeout( SOCKET_TIMEOUT );
 		
@@ -175,7 +175,7 @@ public class ConnectionObj implements Connection {
 		
 		/*
 		 * End Handshake
-		 */
+		 */		
 		return endHandshake( manager, socket, inputStream, outputStream, other, otherType );
 	}
 	
@@ -195,6 +195,8 @@ public class ConnectionObj implements Connection {
 	private final Receiving receiving;
 	private final Sending sending;
 	private final NetPacketHandler packetHandler;
+	
+	private final AtomicLong lastUse = new AtomicLong( System.currentTimeMillis() );
 	
 	public ConnectionObj( AbstractXServerManager manager, Socket socket, DataInputStream inputStream,
 			DataOutputStream outputStream, XServerObj xserver ) {
@@ -219,11 +221,18 @@ public class ConnectionObj implements Connection {
 		
 	}
 	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see de.mickare.xserver.net.Connection#ping(de.mickare.xserver.net.Ping)
-	 */
+	public synchronized long getLastUse() {
+		return this.lastUse.get();
+	}
+	
+	public synchronized void setLastUse( long time ) {
+		this.lastUse.set( time );
+	}
+	
+	public synchronized void setLastUseNow() {
+		this.setLastUse( System.currentTimeMillis() );
+	}
+	
 	@Override
 	public void ping( Ping ping ) throws InterruptedException, IOException {
 		ByteArrayOutputStream b = null;
@@ -241,17 +250,17 @@ public class ConnectionObj implements Connection {
 	}
 	
 	@Override
-	public synchronized void close() throws Exception {
+	public void close() throws Exception {
 		if ( !closed ) {
 			this.xserver.addConnection( this );
 		}
 	}
 	
-	protected synchronized void closeForReal() throws Exception {
+	protected void closeForReal() throws Exception {
 		if ( !closed ) {
 			closed = true;
+			this.xserver.closeConnection( this );
 			try {
-				this.xserver.closeConnection( this );
 			} finally {
 				disconnect();
 			}
@@ -259,11 +268,11 @@ public class ConnectionObj implements Connection {
 	}
 	
 	@Override
-	public synchronized boolean isClosed() {
-		return closed ? closed : ( socket != null ? !socket.isClosed() : false );
+	public boolean isClosed() {
+		return closed ? closed : socket.isClosed();
 	}
 	
-	public synchronized void disconnect() throws IOException {
+	public void disconnect() throws IOException {
 		closed = true;
 		sending.interrupt();
 		receiving.interrupt();
@@ -304,10 +313,8 @@ public class ConnectionObj implements Connection {
 	
 	private abstract class InterruptableRunnable implements Runnable {
 		private final AtomicBoolean interrupted = new AtomicBoolean( false );
-		private final String name;
 		
 		private InterruptableRunnable( String name ) {
-			this.name = name;
 		}
 		
 		public void start( AbstractXServerManager manager ) {
@@ -320,10 +327,6 @@ public class ConnectionObj implements Connection {
 		
 		public void interrupt() {
 			this.interrupted.set( true );
-		}
-		
-		public String getName() {
-			return name;
 		}
 		
 	}
