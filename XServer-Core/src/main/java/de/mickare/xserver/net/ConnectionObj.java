@@ -4,7 +4,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,7 +16,6 @@ import de.mickare.xserver.XType;
 import de.mickare.xserver.events.XServerConnectionDenied;
 import de.mickare.xserver.events.XServerDisconnectEvent;
 import de.mickare.xserver.events.XServerLoggedInEvent;
-import de.mickare.xserver.util.MyStringUtils;
 
 public class ConnectionObj implements Connection {
 	
@@ -25,97 +23,118 @@ public class ConnectionObj implements Connection {
 	
 	private static final void sendOwnLogin( final AbstractXServerManager manager, final Socket socket,
 			final DataInputStream inputStream, final DataOutputStream outputStream, final XServerObj other,
-			PacketType type ) throws IOException {
-		/*
-		 * Send own Login
-		 */
-		outputStream.writeInt( type.packetID );
-		outputStream.writeUTF( manager.getHomeServer().getName() );
-		outputStream.writeUTF( manager.getHomeServer().getPassword() );
-		outputStream.writeInt( manager.getPlugin().getHomeType().getNumber() );
-		
-		if ( inputStream.readInt() != PacketType.LOGIN_ACCEPTED.packetID ) {
-			String msg = "Own Login denied from " + other.getName() + " (" + socket.getInetAddress().getHostAddress()
-					+ ":" + socket.getPort() + ")";
-			manager.getLogger().info( msg );
+			final PacketType type ) throws IOException, InterruptedException {
+		try {
+			/*
+			 * Send own Login
+			 */
+			outputStream.writeInt( type.getPacketID() );
+			outputStream.writeUTF( manager.getHomeServer().getName() );
+			outputStream.writeUTF( manager.getHomeServer().getPassword() );
+			outputStream.writeInt( manager.getPlugin().getHomeType().getNumber() );
+			
+			if ( inputStream.readInt() != PacketType.LOGIN_ACCEPTED.getPacketID() ) {
+				outputStream.writeInt( PacketType.DISCONNECT.getPacketID() );
+				String msg = "Own Login denied from " + other.getName() + " ("
+						+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")";
+				manager.getLogger().info( msg );
+				socket.close();
+				throw new IOException( msg );
+			}
+			manager.getLogger().info( "Own Login from " + other.getName() + " accepted! ("
+					+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
+		} catch ( Exception e ) {
+			inputStream.close();
+			outputStream.close();
 			socket.close();
-			throw new IOException( msg );
+			throw e;
 		}
-		manager.getLogger().info( "Own Login from " + other.getName() + " accepted! ("
-				+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
 	}
 	
 	private static final Object[] receiveOtherLogin( final AbstractXServerManager manager, final Socket socket,
 			final DataInputStream inputStream, final DataOutputStream outputStream, PacketType type )
-			throws IOException {
-		
-		/*
-		 * Check other Login
-		 */
-		if ( inputStream.readInt() != type.packetID ) {
-			// Packet Error
-			String msg = "Other has wrong Login (Packet Error) (" + socket.getInetAddress().getHostAddress() + ":"
-					+ socket.getPort() + ")";
-			manager.getLogger().info( msg );
-			outputStream.writeInt( PacketType.Error.packetID );
-			socket.close();
-			throw new IOException( msg );
-		}
-		final String name = inputStream.readUTF();
-		final String password = inputStream.readUTF();
-		final XType otherType = XType.getByNumber( inputStream.readInt() );
-		final XServerObj other = manager.getServer( name );
-		
-		if ( other == null || !other.getPassword().equals( password ) ) {
-			// Wrong Login
-			outputStream.writeInt( PacketType.LOGIN_DENIED.packetID );
-			String msg = "Other Login from " + name + " denied! (" + socket.getInetAddress().getHostAddress() + ":"
-					+ socket.getPort() + ")";
-			if ( other == null ) {
-				msg += " - XServer \"" + name + "\" not found";
-			} else {
-				msg += " - wrong password";
+			throws IOException, InterruptedException {
+		try {
+			/*
+			 * Check other Login
+			 */
+			if ( inputStream.readInt() != type.getPacketID() ) {
+				// Packet Error
+				outputStream.writeInt( PacketType.Error.packetID );
+				String msg = "Other has wrong Login (Packet Error) (" + socket.getInetAddress().getHostAddress() + ":"
+						+ socket.getPort() + ")";
+				manager.getLogger().info( msg );
+				socket.close();
+				throw new IOException( msg );
 			}
-			manager.getLogger().info( msg );
-			manager.getEventHandler().callEvent( new XServerConnectionDenied( name, password, socket.getInetAddress()
-					.getHostAddress(), socket.getPort() ) );
+			final String name = inputStream.readUTF();
+			final String password = inputStream.readUTF();
+			final XType otherType = XType.getByNumber( inputStream.readInt() );
+			final XServerObj other = manager.getServer( name );
+			
+			if ( other == null || !other.getPassword().equals( password ) ) {
+				// Wrong Login
+				outputStream.writeInt( PacketType.LOGIN_DENIED.getPacketID() );
+				String msg = "Other Login from " + name + " denied! (" + socket.getInetAddress().getHostAddress() + ":"
+						+ socket.getPort() + ")";
+				if ( other == null ) {
+					msg += " - XServer \"" + name + "\" not found";
+				} else {
+					msg += " - wrong password";
+				}
+				manager.getLogger().info( msg );
+				manager.getEventHandler().callEvent( new XServerConnectionDenied( name, password, socket
+						.getInetAddress().getHostAddress(), socket.getPort() ) );
+				socket.close();
+				throw new IOException( msg );
+			}
+			
+			// Accept
+			outputStream.writeInt( PacketType.LOGIN_ACCEPTED.packetID );
+			manager.getLogger().info( "Other Login from " + name + " accepted! ("
+					+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
+			
+			return new Object[] { other, otherType };
+		} catch ( Exception e ) {
+			inputStream.close();
+			outputStream.close();
 			socket.close();
-			throw new IOException( msg );
+			throw e;
 		}
-		
-		// Accept
-		outputStream.writeInt( PacketType.LOGIN_ACCEPTED.packetID );
-		manager.getLogger().info( "Other Login from " + name + " accepted! ("
-				+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
-		
-		return new Object[] { other, otherType };
 	}
 	
 	public static ConnectionObj endHandshake( final AbstractXServerManager manager, final Socket socket,
 			final DataInputStream inputStream, final DataOutputStream outputStream, final XServerObj other,
 			final XType otherType ) throws IOException, InterruptedException {
-		/*
-		 * End Handshake
-		 */
-		outputStream.writeInt( PacketType.LOGIN_END.packetID );
-		
-		if ( inputStream.readInt() != PacketType.LOGIN_END.packetID ) {
-			manager.getLogger().info( "Handshake failed with " + socket.getInetAddress().getHostAddress() + ":"
-					+ socket.getPort() );
-			socket.close();
-			throw new IOException( "Handshake failed" );
-		}
-		
-		other.setType( otherType );
-		ConnectionObj con = new ConnectionObj( manager, socket, inputStream, outputStream, other );
-		manager.getExecutorService().submit( new Runnable() {
-			@Override
-			public void run() {
-				manager.getEventHandler().callEvent( new XServerLoggedInEvent( other ) );
+		try {
+			/*
+			 * End Handshake
+			 */
+			outputStream.writeInt( PacketType.LOGIN_END.packetID );
+			
+			if ( inputStream.readInt() != PacketType.LOGIN_END.packetID ) {
+				manager.getLogger().info( "Handshake failed with (" + socket.getInetAddress().getHostAddress() + ":"
+						+ socket.getPort() + ")" );
+				socket.close();
+				throw new IOException( "Handshake failed" );
 			}
-		} );
-		
-		return con;
+			
+			other.setType( otherType );
+			ConnectionObj con = new ConnectionObj( manager, socket, inputStream, outputStream, other );
+			manager.getExecutorService().submit( new Runnable() {
+				@Override
+				public void run() {
+					manager.getEventHandler().callEvent( new XServerLoggedInEvent( other ) );
+				}
+			} );
+			
+			return con;
+		} catch ( Exception e ) {
+			inputStream.close();
+			outputStream.close();
+			socket.close();
+			throw e;
+		}
 	}
 	
 	public static final ConnectionObj connectToServer( final AbstractXServerManager manager, final SocketFactory sf,
@@ -123,28 +142,34 @@ public class ConnectionObj implements Connection {
 		
 		// manager.getLogger().info( "connectToServer" );
 		
-		Socket socket = sf.createSocket( other.getHost(), other.getPort() );
+		final Socket socket = sf.createSocket( other.getHost(), other.getPort() );
 		socket.setSoTimeout( SOCKET_TIMEOUT );
 		
-		final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
-		final DataOutputStream outputStream = new DataOutputStream( socket.getOutputStream() );
-		
-		/*
-		 * Send own Login
-		 */
-		sendOwnLogin( manager, socket, inputStream, outputStream, other, PacketType.LOGIN_CLIENT );
-		
-		/*
-		 * Check other Login
-		 */
-		Object[] o = receiveOtherLogin( manager, socket, inputStream, outputStream, PacketType.LOGIN_SERVER );
-		XServerObj other2 = ( XServerObj ) o[0];
-		XType otherType = ( XType ) o[1];
-		
-		/*
-		 * End Handshake
-		 */
-		return endHandshake( manager, socket, inputStream, outputStream, other2, otherType );
+		try {
+			
+			final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
+			final DataOutputStream outputStream = new DataOutputStream( socket.getOutputStream() );
+			
+			/*
+			 * Send own Login
+			 */
+			sendOwnLogin( manager, socket, inputStream, outputStream, other, PacketType.LOGIN_CLIENT );
+			
+			/*
+			 * Check other Login
+			 */
+			Object[] o = receiveOtherLogin( manager, socket, inputStream, outputStream, PacketType.LOGIN_SERVER );
+			XServerObj other2 = ( XServerObj ) o[0];
+			XType otherType = ( XType ) o[1];
+			
+			/*
+			 * End Handshake
+			 */
+			return endHandshake( manager, socket, inputStream, outputStream, other2, otherType );
+		} catch ( Exception e ) {
+			socket.close();
+			throw e;
+		}
 	}
 	
 	public static final void handleClient( final AbstractXServerManager manager, final Socket socket ) {
@@ -154,7 +179,9 @@ public class ConnectionObj implements Connection {
 		manager.getExecutorService().submit( new Runnable() {
 			@Override
 			public void run() {
+				XServerObj other = null;
 				try {
+					
 					socket.setSoTimeout( SOCKET_TIMEOUT );
 					
 					final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
@@ -164,7 +191,7 @@ public class ConnectionObj implements Connection {
 					 * Check other Login
 					 */
 					Object[] o = receiveOtherLogin( manager, socket, inputStream, outputStream, PacketType.LOGIN_CLIENT );
-					XServerObj other = ( XServerObj ) o[0];
+					other = ( XServerObj ) o[0];
 					XType otherType = ( XType ) o[1];
 					
 					/*
@@ -178,8 +205,13 @@ public class ConnectionObj implements Connection {
 					ConnectionObj con = endHandshake( manager, socket, inputStream, outputStream, other, otherType );
 					other.addConnection( con );
 				} catch ( IOException | InterruptedException e ) {
-					manager.getLogger().warning( "Exception while connecting: " + e.getMessage() + "\n"
-							+ MyStringUtils.stackTraceToString( e ) );
+					
+					StringBuilder sb = new StringBuilder();
+					sb.append( "Exception while handling connecting client " );
+					if ( other != null ) {
+						sb.append( other.getName() ).append( " " );
+					}
+					sb.append( " (" + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
 				}
 			}
 		} );

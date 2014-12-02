@@ -27,10 +27,10 @@ public class XServerObj implements XServer {
 	
 	private final static int CAPACITY = 16384;
 	
-	private final static int BORDER_INCREASE = 100;
-	private final static int BORDER_DECREASE = 20;
+	private final static int BORDER_INCREASE = 500;
+	private final static int BORDER_DECREASE = 200;
 	
-	private final static int MAX_CONNECTIONS = 8;
+	private final static int MAX_CONNECTIONS = 3;
 	private final static long CONNECTION_CHANGE_DELAY = 10 * 1000;
 	// private final static int MESSAGE_CACHE_SIZE = 8192;
 	
@@ -154,15 +154,14 @@ public class XServerObj implements XServer {
 		lastChange.set( System.currentTimeMillis() );
 		try {
 			con.closeForReal();
-			manager.getLogger().warning( this.name + " - Decreased connections to: " + this.connectionOpened.size() );
+			this.manager.getLogger().info( this.name + " - Decreased connections to: " + this.connectionOpened.size() );
 		} catch ( IOException e ) {
-			manager.getLogger().warning( this.name + " - Could not decrease connections correctly: " + e.getMessage() );
 			this.connectionOpened.remove( con );
 			throw e;
 		}
 	}
 	
-	private void increaseConnections() throws IOException, InterruptedException {
+	private synchronized void increaseConnections() throws IOException, InterruptedException {
 		
 		if ( this.connectionOpened.size() >= MAX_CONNECTIONS
 				|| System.currentTimeMillis() - lastChange.get() <= CONNECTION_CHANGE_DELAY ) {
@@ -174,9 +173,8 @@ public class XServerObj implements XServer {
 			con = ConnectionObj.connectToServer( manager, manager.getSocketFactory(), this );
 			this.connectionOpened.add( con );
 			this.connectionPool.putLast( con );
-			manager.getLogger().warning( this.name + " - Increased connections to: " + this.connectionOpened.size() );
+			this.manager.getLogger().info( this.name + " - Increased connections to: " + this.connectionOpened.size() );
 		} catch ( IOException | InterruptedException e ) {
-			manager.getLogger().warning( this.name + " - Could not increase connections: " + e.getMessage() );
 			if ( con != null ) {
 				this.connectionOpened.remove( con );
 				this.connectionPool.remove( con );

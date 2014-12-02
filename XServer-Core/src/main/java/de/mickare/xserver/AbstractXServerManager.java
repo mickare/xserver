@@ -339,8 +339,6 @@ public abstract class AbstractXServerManager extends XServerManager {
 						.createServerSocket( homeServer.getPort(), 100 ), this );
 				mainserver.start( this.getExecutorService() );
 				
-				start_async();
-				
 			}
 		}
 	}
