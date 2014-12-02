@@ -24,7 +24,7 @@ import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
 public class XServerObj implements XServer {
 	
-	private final static int MAX_CONNECTIONS = 4;
+	private final static int MAX_CONNECTIONS = 2;
 	private final static long MAX_LAST_USE = 120 * 1000;
 	// private final static int MESSAGE_CACHE_SIZE = 8192;
 	
@@ -81,15 +81,17 @@ public class XServerObj implements XServer {
 	private ConnectionObj createConnection() throws UnknownHostException, IOException, InterruptedException {
 		// log( "B1" );
 		ConnectionObj con;
-		if ( connectionOpened.size() >= MAX_CONNECTIONS ) {
-			// log( "B2.1" );
-			con = connectionPool.takeLast();
-			// log( "B2.2" );
-			con.setLastUseNow();
-			return con;
+		
+		if ( connectionOpened.size() < MAX_CONNECTIONS ) {
+			try ( CloseableLock c = this.connectionLock.writeLock().open() ) {
+				// log( "B2.1" );
+				if ( connectionOpened.size() < MAX_CONNECTIONS ) {
+					ConnectionObj.connectToServer( manager, manager.getSocketFactory(), this );
+				}
+			}
 		}
 		// log( "B3.1" );
-		ConnectionObj.connectToServer( manager, manager.getSocketFactory(), this );
+		
 		con = connectionPool.takeLast();
 		con.setLastUseNow();
 		// log( "B3.2" );
