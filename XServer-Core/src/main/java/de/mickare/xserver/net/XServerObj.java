@@ -75,7 +75,7 @@ public class XServerObj implements XServer {
 			if (isConnected()) {
 				this.disconnect();
 			}
-			new ConnectionObj( manager.getSocketFactory(), host, port, manager );
+			new ConnectionObj( manager.getSocketFactory(), host, port, this, manager );
 		}
 	}
 

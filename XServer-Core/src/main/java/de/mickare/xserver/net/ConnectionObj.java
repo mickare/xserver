@@ -61,10 +61,12 @@ public class ConnectionObj implements Connection
 	 * @throws InterruptedException
 	 * @throws NotInitializedException
 	 */
-	public ConnectionObj(SocketFactory sf, String host, int port, AbstractXServerManagerObj manager) throws UnknownHostException, IOException, InterruptedException,
+	public ConnectionObj(SocketFactory sf, String host, int port, XServer xserver, AbstractXServerManagerObj manager) throws UnknownHostException, IOException, InterruptedException,
 			NotInitializedException
 	{
 
+		this.xserver = xserver;
+		
 		this.host = host;
 		this.port = port;
 		this.socket = sf.createSocket(host, port);
@@ -74,13 +76,15 @@ public class ConnectionObj implements Connection
 		this.output = new DataOutputStream(socket.getOutputStream());
 
 		this.packetHandler = new NetPacketHandler(this, manager);
+		
 		this.receiving = new Receiving();
+		this.receiving.start(manager);
+		
 		this.sending = new Sending();
-
+		this.sending.start(manager);
+		
 		this.packetHandler.sendFirstLoginRequest();
 
-		this.receiving.start(manager);
-		this.sending.start(manager);
 		//this.packetHandler.start();
 	}
 
