@@ -238,20 +238,29 @@ public class ConnectionObj implements Connection {
 	}
 	
 	@Override
-	public void close() throws Exception {
-		this.xserver.addConnection( this );
+	public synchronized void close() throws Exception {
+		if ( !closed ) {
+			this.xserver.addConnection( this );
+		}
 	}
 	
-	protected void closeForReal() throws Exception {
-		disconnect();
+	protected synchronized void closeForReal() throws Exception {
+		if ( !closed ) {
+			closed = true;
+			try {
+				this.xserver.closeConnection( this );
+			} finally {
+				disconnect();
+			}
+		}
 	}
 	
 	@Override
-	public boolean isClosed() {
+	public synchronized boolean isClosed() {
 		return closed ? closed : ( socket != null ? !socket.isClosed() : false );
 	}
 	
-	public void disconnect() throws IOException {
+	public synchronized void disconnect() throws IOException {
 		closed = true;
 		sending.interrupt();
 		receiving.interrupt();

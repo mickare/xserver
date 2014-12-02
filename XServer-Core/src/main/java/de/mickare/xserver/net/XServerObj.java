@@ -84,7 +84,7 @@ public class XServerObj implements XServer {
 		}
 	}
 	
-	private void closeConnection( final ConnectionObj con ) throws Exception {
+	protected void closeConnection( final ConnectionObj con ) throws Exception {
 		try ( CloseableLock c = connectionLock.writeLock().open() ) {
 			try {
 				if ( !con.isClosed() ) {
@@ -144,6 +144,8 @@ public class XServerObj implements XServer {
 				} catch ( Exception e ) {
 				}
 			}
+			this.connectionOpened.clear();
+			this.connectionPool.clear();
 			if ( !deprecated ) {
 				try {
 					connect();
