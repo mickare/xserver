@@ -1,9 +1,7 @@
 package de.mickare.xserver.net;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 import de.mickare.xserver.AbstractXServerManager;
@@ -34,7 +32,7 @@ public class NetPacketHandler // extends Thread
 				con.disconnect();
 			} else if ( p.getPacketID() == PacketType.PING_REQUEST.packetID ) // PingRequest
 			{
-				con.send( new Packet( PacketType.PING_ANSWER, p.getData() ) );
+				con.getXServer().send( new Packet( PacketType.PING_ANSWER, p.getData() ) );
 				
 			} else if ( p.getPacketID() == PacketType.PING_ANSWER.packetID ) // PingAnswer
 			{
@@ -77,23 +75,6 @@ public class NetPacketHandler // extends Thread
 		p.destroy();
 	}
 	
-	protected void sendFirstLoginRequest() throws IOException, InterruptedException, NotInitializedException {
-		sendLoginRequest( PacketType.LOGIN_CLIENT );
-	}
-	
-	protected void sendAcceptedLoginRequest() throws IOException, InterruptedException, NotInitializedException {
-		sendLoginRequest( PacketType.LOGIN_SERVER );
-	}
-	
-	private void sendLoginRequest( PacketType type ) throws IOException, InterruptedException, NotInitializedException {
-		try ( ByteArrayOutputStream b = new ByteArrayOutputStream() ) {
-			try ( DataOutputStream out = new DataOutputStream( b ) ) {
-				out.writeUTF( manager.getHomeServer().getName() );
-				out.writeUTF( manager.getHomeServer().getPassword() );
-				out.writeInt( manager.getPlugin().getHomeType().getNumber() );
-				con.send( new Packet( type, b.toByteArray() ) );
-			}
-		}
-	}
+
 	
 }

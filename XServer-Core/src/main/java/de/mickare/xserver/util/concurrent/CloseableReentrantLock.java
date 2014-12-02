@@ -2,7 +2,7 @@ package de.mickare.xserver.util.concurrent;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-public class CloseableReentrantLock extends ReentrantLock implements AutoCloseable {
+public class CloseableReentrantLock extends ReentrantLock implements CloseableLock, AutoCloseable {
 
 	/**
 	 * 

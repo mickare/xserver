@@ -1,10 +1,12 @@
 package de.mickare.xserver.net;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicLong;
@@ -15,7 +17,6 @@ import de.mickare.xserver.XGroup;
 import de.mickare.xserver.XServerManager;
 import de.mickare.xserver.XType;
 import de.mickare.xserver.events.XServerMessageOutgoingEvent;
-import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.util.Encryption;
 import de.mickare.xserver.util.MyStringUtils;
 import de.mickare.xserver.util.concurrent.CloseableLock;
@@ -24,8 +25,13 @@ import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
 public class XServerObj implements XServer {
 	
-	private final static int MAX_CONNECTIONS = 2;
-	private final static long MAX_LAST_USE = 120 * 1000;
+	private final static int CAPACITY = 16384;
+	
+	private final static int BORDER_INCREASE = 100;
+	private final static int BORDER_DECREASE = 20;
+	
+	private final static int MAX_CONNECTIONS = 8;
+	private final static long CONNECTION_CHANGE_DELAY = 10 * 1000;
 	// private final static int MESSAGE_CACHE_SIZE = 8192;
 	
 	private final String name;
@@ -35,7 +41,7 @@ public class XServerObj implements XServer {
 	
 	private volatile boolean deprecated = false;
 	
-	private CloseableReadWriteLock connectionLock = new CloseableReentrantReadWriteLock();
+	private final CloseableReadWriteLock connectionLock = new CloseableReentrantReadWriteLock();
 	private final Set<ConnectionObj> connectionOpened = Collections
 			.newSetFromMap( new ConcurrentHashMap<ConnectionObj, Boolean>() );
 	private final LinkedBlockingDeque<ConnectionObj> connectionPool = new LinkedBlockingDeque<ConnectionObj>();
@@ -47,6 +53,8 @@ public class XServerObj implements XServer {
 	// private final CacheList<Packet> pendingPackets = new CacheList<Packet>( MESSAGE_CACHE_SIZE );
 	
 	private final AbstractXServerManager manager;
+	
+	private final ArrayBlockingQueue<Packet> pendingSendingPackets = new ArrayBlockingQueue<Packet>( CAPACITY, true );
 	
 	public XServerObj( String name, String host, int port, String password, AbstractXServerManager manager ) {
 		this.name = name;
@@ -65,9 +73,10 @@ public class XServerObj implements XServer {
 		this.manager = manager;
 	}
 	
-	private void log( String msg ) {
-		manager.getLogger().info( msg );
-	}
+	/*
+	 * private void log( String msg ) { manager.getLogger().info( Thread.currentThread().getName() + " - " + msg + "\n"
+	 * + MyStringUtils.stackTraceToString( Thread.currentThread().getStackTrace() ) ); }
+	 */
 	
 	protected void addConnection( ConnectionObj con ) throws InterruptedException {
 		// log( "A1" );
@@ -78,77 +87,107 @@ public class XServerObj implements XServer {
 		}
 	}
 	
-	private ConnectionObj createConnection() throws UnknownHostException, IOException, InterruptedException {
-		// log( "B1" );
-		ConnectionObj con;
-		
-		if ( connectionOpened.size() < MAX_CONNECTIONS ) {
-			try ( CloseableLock c = this.connectionLock.writeLock().open() ) {
-				// log( "B2.1" );
-				if ( connectionOpened.size() < MAX_CONNECTIONS ) {
-					ConnectionObj.connectToServer( manager, manager.getSocketFactory(), this );
-				}
-			}
-		}
-		// log( "B3.1" );
-		
-		con = connectionPool.takeLast();
-		con.setLastUseNow();
-		// log( "B3.2" );
-		return con;
-		
-	}
+	/*
+	 * private ConnectionObj createConnection() throws UnknownHostException, IOException, InterruptedException { // log(
+	 * "B1" );
+	 * 
+	 * if ( this.deprecated ) { return null; }
+	 * 
+	 * ConnectionObj con;
+	 * 
+	 * do { con = null;
+	 * 
+	 * // try ( CloseableLock c = this.connectionLock.writeLock().open() ) { // log( "B2.1" ); if (
+	 * connectionOpened.size() < MAX_CONNECTIONS ) { try ( CloseableLock c = createConnectionLock.open() ) { if (
+	 * connectionOpened.size() < MAX_CONNECTIONS ) { con = ConnectionObj.connectToServer( manager,
+	 * manager.getSocketFactory(), this ); connectionOpened.add( con ); } } }
+	 * 
+	 * // log( "B3.1" ); if ( con == null ) { con = connectionPool.pollLast( 1, TimeUnit.MILLISECONDS ); } // }
+	 * 
+	 * if ( con != null && con.isClosed() ) { this.connectionOpened.remove( con ); this.connectionPool.remove( con );
+	 * con = null; } } while ( con == null || con.isClosed() ); con.setLastUseNow(); // log( "B3.2" ); return con;
+	 * 
+	 * }
+	 */
 	
-	protected void closeConnection( final ConnectionObj con ) throws Exception {
+	protected void closeConnection( final ConnectionObj con ) {
 		// log( "C1" );
 		try {
 			this.connectionPool.remove( con );
+			this.connectionOpened.remove( con );
 			con.closeForReal();
 			// log( "C2" );
-		} catch ( Exception e ) {
-			throw e;
+		} catch ( IOException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} finally {
 			this.connectionOpened.remove( con );
 			if ( !deprecated ) {
-				connect();
-			}
-		}
-	}
-	
-	private final AtomicLong lastClean = new AtomicLong( System.currentTimeMillis() );
-	
-	private void cleanConnections() {
-		if ( System.currentTimeMillis() - lastClean.get() <= MAX_LAST_USE ) {
-			return;
-		}
-		// log( "D1" );
-		lastClean.set( System.currentTimeMillis() );
-		for ( ConnectionObj o : new HashSet<ConnectionObj>( this.connectionOpened ) ) {
-			if ( System.currentTimeMillis() - o.getLastUse() > MAX_LAST_USE ) {
 				try {
-					o.closeForReal();
+					connect();
 				} catch ( Exception e ) {
 				}
 			}
 		}
 	}
 	
-	private ConnectionObj getConnection() {
-		// log( "E1" );
-		try {
-			ConnectionObj con = connectionPool.pollLast();
-			if ( con != null && !con.isClosed() ) {
-				// log( "E2" );
-				con.setLastUseNow();
-				return con;
-			} else {
-				// log( "E3" );
-				return createConnection();
-			}
-		} catch ( NotInitializedException | IOException | InterruptedException e ) {
-			manager.getLogger().info( "No Connection! - " + e.getMessage() );
+	private final AtomicLong lastChange = new AtomicLong( System.currentTimeMillis() );
+	
+	private synchronized void changeConnections() throws IOException, InterruptedException {
+		if ( System.currentTimeMillis() - lastChange.get() <= CONNECTION_CHANGE_DELAY ) {
+			return;
 		}
-		return null;
+		int size = this.pendingSendingPackets.size();
+		if ( size > BORDER_INCREASE ) {
+			this.increaseConnections();
+		} else if ( size <= BORDER_DECREASE ) {
+			this.decreaseConnections();
+		}
+	}
+	
+	private synchronized void decreaseConnections() throws IOException {
+		ConnectionObj con = this.connectionPool.pollFirst();
+		if ( this.connectionOpened.size() <= 1 || con == null
+				|| System.currentTimeMillis() - lastChange.get() <= CONNECTION_CHANGE_DELAY ) {
+			return;
+		}
+		lastChange.set( System.currentTimeMillis() );
+		try {
+			con.closeForReal();
+			manager.getLogger().warning( this.name + " - Decreased connections to: " + this.connectionOpened.size() );
+		} catch ( IOException e ) {
+			manager.getLogger().warning( this.name + " - Could not decrease connections correctly: " + e.getMessage() );
+			this.connectionOpened.remove( con );
+			throw e;
+		}
+	}
+	
+	private void increaseConnections() throws IOException, InterruptedException {
+		
+		if ( this.connectionOpened.size() >= MAX_CONNECTIONS
+				|| System.currentTimeMillis() - lastChange.get() <= CONNECTION_CHANGE_DELAY ) {
+			return;
+		}
+		
+		ConnectionObj con = null;
+		try {
+			con = ConnectionObj.connectToServer( manager, manager.getSocketFactory(), this );
+			this.connectionOpened.add( con );
+			this.connectionPool.putLast( con );
+			manager.getLogger().warning( this.name + " - Increased connections to: " + this.connectionOpened.size() );
+		} catch ( IOException | InterruptedException e ) {
+			manager.getLogger().warning( this.name + " - Could not increase connections: " + e.getMessage() );
+			if ( con != null ) {
+				this.connectionOpened.remove( con );
+				this.connectionPool.remove( con );
+				try {
+					con.closeForReal();
+				} catch ( IOException e1 ) {
+				}
+			}
+			throw e;
+		}
+		
 	}
 	
 	private boolean hasOpenedConnections() {
@@ -166,17 +205,13 @@ public class XServerObj implements XServer {
 	}
 	
 	public void connect() throws Exception {
-		try ( CloseableLock c = connectionLock.readLock().open() ) {
-			if ( !valid() ) {
-				return;
-			}
+		if ( !valid() ) {
+			return;
+		}
+		try ( CloseableLock c = connectionLock.writeLock().open() ) {
 			if ( !hasOpenedConnections() ) {
-				ConnectionObj con = this.createConnection();
-				if ( con != null ) {
-					this.connectionPool.put( this.createConnection() );
-				}
+				this.increaseConnections();
 			}
-			cleanConnections();
 		}
 	}
 	
@@ -245,21 +280,15 @@ public class XServerObj implements XServer {
 	 */
 	@Override
 	public boolean sendMessage( Message message ) throws IOException {
+		if ( message == null ) {
+			throw new NullPointerException( "parameter is null" );
+		}
 		boolean result = false;
 		if ( !valid() ) {
 			return false;
 		}
-		if ( isConnected() && hasOpenedConnections() ) {
-			try ( ConnectionObj con = this.getConnection() ) {
-				if ( con.send( new Packet( PacketType.MESSAGE, message.getData() ) ) ) {
-					result = true;
-				}
-			} catch ( InterruptedException e ) {
-				return false;
-			} catch ( Exception e ) {
-				throw new RuntimeException( e );
-			}
-		}
+		
+		send( new Packet( PacketType.MESSAGE, message.getData() ) );
 		
 		manager.getEventHandler().callEvent( new XServerMessageOutgoingEvent( this, message ) );
 		return result;
@@ -272,17 +301,35 @@ public class XServerObj implements XServer {
 	 * @see de.mickare.xserver.net.XServer#ping(de.mickare.xserver.net.Ping)
 	 */
 	@Override
-	public void ping( Ping ping ) throws InterruptedException, IOException {
+	public void ping( Ping ping ) throws IOException {
 		if ( !valid() ) {
 			return;
 		}
-		if ( isConnected() && hasOpenedConnections() ) {
-			try ( ConnectionObj con = this.getConnection() ) {
-				con.ping( ping );
-			} catch ( InterruptedException e ) {
-				throw e;
-			} catch ( Exception e ) {
-				throw new RuntimeException( e );
+		
+		ByteArrayOutputStream b = null;
+		DataOutputStream out = null;
+		try {
+			b = new ByteArrayOutputStream();
+			out = new DataOutputStream( b );
+			out.writeUTF( ping.getKey() );
+			send( new Packet( PacketType.PING_REQUEST, b.toByteArray() ) );
+		} finally {
+			if ( out != null ) {
+				out.close();
+			}
+		}
+		
+	}
+	
+	public void send( Packet packet ) {
+		getPendingSendingPackets().offer( packet );
+		try {
+			this.changeConnections();
+		} catch ( InterruptedException e ) {
+			throw new RuntimeException( e );
+		} catch ( IOException e ) {
+			if ( !this.hasOpenedConnections() ) {
+				manager.notifyNotConnected( this, e );
 			}
 		}
 	}
@@ -405,6 +452,10 @@ public class XServerObj implements XServer {
 	@Override
 	public XServer getCurrentXServer() {
 		return this.manager.getXServer( name );
+	}
+	
+	protected ArrayBlockingQueue<Packet> getPendingSendingPackets() {
+		return pendingSendingPackets;
 	}
 	
 }

@@ -125,7 +125,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 		} );
 	}
 	
-	private synchronized void notifyNotConnected( XServer s, Exception e ) {
+	public synchronized void notifyNotConnected( XServer s, Exception e ) {
 		synchronized ( notConnectedServers ) {
 			int n = 0;
 			if ( notConnectedServers.containsKey( s ) ) {
@@ -185,6 +185,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 				executorService.execute( new Runnable() {
 					public void run() {
 						try {
+							s.disconnect();
 							s.connect();
 							synchronized ( notConnectedServers ) {
 								notConnectedServers.remove( s );
@@ -213,6 +214,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 			reconnectClockRunning = false;
 			
 			for ( XServerObj s : servers.values() ) {
+				s.setDeprecated();
 				s.disconnect();
 			}
 			

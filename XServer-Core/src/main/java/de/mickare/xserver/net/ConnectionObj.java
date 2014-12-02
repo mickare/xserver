@@ -1,14 +1,10 @@
 package de.mickare.xserver.net;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -23,7 +19,6 @@ import de.mickare.xserver.events.XServerLoggedInEvent;
 
 public class ConnectionObj implements Connection {
 	
-	private final static int CAPACITY = 16384;
 	private final static int SOCKET_TIMEOUT = 5000;
 	
 	private static final void sendOwnLogin( final AbstractXServerManager manager, final Socket socket,
@@ -111,7 +106,6 @@ public class ConnectionObj implements Connection {
 		
 		other.setType( otherType );
 		ConnectionObj con = new ConnectionObj( manager, socket, inputStream, outputStream, other );
-		other.addConnection( con );
 		manager.getExecutorService().submit( new Runnable() {
 			@Override
 			public void run() {
@@ -175,7 +169,7 @@ public class ConnectionObj implements Connection {
 		
 		/*
 		 * End Handshake
-		 */		
+		 */
 		return endHandshake( manager, socket, inputStream, outputStream, other, otherType );
 	}
 	
@@ -189,8 +183,6 @@ public class ConnectionObj implements Connection {
 	private final Socket socket;
 	private final DataInputStream input;
 	private final DataOutputStream output;
-	
-	private final ArrayBlockingQueue<Packet> pendingSendingPackets = new ArrayBlockingQueue<Packet>( CAPACITY, true );
 	
 	private final Receiving receiving;
 	private final Sending sending;
@@ -234,33 +226,20 @@ public class ConnectionObj implements Connection {
 	}
 	
 	@Override
-	public void ping( Ping ping ) throws InterruptedException, IOException {
-		ByteArrayOutputStream b = null;
-		DataOutputStream out = null;
-		try {
-			b = new ByteArrayOutputStream();
-			out = new DataOutputStream( b );
-			out.writeUTF( ping.getKey() );
-			pendingSendingPackets.put( new Packet( PacketType.PING_REQUEST, b.toByteArray() ) );
-		} finally {
-			if ( out != null ) {
-				out.close();
-			}
-		}
-	}
-	
-	@Override
 	public void close() throws Exception {
 		if ( !closed ) {
 			this.xserver.addConnection( this );
 		}
 	}
 	
-	protected void closeForReal() throws Exception {
+	protected void closeForReal() throws IOException {
 		if ( !closed ) {
 			closed = true;
-			this.xserver.closeConnection( this );
 			try {
+				this.xserver.closeConnection( this );
+				
+			} catch ( Exception e ) {
+				e.printStackTrace();
 			} finally {
 				disconnect();
 			}
@@ -274,8 +253,8 @@ public class ConnectionObj implements Connection {
 	
 	public void disconnect() throws IOException {
 		closed = true;
-		sending.interrupt();
-		receiving.interrupt();
+		sending.stopWorker();
+		receiving.stopWorker();
 		try {
 			socket.close();
 			input.close();
@@ -297,22 +276,8 @@ public class ConnectionObj implements Connection {
 		return port;
 	}
 	
-	@Override
-	public boolean send( Packet packet ) {
-		return pendingSendingPackets.offer( packet );
-	}
-	
-	@Override
-	public boolean sendAll( Collection<Packet> packets ) {
-		boolean result = true;
-		for ( Packet p : packets ) {
-			result &= send( p );
-		}
-		return result;
-	}
-	
 	private abstract class InterruptableRunnable implements Runnable {
-		private final AtomicBoolean interrupted = new AtomicBoolean( false );
+		private final AtomicBoolean stopped = new AtomicBoolean( false );
 		
 		private InterruptableRunnable( String name ) {
 		}
@@ -321,12 +286,12 @@ public class ConnectionObj implements Connection {
 			manager.getExecutorService().submit( this );
 		}
 		
-		public boolean isInterrupted() {
-			return interrupted.get();
+		public boolean isStopped() {
+			return stopped.get();
 		}
 		
-		public void interrupt() {
-			this.interrupted.set( true );
+		public void stopWorker() {
+			this.stopped.set( true );
 		}
 		
 	}
@@ -358,11 +323,11 @@ public class ConnectionObj implements Connection {
 		@Override
 		public void run() {
 			try {
-				while ( !isInterrupted() && !isClosed() ) {
+				while ( !isStopped() && !isClosed() ) {
 					
-					Packet p = pendingSendingPackets.poll( 1000, TimeUnit.MILLISECONDS );
+					Packet p = ConnectionObj.this.xserver.getPendingSendingPackets().poll( 1000, TimeUnit.MILLISECONDS );
 					
-					if ( isInterrupted() ) {
+					if ( isStopped() ) {
 						return;
 					}
 					
@@ -372,8 +337,8 @@ public class ConnectionObj implements Connection {
 							;
 							tickPacket();
 						} else {
-							disconnect();
-							this.interrupt();
+							ConnectionObj.this.closeForReal();
+							this.stopWorker();
 						}
 					} else {
 						p.writeToStream( output );
@@ -383,11 +348,11 @@ public class ConnectionObj implements Connection {
 					
 				}
 			} catch ( IOException | InterruptedException e ) {
+				this.stopWorker();
 				try {
-					disconnect();
+					ConnectionObj.this.closeForReal();
 				} catch ( IOException e1 ) {
 				}
-				this.interrupt();
 			}
 		}
 		
@@ -420,16 +385,16 @@ public class ConnectionObj implements Connection {
 		@Override
 		public void run() {
 			try {
-				while ( !isInterrupted() && !isClosed() ) {
+				while ( !isStopped() && !isClosed() ) {
 					packetHandler.handle( Packet.readFromSteam( input ) );
 					tickPacket();
 				}
 			} catch ( IOException e ) {
 				try {
-					disconnect();
+					ConnectionObj.this.closeForReal();
 				} catch ( IOException e1 ) {
 				}
-				this.interrupt();
+				this.stopWorker();
 			}
 		}
 	}
@@ -437,11 +402,6 @@ public class ConnectionObj implements Connection {
 	@Override
 	public XServerObj getXServer() {
 		return this.xserver;
-	}
-	
-	@Override
-	public Queue<Packet> getPendingPackets() {
-		return new ArrayBlockingQueue<Packet>( CAPACITY, false, pendingSendingPackets );
 	}
 	
 	@Override
