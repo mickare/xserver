@@ -74,30 +74,24 @@
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-assembly-plugin</artifactId>
+				<artifactId>maven-shade-plugin</artifactId>
 				<version>2.2</version>
-				<configuration>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
-					<finalName>dumpster-diver</finalName>
-                	<appendAssemblyId>false</appendAssemblyId>
-                	<archive>
-                    <manifest>
-                        <mainClass>DumpsterDiver</mainClass>
-                    </manifest>
-                </archive>
-				</configuration>
 				<executions>
 					<execution>
-						<id>make-assembly</id>
 						<phase>package</phase>
 						<goals>
-							<goal>single</goal>
+							<goal>shade</goal>
 						</goals>
+						<configuration>
+							<!-- <minimizeJar>true</minimizeJar> -->
+							<artifactSet>
+								<includes>
+									<include>de.mickare.xserver:*</include>
+								</includes>
+							</artifactSet>
+						</configuration>
 					</execution>
 				</executions>
-				
 			</plugin>
 		</plugins>
 	</build>

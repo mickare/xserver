@@ -97,21 +97,15 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
+							<!-- <minimizeJar>true</minimizeJar> -->
 							<artifactSet>
-								<excludes>
-									<exclude>junit:junit</exclude>
-									<exclude>org.spigotmc:*</exclude>
-									<exclude>org.bukkit:*</exclude>
-								</excludes>
+								<includes>
+									<include>de.mickare.xserver:*</include>
+								</includes>
 							</artifactSet>
 						</configuration>
 					</execution>
 				</executions>
-				<configuration>
-					<finalName>${artifactId}</finalName>
-					<source>1.7</source>
-					<target>1.7</target>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

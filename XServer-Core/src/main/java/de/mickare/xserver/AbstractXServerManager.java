@@ -132,7 +132,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 				n = notConnectedServers.get( s ).intValue();
 			}
 			
-			if ( n++ % 100 == 0 ) {
+			if ( n++ % 1000 == 0 ) {
 				plugin.getLogger().info( "Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}" );
 				// plugin.getLogger().info( "Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}"
 				// + "\n" + MyStringUtils.stackTraceToString( e ) );

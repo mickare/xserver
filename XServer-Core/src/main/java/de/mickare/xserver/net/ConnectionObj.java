@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -16,6 +17,7 @@ import de.mickare.xserver.XType;
 import de.mickare.xserver.events.XServerConnectionDenied;
 import de.mickare.xserver.events.XServerDisconnectEvent;
 import de.mickare.xserver.events.XServerLoggedInEvent;
+import de.mickare.xserver.util.MyStringUtils;
 
 public class ConnectionObj implements Connection {
 	
@@ -145,32 +147,43 @@ public class ConnectionObj implements Connection {
 		return endHandshake( manager, socket, inputStream, outputStream, other2, otherType );
 	}
 	
-	public static final ConnectionObj handleClient( final AbstractXServerManager manager, final Socket socket )
-			throws IOException, InterruptedException {
+	public static final void handleClient( final AbstractXServerManager manager, final Socket socket ) {
 		
 		// manager.getLogger().info( "handleClient" );
 		
-		socket.setSoTimeout( SOCKET_TIMEOUT );
+		manager.getExecutorService().submit( new Runnable() {
+			@Override
+			public void run() {
+				try {
+					socket.setSoTimeout( SOCKET_TIMEOUT );
+					
+					final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
+					final DataOutputStream outputStream = new DataOutputStream( socket.getOutputStream() );
+					
+					/*
+					 * Check other Login
+					 */
+					Object[] o = receiveOtherLogin( manager, socket, inputStream, outputStream, PacketType.LOGIN_CLIENT );
+					XServerObj other = ( XServerObj ) o[0];
+					XType otherType = ( XType ) o[1];
+					
+					/*
+					 * Send own Login
+					 */
+					sendOwnLogin( manager, socket, inputStream, outputStream, other, PacketType.LOGIN_SERVER );
+					
+					/*
+					 * End Handshake
+					 */
+					ConnectionObj con = endHandshake( manager, socket, inputStream, outputStream, other, otherType );
+					other.addConnection( con );
+				} catch ( IOException | InterruptedException e ) {
+					manager.getLogger().warning( "Exception while connecting: " + e.getMessage() + "\n"
+							+ MyStringUtils.stackTraceToString( e ) );
+				}
+			}
+		} );
 		
-		final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
-		final DataOutputStream outputStream = new DataOutputStream( socket.getOutputStream() );
-		
-		/*
-		 * Check other Login
-		 */
-		Object[] o = receiveOtherLogin( manager, socket, inputStream, outputStream, PacketType.LOGIN_CLIENT );
-		XServerObj other = ( XServerObj ) o[0];
-		XType otherType = ( XType ) o[1];
-		
-		/*
-		 * Send own Login
-		 */
-		sendOwnLogin( manager, socket, inputStream, outputStream, other, PacketType.LOGIN_SERVER );
-		
-		/*
-		 * End Handshake
-		 */
-		return endHandshake( manager, socket, inputStream, outputStream, other, otherType );
 	}
 	
 	private volatile boolean closed = false;
