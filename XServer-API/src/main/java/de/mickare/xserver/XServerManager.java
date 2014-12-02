@@ -8,10 +8,27 @@ import java.util.logging.Logger;
 import javax.net.SocketFactory;
 
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
+import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.net.XServer;
 
-public interface AbstractXServerManager {
+public abstract class XServerManager {
 
+	private static XServerManager instance = null;
+
+	public static XServerManager getInstance() throws NotInitializedException {
+		if (instance == null) {
+			throw new NotInitializedException();
+		}
+		return instance;
+	}
+	
+	public XServerManager() {
+		if(instance != null) {
+			throw new RuntimeException("XServer Manager created twice!");
+		}
+		instance = this;
+	}
+	
 	public abstract void start() throws IOException;
 
 	public abstract void start_async();
@@ -88,10 +105,10 @@ public interface AbstractXServerManager {
 
 	public abstract void registerOwnListeners();
 
-	Set<XServer> getServers( XGroup group );
+	public abstract Set<XServer> getServers( XGroup group );
 
-	Set<? extends XGroup> getGroups();
+	public abstract Set<? extends XGroup> getGroups();
 
-	XGroup getGroupByName( String name );
+	public abstract XGroup getGroupByName( String name );
 
 }

@@ -2,7 +2,7 @@ package de.mickare.xserver.listener;
 
 import java.io.IOException;
 
-import de.mickare.xserver.AbstractXServerManager;
+import de.mickare.xserver.XServerManager;
 import de.mickare.xserver.XServerListener;
 import de.mickare.xserver.annotations.XEventHandler;
 import de.mickare.xserver.events.XServerMessageIncomingEvent;
@@ -10,9 +10,9 @@ import de.mickare.xserver.stresstest.StressTest;
 
 public class StressTestListener implements XServerListener {
 
-	private final AbstractXServerManager manager;
+	private final XServerManager manager;
 
-	public StressTestListener(AbstractXServerManager manager) {
+	public StressTestListener(XServerManager manager) {
 		this.manager = manager;
 	}
 

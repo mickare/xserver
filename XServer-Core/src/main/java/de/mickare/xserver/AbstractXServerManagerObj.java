@@ -24,7 +24,7 @@ import de.mickare.xserver.util.concurrent.CloseableLock;
 import de.mickare.xserver.util.concurrent.CloseableReadWriteLock;
 import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
-public abstract class AbstractXServerManagerObj implements AbstractXServerManager {
+public abstract class AbstractXServerManagerObj extends XServerManager {
 
 	private final String sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups;
 

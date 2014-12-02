@@ -4,35 +4,13 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.Set;
 
-import de.mickare.xserver.AbstractXServerManager;
+import de.mickare.xserver.XServerManager;
 import de.mickare.xserver.Message;
 import de.mickare.xserver.XGroup;
 import de.mickare.xserver.XType;
 import de.mickare.xserver.exceptions.NotInitializedException;
 
 public interface XServer {
-
-	/**
-	 * Try to establish a connection to this server
-	 * @throws UnknownHostException
-	 * @throws IOException
-	 * @throws InterruptedException
-	 * @throws NotInitializedException
-	 */
-	public abstract void connect() throws UnknownHostException, IOException,
-	InterruptedException, NotInitializedException;
-
-	/**
-	 * Set the connection of this server
-	 * @param con is the open connection
-	 */
-	public abstract void setConnection(Connection con);
-	
-	/**
-	 * Set the connection of this server on a rebouncing and successful Login Request (Dual Login, both servers needs to login on eachother)
-	 * @param con is the open connection
-	 */
-	public abstract void setReloginConnection(Connection con);
 	
 	/**
 	 * Returns the connection status
@@ -101,7 +79,7 @@ public interface XServer {
 	 * Get the Current Server Manager Object
 	 * @return
 	 */
-	public abstract AbstractXServerManager getManager();
+	public abstract XServerManager getManager();
 	
 	/**
 	 * Get the record number of packages sended in one second

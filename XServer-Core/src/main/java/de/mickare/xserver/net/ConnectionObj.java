@@ -30,7 +30,7 @@ public class ConnectionObj implements Connection
 	private final static int SOCKET_TIMEOUT = 5000;
 
 	private ReentrantReadWriteLock statusLock = new ReentrantReadWriteLock();
-	private stats status = stats.connecting;
+	private volatile STATE status;
 
 	private final String host;
 	private final int port;
@@ -66,6 +66,7 @@ public class ConnectionObj implements Connection
 	{
 
 		this.xserver = xserver;
+		
 		
 		this.host = host;
 		this.port = port;
@@ -395,7 +396,7 @@ public class ConnectionObj implements Connection
 	 * @see de.mickare.xserver.net.Connection#getStatus()
 	 */
 	@Override
-	public stats getStatus()
+	public STATE getStatus()
 	{
 		statusLock.readLock().lock();
 		try
@@ -430,7 +431,7 @@ public class ConnectionObj implements Connection
 		}
 	}
 
-	protected void setXserver(XServer xserver)
+	protected void setXserver(XServerObj xserver)
 	{
 		try(CloseableLock c = xserverLock.writeLock().open()) {
 			this.xserver = xserver;
@@ -438,11 +439,11 @@ public class ConnectionObj implements Connection
 		}
 	}
 
-	protected void setReloginXserver(XServer xserver)
+	protected boolean setReloginXserver(XServerObj xserver)
 	{
 		try(CloseableLock c = xserverLock.writeLock().open()) {
 			this.xserver = xserver;
-			xserver.setReloginConnection(this);
+			return xserver.setReloginConnection(this);
 		}
 	}
 
@@ -513,6 +514,24 @@ public class ConnectionObj implements Connection
 	@Override
 	public long getReceivinglastSecondPackageCount() {
 		return this.receiving.lastSecondPackageCount.get();
+	}
+
+	@Override
+	public void close() throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean isOpened() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public XServer getXServer() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 }

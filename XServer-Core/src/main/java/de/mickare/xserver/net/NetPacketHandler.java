@@ -79,12 +79,13 @@ public class NetPacketHandler // extends Thread
 					 */
 					if ( s != null && s.getPassword().equals( password ) ) {
 						s.setType( xtype );
-						sendAcceptedLoginRequest();
-						con.setReloginXserver( s );
+						if(!con.setReloginXserver( s )) {
+							return;
+						}
 						con.setStatus( Connection.stats.connected );
+						sendAcceptedLoginRequest();
 						
 						s.getManager().getLogger().info( "Login Request from " + name + " accepted!" );
-						s.flushCache();
 						s.getManager().getEventHandler().callEvent( new XServerLoggedInEvent( con.getXserver() ) );
 					} else {
 						con.send( new Packet( PacketType.LoginDenied, new byte[0] ) );
@@ -117,7 +118,7 @@ public class NetPacketHandler // extends Thread
 						con.setXserver( s );
 						con.setStatus( Connection.stats.connected );
 						s.getManager().getLogger().info( "Login Reply accepted from " + s.getName() );
-						s.flushCache();
+						//s.flushCache();
 						s.getManager().getEventHandler().callEvent( new XServerLoggedInEvent( s ) );
 					} else {
 						con.send( new Packet( PacketType.LoginDenied, new byte[0] ) );
