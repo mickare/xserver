@@ -73,14 +73,8 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
 			log.info( "Starting XServer async." );
 			xmanager = new BungeeXServerManager( servername, this, cfgconnection, sql_table_xservers,
 					sql_table_xgroups, sql_table_xserversxgroups );
-			
-			this.getProxy().getScheduler().schedule( this, new Runnable() {
-				@Override
-				public void run() {
-					BungeeXServerPlugin.this.getManager().start_async();
-				}
-			}, 20, TimeUnit.MILLISECONDS );
-			
+			BungeeXServerPlugin.this.getManager().start_async();
+						
 		} catch ( InvalidConfigurationException | IOException e ) {
 			log.severe( "XServerManager not initialized correctly!\n" + e.getMessage() + "\n"
 					+ MyStringUtils.stackTraceToString( e ) );
