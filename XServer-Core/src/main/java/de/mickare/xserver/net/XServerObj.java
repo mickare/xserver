@@ -30,7 +30,7 @@ public class XServerObj implements XServer {
 	private final static int CAPACITY = 16384;
 	
 	private final static int BORDER_INCREASE = 500;
-	private final static int BORDER_DECREASE = 200;
+	private final static int BORDER_DECREASE = 1;
 	
 	private final static int MAX_CONNECTIONS = 2;
 	private final static long CONNECTION_CHANGE_DELAY = 2000;
@@ -163,6 +163,9 @@ public class XServerObj implements XServer {
 				|| System.currentTimeMillis() - lastChange.get() <= CONNECTION_CHANGE_DELAY ) {
 			return;
 		}
+		if ( con.getXServer() == manager.getHomeServer() && this.connectionOpened.size() <= 2 ) {
+			return;
+		}
 		synchronized ( XServerObj.this ) {
 			lastChange.set( System.currentTimeMillis() );
 			try {
@@ -193,8 +196,9 @@ public class XServerObj implements XServer {
 						+ this.connectionOpened.size() );
 			} catch ( IOException | InterruptedException e ) {
 				
-				//this.manager.getLogger().info( this.name + " - Increased connections failed\n" + e.getMessage() + "\n"
-				//		+ MyStringUtils.stackTraceToString( e ) );
+				// this.manager.getLogger().info( this.name + " - Increased connections failed\n" + e.getMessage() +
+				// "\n"
+				// + MyStringUtils.stackTraceToString( e ) );
 				
 				if ( con != null ) {
 					this.connectionOpened.remove( con );
@@ -227,11 +231,13 @@ public class XServerObj implements XServer {
 		if ( !valid() ) {
 			return;
 		}
-		//try ( CloseableLock c = connectionLock.writeLock().open() ) {
+		// try ( CloseableLock c = connectionLock.writeLock().open() ) {
+		synchronized ( XServerObj.this ) {
 			if ( !hasOpenedConnections() ) {
 				this.increaseConnections();
 			}
-		//}
+		}
+		// }
 	}
 	
 	@Override
