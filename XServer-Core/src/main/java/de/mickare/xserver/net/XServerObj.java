@@ -32,7 +32,7 @@ public class XServerObj implements XServer {
 	private final static int BORDER_INCREASE = 500;
 	private final static int BORDER_DECREASE = 200;
 	
-	private final static int MAX_CONNECTIONS = 3;
+	private final static int MAX_CONNECTIONS = 2;
 	private final static long CONNECTION_CHANGE_DELAY = 10 * 1000;
 	// private final static int MESSAGE_CACHE_SIZE = 8192;
 	

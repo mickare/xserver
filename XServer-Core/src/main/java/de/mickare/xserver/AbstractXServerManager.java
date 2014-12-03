@@ -1,6 +1,8 @@
 package de.mickare.xserver;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.sql.ResultSet;
 import java.util.Collections;
 import java.util.HashMap;
@@ -138,8 +140,8 @@ public abstract class AbstractXServerManager extends XServerManager {
 				// + "\n" + MyStringUtils.stackTraceToString( e ) );
 			}
 			
-			// logger.warning("Connection to " + s.getName() + " failed!\n" +
-			// e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
+			plugin.getLogger().warning( "Connection to " + s.getName() + " failed!\n" + e.getMessage() + "\n"
+					+ MyStringUtils.stackTraceToString( e ) );
 			notConnectedServers.put( s, new Integer( n ) );
 		}
 	}
@@ -335,8 +337,15 @@ public abstract class AbstractXServerManager extends XServerManager {
 				
 				connection.disconnect();
 				
-				mainserver = new MainServer( ServerSocketFactory.getDefault()
-						.createServerSocket( homeServer.getPort(), 100 ), this );
+				plugin.getLogger().warning( this.servers.size() + " XServers loaded" );
+				
+				ServerSocket ss = ServerSocketFactory.getDefault().createServerSocket();
+				ss.setReuseAddress( true );
+				ss.setPerformancePreferences( 2, 1, 0 );
+				ss.setSoTimeout(3100);
+				ss.bind( new InetSocketAddress( homeServer.getPort() ), 500 );
+				
+				mainserver = new MainServer( ss, this );
 				mainserver.start( this.getExecutorService() );
 				
 			}

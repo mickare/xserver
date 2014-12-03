@@ -3,6 +3,7 @@ package de.mickare.xserver;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,8 +44,12 @@ public class MainServer implements Runnable {
 		Socket socket = null;
 		while ( !isClosed() ) {
 			try {
-				socket = server.accept();
-				ConnectionObj.handleClient( manager, socket );
+				try {
+					socket = server.accept();
+					ConnectionObj.handleClient( manager, socket );
+				} catch ( SocketTimeoutException ste ) {
+					
+				}
 			} catch ( IOException e ) {
 				manager.getLogger().warning( "Exception while connecting: " + e.getMessage() );
 				if ( socket != null ) {

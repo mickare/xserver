@@ -20,6 +20,8 @@ import de.mickare.xserver.net.protocol.PingPacket;
 public class NetPacketHandler implements SocketPacketHandler // extends Thread
 {
 	
+	private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+	
 	public enum State {
 		EXPECTING_HANDSHAKE_AUTHENTIFICATION,
 		EXPECTING_HANDSHAKE_ACCEPT,
@@ -55,6 +57,9 @@ public class NetPacketHandler implements SocketPacketHandler // extends Thread
 		}
 		InputStream in = socket.getInputStream();
 		PacketType type = PacketType.getPacket( in.read() );
+		if ( type == PacketType.BAD_PACKET ) {
+			throw new IOException( "Bad packet!" );
+		}
 		int size = in.read();
 		byte[] buf = new byte[size];
 		in.read( buf );
@@ -98,11 +103,13 @@ public class NetPacketHandler implements SocketPacketHandler // extends Thread
 		OutputStream out = socket.getOutputStream();
 		
 		try ( ByteArrayOutputStream b = new ByteArrayOutputStream() ) {
+			byte[] buf = EMPTY_BYTE_ARRAY;
 			try ( DataOutputStream dataOut = new DataOutputStream( b ) ) {
 				p.writeTo( dataOut );
+				dataOut.flush();
+				buf = b.toByteArray();
 			}
 			out.write( p.getPacketID() );
-			byte[] buf = b.toByteArray();
 			out.write( buf.length );
 			out.write( buf );
 			out.flush();

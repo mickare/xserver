@@ -19,7 +19,8 @@ import de.mickare.xserver.net.protocol.KeepAlivePacket;
 
 public class ConnectionObj implements Connection {
 	
-	private final static int SOCKET_TIMEOUT = 5000;
+	private final static int SOCKET_TIMEOUT = 3000;
+	private final static int KEEP_ALIVE_PACKETS = 1000;
 	
 	public enum TYPE {
 		CLIENT,
@@ -83,7 +84,7 @@ public class ConnectionObj implements Connection {
 			/*
 			 * Create valid connection
 			 */
-			ConnectionObj con = new ConnectionObj( manager, socket, other, handler );
+			ConnectionObj con = new ConnectionObj( manager, socket, other, handler, TYPE.CLIENT );
 			handler.setConnection( con ); // Important to reference the connection with the handler
 			manager.getExecutorService().submit( new Runnable() {
 				@Override
@@ -156,7 +157,7 @@ public class ConnectionObj implements Connection {
 					/*
 					 * Create valid connection
 					 */
-					ConnectionObj con = new ConnectionObj( manager, socket, other, handler );
+					ConnectionObj con = new ConnectionObj( manager, socket, other, handler, TYPE.SERVER );
 					handler.setConnection( con ); // Important to reference the connection with the handler
 					other.addConnection( con );
 					manager.getExecutorService().submit( new Runnable() {
@@ -185,6 +186,7 @@ public class ConnectionObj implements Connection {
 	
 	private final AbstractXServerManager manager;
 	private final XServerObj xserver;
+	private final TYPE connectionType;
 	private final String host;
 	private final int port;
 	
@@ -196,10 +198,12 @@ public class ConnectionObj implements Connection {
 	
 	private final AtomicLong lastUse = new AtomicLong( System.currentTimeMillis() );
 	
-	public ConnectionObj( AbstractXServerManager manager, Socket socket, XServerObj xserver, NetPacketHandler handler ) {
+	public ConnectionObj( AbstractXServerManager manager, Socket socket, XServerObj xserver, NetPacketHandler handler,
+			TYPE connectionType ) {
 		
 		this.manager = manager;
 		this.xserver = xserver;
+		this.connectionType = connectionType;
 		
 		this.socket = socket;
 		this.host = socket.getInetAddress().getHostAddress();
@@ -325,7 +329,8 @@ public class ConnectionObj implements Connection {
 			try {
 				while ( !isStopped() && !isClosed() ) {
 					
-					Packet p = ConnectionObj.this.xserver.getPendingSendingPackets().poll( 1000, TimeUnit.MILLISECONDS );
+					Packet p = ConnectionObj.this.xserver.getPendingSendingPackets()
+							.poll( KEEP_ALIVE_PACKETS, TimeUnit.MILLISECONDS );
 					
 					if ( isStopped() ) {
 						return;
@@ -430,6 +435,10 @@ public class ConnectionObj implements Connection {
 	
 	protected Socket getSocket() {
 		return this.socket;
+	}
+
+	public TYPE getConnectionType() {
+		return connectionType;
 	}
 	
 }
