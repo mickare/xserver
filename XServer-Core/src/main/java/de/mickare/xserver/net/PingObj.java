@@ -100,7 +100,7 @@ public class PingObj implements Ping {
 				}
 			}
 			check();
-			manager.getExecutorService().submit(new Runnable() {
+			manager.getThreadPool().runTask(new Runnable() {
 				public void run() {
 					try {
 						Thread.sleep(TIMEOUT + 10);

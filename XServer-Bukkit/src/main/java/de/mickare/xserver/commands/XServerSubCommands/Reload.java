@@ -24,7 +24,7 @@ public class Reload extends SubCommand {
 		try {
 			getPlugin().getManager().reload();
 			sender.sendMessage("Reload done and now connecting to servers...");
-			getPlugin().getManager().getExecutorService().execute(new Runnable() {
+			getPlugin().getManager().getThreadPool().runTask(new Runnable() {
 				public void run() {
 					try {
 						XServerManager.getInstance().reconnectAll_forced();

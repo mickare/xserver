@@ -19,9 +19,9 @@ public abstract class XServerManager extends AbstractXServerManagerObj {
 	}
 	
 	protected XServerManager(String servername, XServerPlugin plugin, MySQL connection, String sql_table_xservers,
-			String sql_table_xgroups, String sql_table_xserversxgroups, ExecutorService executorService)
+			String sql_table_xgroups, String sql_table_xserversxgroups, ServerThreadPoolExecutor stp)
 			throws InvalidConfigurationException, IOException {
-		super( servername, plugin, connection, sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups, executorService );
+		super( servername, plugin, connection, sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups, stp );
 		instance = this;
 		
 		

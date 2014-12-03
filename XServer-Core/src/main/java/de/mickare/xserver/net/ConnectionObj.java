@@ -258,7 +258,7 @@ public class ConnectionObj implements Connection
 		}
 
 		public void start(AbstractXServerManagerObj manager) {
-			manager.getExecutorService().submit( this );
+			manager.getThreadPool().runTask( this );
 		}
 		
 		public boolean isInterrupted() {
