@@ -14,11 +14,9 @@ public class HandshakeAuthentificationPacket implements Packet {
 	private final static PacketType type = PacketType.HANDSHAKE_AUTHENTIFICATION;
 	
 	public static HandshakeAuthentificationPacket readFrom( DataInputStream input ) throws IOException {
-		
 		final String name = input.readUTF();
 		final String password = input.readUTF();
 		final XType xtype = XType.getByNumber( input.readInt() );
-		
 		return new HandshakeAuthentificationPacket( name, password, xtype );
 	}
 	

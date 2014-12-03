@@ -15,7 +15,6 @@ import de.mickare.xserver.events.XServerLoggedInEvent;
 import de.mickare.xserver.net.protocol.HandshakeAcceptPacket;
 import de.mickare.xserver.net.protocol.HandshakeAuthentificationPacket;
 import de.mickare.xserver.net.protocol.KeepAlivePacket;
-import de.mickare.xserver.util.MyStringUtils;
 
 public class ConnectionObj implements Connection {
 	
@@ -35,8 +34,6 @@ public class ConnectionObj implements Connection {
 		socket.setSoTimeout( AbstractXServerManager.SOCKET_TIMEOUT );
 		
 		try {
-			
-			Thread.sleep( 10 );
 			
 			final NetPacketHandler handler = new NetPacketHandler( socket, manager );
 			
@@ -111,14 +108,12 @@ public class ConnectionObj implements Connection {
 			@Override
 			public void run() {
 				
-				manager.getLogger().info( "A1" );
-				
 				try {
 					final NetPacketHandler handler = new NetPacketHandler( socket, manager );
 					
+					// Wait for client to write
 					Thread.sleep( 10 );
 					
-					manager.getLogger().info( "A2" );
 					/*
 					 * Authentification of client side
 					 */
@@ -132,8 +127,6 @@ public class ConnectionObj implements Connection {
 						throw new IOException( msg );
 					}
 					
-					manager.getLogger().info( "A3" );
-					
 					final XServerObj other = handler.getXserverIfPresent();
 					
 					/*
@@ -141,8 +134,6 @@ public class ConnectionObj implements Connection {
 					 */
 					handler.write( new HandshakeAuthentificationPacket( manager.getHomeServer().getName(), manager
 							.getHomeServer().getPassword(), manager.getPlugin().getHomeType() ) );
-					
-					manager.getLogger().info( "A4" );
 					
 					/*
 					 * Finish handshake on server side
@@ -155,8 +146,6 @@ public class ConnectionObj implements Connection {
 						socket.close();
 						throw new IOException( msg );
 					}
-					
-					manager.getLogger().info( "A5" );
 					
 					/*
 					 * Finish the handshake on client side
@@ -180,12 +169,8 @@ public class ConnectionObj implements Connection {
 						}
 					} );
 					
-					manager.getLogger().info( "A6" );
-					
 				} catch ( Exception e ) {
 					try {
-						manager.getLogger().info( "F1 - " + e.getMessage() + "\n"
-								+ MyStringUtils.stackTraceToString( e ) );
 						socket.close();
 					} catch ( IOException e1 ) {
 					}

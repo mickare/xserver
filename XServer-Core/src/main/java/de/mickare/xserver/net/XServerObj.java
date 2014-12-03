@@ -124,12 +124,6 @@ public class XServerObj implements XServer {
 			e.printStackTrace();
 		} finally {
 			this.connectionOpened.remove( con );
-			if ( !deprecated ) {
-				try {
-					connect();
-				} catch ( Exception e ) {
-				}
-			}
 		}
 	}
 	
@@ -198,8 +192,10 @@ public class XServerObj implements XServer {
 				this.manager.getLogger().info( this.name + " - Increased connections to: "
 						+ this.connectionOpened.size() );
 			} catch ( IOException | InterruptedException e ) {
-				this.manager.getLogger().info( this.name + " - Increased connections failed\n" + e.getMessage() + "\n"
-						+ MyStringUtils.stackTraceToString( e ) );
+				
+				//this.manager.getLogger().info( this.name + " - Increased connections failed\n" + e.getMessage() + "\n"
+				//		+ MyStringUtils.stackTraceToString( e ) );
+				
 				if ( con != null ) {
 					this.connectionOpened.remove( con );
 					this.connectionPool.remove( con );

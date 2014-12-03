@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 import javax.net.ServerSocketFactory;
@@ -136,14 +135,14 @@ public abstract class AbstractXServerManager extends XServerManager {
 				n = notConnectedServers.get( s ).intValue();
 			}
 			
-			if ( n++ % 1000 == 0 ) {
+			if ( n++ % 200 == 1 ) {
 				plugin.getLogger().info( "Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}" );
 				// plugin.getLogger().info( "Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}"
 				// + "\n" + MyStringUtils.stackTraceToString( e ) );
 			}
 			
-			plugin.getLogger().warning( "Connection to " + s.getName() + " failed!\n" + e.getMessage() + "\n"
-					+ MyStringUtils.stackTraceToString( e ) );
+			//plugin.getLogger().warning( "Connection to " + s.getName() + " failed!\n" + e.getMessage() + "\n"
+			//		+ MyStringUtils.stackTraceToString( e ) );
 			notConnectedServers.put( s, new Integer( n ) );
 		}
 	}
@@ -343,7 +342,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 				
 				ServerSocket ss = ServerSocketFactory.getDefault().createServerSocket();
 				ss.setReuseAddress( true );
-				ss.setPerformancePreferences( 2, 1, 0 );
+				ss.setPerformancePreferences( 0, 1, 1 );
 				ss.setSoTimeout( SOCKET_TIMEOUT );
 				ss.bind( new InetSocketAddress( homeServer.getPort() ), 500 );
 				
