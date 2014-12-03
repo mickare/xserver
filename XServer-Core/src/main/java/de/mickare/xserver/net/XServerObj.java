@@ -33,7 +33,7 @@ public class XServerObj implements XServer {
 	private final static int BORDER_DECREASE = 200;
 	
 	private final static int MAX_CONNECTIONS = 2;
-	private final static long CONNECTION_CHANGE_DELAY = 1000;
+	private final static long CONNECTION_CHANGE_DELAY = 2000;
 	// private final static int MESSAGE_CACHE_SIZE = 8192;
 	
 	private final String name;
@@ -231,11 +231,11 @@ public class XServerObj implements XServer {
 		if ( !valid() ) {
 			return;
 		}
-		try ( CloseableLock c = connectionLock.writeLock().open() ) {
+		//try ( CloseableLock c = connectionLock.writeLock().open() ) {
 			if ( !hasOpenedConnections() ) {
 				this.increaseConnections();
 			}
-		}
+		//}
 	}
 	
 	@Override

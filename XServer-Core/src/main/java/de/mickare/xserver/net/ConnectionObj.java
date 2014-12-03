@@ -15,6 +15,7 @@ import de.mickare.xserver.events.XServerLoggedInEvent;
 import de.mickare.xserver.net.protocol.HandshakeAcceptPacket;
 import de.mickare.xserver.net.protocol.HandshakeAuthentificationPacket;
 import de.mickare.xserver.net.protocol.KeepAlivePacket;
+import de.mickare.xserver.util.MyStringUtils;
 
 public class ConnectionObj implements Connection {
 	
@@ -97,7 +98,7 @@ public class ConnectionObj implements Connection {
 					manager.getEventHandler().callEvent( new XServerLoggedInEvent( other ) );
 				}
 			} );
-			return con;
+			return con.start();
 		} catch ( Exception e ) {
 			socket.close();
 			throw e;
@@ -110,9 +111,14 @@ public class ConnectionObj implements Connection {
 			@Override
 			public void run() {
 				
+				manager.getLogger().info( "A1" );
+				
 				try {
 					final NetPacketHandler handler = new NetPacketHandler( socket, manager );
 					
+					Thread.sleep( 10 );
+					
+					manager.getLogger().info( "A2" );
 					/*
 					 * Authentification of client side
 					 */
@@ -126,6 +132,8 @@ public class ConnectionObj implements Connection {
 						throw new IOException( msg );
 					}
 					
+					manager.getLogger().info( "A3" );
+					
 					final XServerObj other = handler.getXserverIfPresent();
 					
 					/*
@@ -133,6 +141,8 @@ public class ConnectionObj implements Connection {
 					 */
 					handler.write( new HandshakeAuthentificationPacket( manager.getHomeServer().getName(), manager
 							.getHomeServer().getPassword(), manager.getPlugin().getHomeType() ) );
+					
+					manager.getLogger().info( "A4" );
 					
 					/*
 					 * Finish handshake on server side
@@ -146,6 +156,8 @@ public class ConnectionObj implements Connection {
 						throw new IOException( msg );
 					}
 					
+					manager.getLogger().info( "A5" );
+					
 					/*
 					 * Finish the handshake on client side
 					 */
@@ -156,7 +168,7 @@ public class ConnectionObj implements Connection {
 					 */
 					ConnectionObj con = new ConnectionObj( manager, socket, other, handler, TYPE.SERVER );
 					handler.setConnection( con ); // Important to reference the connection with the handler
-					other.addConnection( con );
+					other.addConnection( con.start() );
 					manager.getThreadPool().runTask( new Runnable() {
 						@Override
 						public void run() {
@@ -168,8 +180,12 @@ public class ConnectionObj implements Connection {
 						}
 					} );
 					
+					manager.getLogger().info( "A6" );
+					
 				} catch ( Exception e ) {
 					try {
+						manager.getLogger().info( "F1 - " + e.getMessage() + "\n"
+								+ MyStringUtils.stackTraceToString( e ) );
 						socket.close();
 					} catch ( IOException e1 ) {
 					}
@@ -207,13 +223,15 @@ public class ConnectionObj implements Connection {
 		this.port = socket.getPort();
 		
 		this.packetHandler = handler;
-		
 		this.receiving = new Receiving();
-		this.receiving.start( manager );
-		
 		this.sending = new Sending();
-		this.sending.start( manager );
 		
+	}
+	
+	private ConnectionObj start() {
+		this.receiving.start( manager );
+		this.sending.start( manager );
+		return this;
 	}
 	
 	public synchronized long getLastUse() {

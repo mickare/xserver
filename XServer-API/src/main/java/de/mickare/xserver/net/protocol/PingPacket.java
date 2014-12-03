@@ -32,7 +32,7 @@ public class PingPacket implements Packet {
 		}
 	}
 	
-	private final static PacketType type = PacketType.HANDSHAKE_ACCEPT;
+	private final static PacketType type = PacketType.PING;
 	
 	private final Direction direction;
 	private final byte[] data;
@@ -54,11 +54,7 @@ public class PingPacket implements Packet {
 		output.writeInt( getData().length );
 		output.write( getData() );
 	}
-	
-	public int getPacketID() {
-		return type.getPacketID();
-	}
-	
+		
 	@Override
 	public PacketType getPacketType() {
 		return type;

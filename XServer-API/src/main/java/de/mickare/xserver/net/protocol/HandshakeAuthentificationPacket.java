@@ -37,10 +37,6 @@ public class HandshakeAuthentificationPacket implements Packet {
 		output.writeInt( xtype.getNumber() );
 	}
 	
-	public int getPacketID() {
-		return type.getPacketID();
-	}
-	
 	public void destroy() {
 		try {
 			this.finalize();

@@ -1,12 +1,8 @@
 package de.mickare.xserver.net;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 
 import de.mickare.xserver.AbstractXServerManager;
@@ -16,12 +12,12 @@ import de.mickare.xserver.net.protocol.HandshakeAcceptPacket;
 import de.mickare.xserver.net.protocol.HandshakeAuthentificationPacket;
 import de.mickare.xserver.net.protocol.KeepAlivePacket;
 import de.mickare.xserver.net.protocol.PingPacket;
+import de.mickare.xserver.util.concurrent.CloseableLock;
+import de.mickare.xserver.util.concurrent.CloseableReentrantLock;
 
 public class NetPacketHandler implements SocketPacketHandler // extends Thread
 {
-	
-	private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
-	
+		
 	public enum State {
 		EXPECTING_HANDSHAKE_AUTHENTIFICATION,
 		EXPECTING_HANDSHAKE_ACCEPT,
@@ -35,9 +31,18 @@ public class NetPacketHandler implements SocketPacketHandler // extends Thread
 	
 	private volatile State status = State.EXPECTING_HANDSHAKE_AUTHENTIFICATION;
 	
-	public NetPacketHandler( Socket socket, AbstractXServerManager manager ) {
+	private final DataInputStream dataIn;
+	private final DataOutputStream dataOut;
+	
+	private final CloseableReentrantLock inLock = new CloseableReentrantLock();
+	private final CloseableReentrantLock outLock = new CloseableReentrantLock();
+	
+	public NetPacketHandler( Socket socket, AbstractXServerManager manager ) throws IOException {
 		this.socket = socket;
 		this.manager = manager;
+		
+		dataIn = new DataInputStream( socket.getInputStream() );
+		dataOut = new DataOutputStream( socket.getOutputStream() );
 	}
 	
 	private void disconnect() throws IOException {
@@ -51,76 +56,63 @@ public class NetPacketHandler implements SocketPacketHandler // extends Thread
 		}
 	}
 	
-	public NetPacketHandler read() throws IOException {
+	public void read() throws IOException {
 		
 		if ( socket.isClosed() ) {
 			throw new IOException( "Socket is closed!" );
 		}
-		InputStream in = socket.getInputStream();
-		synchronized ( in ) {
-			PacketType type = PacketType.getPacket( in.read() );
-			if ( type == PacketType.BAD_PACKET ) {
-				throw new IOException( "Bad packet!" );
-			}
-			int size = in.read();
-			if ( size < 0 ) {
-				throw new IOException( "Bad packet!" );
-			}
-			byte[] buf = new byte[size];
-			in.read( buf );
+		// InputStream in = socket.getInputStream();
+		try ( CloseableLock c = inLock.open() ) {
+			/*
+			 * PacketType type = PacketType.getPacket( in.read() ); if ( type == PacketType.BAD_PACKET ) { throw new
+			 * IOException( "Bad packet!" ); } int size = in.read(); if ( size < 0 ) { throw new IOException(
+			 * "Bad packet!" ); } byte[] buf = new byte[size]; in.read( buf );
+			 */
 			
-			try ( DataInputStream dataIn = new DataInputStream( new ByteArrayInputStream( buf ) ) ) {
-				
-				Packet p = null;
-				switch ( type ) {
-					case DATA:
-						p = DataPacket.readFrom( dataIn );
-						break;
-					case KEEP_ALIVE:
-						p = KeepAlivePacket.readFrom( dataIn );
-						break;
-					case PING:
-						p = PingPacket.readFrom( dataIn );
-						break;
-					case HANDSHAKE_AUTHENTIFICATION:
-						p = HandshakeAuthentificationPacket.readFrom( dataIn );
-						break;
-					case HANDSHAKE_ACCEPT:
-						p = HandshakeAcceptPacket.readFrom( dataIn );
-						break;
-					default:
-						disconnect();
-				}
-				
-				if ( p == null ) {
-					disconnect();
-				} else {
-					p.handle( this );
-				}
+			// try ( DataInputStream dataIn = new DataInputStream(in ) ) {
+			int packetID = dataIn.readInt();
+			PacketType type = PacketType.getPacket( packetID );
+			if ( type == PacketType.BAD_PACKET ) {
+				throw new IOException( "Bad packet! (" + packetID + ")" );
 			}
-			return this;
+			
+			Packet p = null;
+			switch ( type ) {
+				case DATA:
+					p = DataPacket.readFrom( dataIn );
+					break;
+				case KEEP_ALIVE:
+					p = KeepAlivePacket.readFrom( dataIn );
+					break;
+				case PING:
+					p = PingPacket.readFrom( dataIn );
+					break;
+				case HANDSHAKE_AUTHENTIFICATION:
+					p = HandshakeAuthentificationPacket.readFrom( dataIn );
+					break;
+				case HANDSHAKE_ACCEPT:
+					p = HandshakeAcceptPacket.readFrom( dataIn );
+					break;
+				default:
+					disconnect();
+			}
+			
+			if ( p == null ) {
+				disconnect();
+			} else {
+				p.handle( this );
+			}
 		}
 	}
 	
-	public NetPacketHandler write( Packet p ) throws IOException {
+	public void write( Packet p ) throws IOException {
 		if ( socket.isClosed() ) {
 			throw new IOException( "Socket is closed!" );
 		}
-		OutputStream out = socket.getOutputStream();
-		synchronized ( out ) {
-			try ( ByteArrayOutputStream b = new ByteArrayOutputStream() ) {
-				byte[] buf = EMPTY_BYTE_ARRAY;
-				try ( DataOutputStream dataOut = new DataOutputStream( b ) ) {
-					p.writeTo( dataOut );
-					dataOut.flush();
-					buf = b.toByteArray();
-				}
-				out.write( p.getPacketID() );
-				out.write( buf.length );
-				out.write( buf );
-				out.flush();
-			}
-			return this;
+		try ( CloseableLock c = outLock.open() ) {
+			dataOut.writeInt( p.getPacketType().getPacketID() );
+			p.writeTo( dataOut );
+			dataOut.flush();
 		}
 	}
 	

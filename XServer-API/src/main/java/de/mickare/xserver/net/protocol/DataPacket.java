@@ -31,10 +31,6 @@ public class DataPacket implements Packet {
 		output.write( data );
 	}
 	
-	public int getPacketID() {
-		return type.getPacketID();
-	}
-	
 	public byte[] getData() {
 		return data;
 	}

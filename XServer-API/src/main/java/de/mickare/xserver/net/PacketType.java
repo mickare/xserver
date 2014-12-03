@@ -2,7 +2,7 @@ package de.mickare.xserver.net;
 
 public enum PacketType {
 	
-	BAD_PACKET( 1 ),
+	BAD_PACKET( -1 ),
 	DISCONNECT( 2 ),
 	Error( 3 ),
 

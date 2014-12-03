@@ -10,7 +10,7 @@ import de.mickare.xserver.net.SocketPacketHandler;
 
 public class KeepAlivePacket implements Packet {
 
-	private final static PacketType type = PacketType.HANDSHAKE_ACCEPT;
+	private final static PacketType type = PacketType.KEEP_ALIVE;
 	
 	public static HandshakeAcceptPacket readFrom( DataInputStream input ) throws IOException {
 		return new HandshakeAcceptPacket();
@@ -22,10 +22,6 @@ public class KeepAlivePacket implements Packet {
 	
 	public void writeTo( DataOutputStream output ) throws IOException {
 		
-	}
-	
-	public int getPacketID() {
-		return type.getPacketID();
 	}
 	
 	@Override

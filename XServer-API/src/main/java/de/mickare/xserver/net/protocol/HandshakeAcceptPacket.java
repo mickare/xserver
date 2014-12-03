@@ -24,10 +24,6 @@ public class HandshakeAcceptPacket implements Packet {
 		
 	}
 	
-	public int getPacketID() {
-		return type.getPacketID();
-	}
-	
 	@Override
 	public PacketType getPacketType() {
 		return type;
