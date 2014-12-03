@@ -1,9 +1,8 @@
 package de.mickare.xserver.net;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -12,129 +11,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.net.SocketFactory;
 
 import de.mickare.xserver.AbstractXServerManager;
-import de.mickare.xserver.XType;
-import de.mickare.xserver.events.XServerConnectionDenied;
 import de.mickare.xserver.events.XServerDisconnectEvent;
 import de.mickare.xserver.events.XServerLoggedInEvent;
+import de.mickare.xserver.net.protocol.HandshakeAcceptPacket;
+import de.mickare.xserver.net.protocol.HandshakeAuthentificationPacket;
+import de.mickare.xserver.net.protocol.KeepAlivePacket;
 
 public class ConnectionObj implements Connection {
 	
 	private final static int SOCKET_TIMEOUT = 5000;
 	
-	private static final void sendOwnLogin( final AbstractXServerManager manager, final Socket socket,
-			final DataInputStream inputStream, final DataOutputStream outputStream, final XServerObj other,
-			final PacketType type ) throws IOException, InterruptedException {
-		try {
-			/*
-			 * Send own Login
-			 */
-			outputStream.writeInt( type.getPacketID() );
-			outputStream.writeUTF( manager.getHomeServer().getName() );
-			outputStream.writeUTF( manager.getHomeServer().getPassword() );
-			outputStream.writeInt( manager.getPlugin().getHomeType().getNumber() );
-			
-			if ( inputStream.readInt() != PacketType.LOGIN_ACCEPTED.getPacketID() ) {
-				outputStream.writeInt( PacketType.DISCONNECT.getPacketID() );
-				String msg = "Own Login denied from " + other.getName() + " ("
-						+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")";
-				manager.getLogger().info( msg );
-				socket.close();
-				throw new IOException( msg );
-			}
-			manager.getLogger().info( "Own Login from " + other.getName() + " accepted! ("
-					+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
-		} catch ( Exception e ) {
-			inputStream.close();
-			outputStream.close();
-			socket.close();
-			throw e;
-		}
-	}
-	
-	private static final Object[] receiveOtherLogin( final AbstractXServerManager manager, final Socket socket,
-			final DataInputStream inputStream, final DataOutputStream outputStream, PacketType type )
-			throws IOException, InterruptedException {
-		try {
-			/*
-			 * Check other Login
-			 */
-			if ( inputStream.readInt() != type.getPacketID() ) {
-				// Packet Error
-				outputStream.writeInt( PacketType.Error.packetID );
-				String msg = "Other has wrong Login (Packet Error) (" + socket.getInetAddress().getHostAddress() + ":"
-						+ socket.getPort() + ")";
-				manager.getLogger().info( msg );
-				socket.close();
-				throw new IOException( msg );
-			}
-			final String name = inputStream.readUTF();
-			final String password = inputStream.readUTF();
-			final XType otherType = XType.getByNumber( inputStream.readInt() );
-			final XServerObj other = manager.getServer( name );
-			
-			if ( other == null || !other.getPassword().equals( password ) ) {
-				// Wrong Login
-				outputStream.writeInt( PacketType.LOGIN_DENIED.getPacketID() );
-				String msg = "Other Login from " + name + " denied! (" + socket.getInetAddress().getHostAddress() + ":"
-						+ socket.getPort() + ")";
-				if ( other == null ) {
-					msg += " - XServer \"" + name + "\" not found";
-				} else {
-					msg += " - wrong password";
-				}
-				manager.getLogger().info( msg );
-				manager.getEventHandler().callEvent( new XServerConnectionDenied( name, password, socket
-						.getInetAddress().getHostAddress(), socket.getPort() ) );
-				socket.close();
-				throw new IOException( msg );
-			}
-			
-			// Accept
-			outputStream.writeInt( PacketType.LOGIN_ACCEPTED.packetID );
-			manager.getLogger().info( "Other Login from " + name + " accepted! ("
-					+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
-			
-			return new Object[] { other, otherType };
-		} catch ( Exception e ) {
-			inputStream.close();
-			outputStream.close();
-			socket.close();
-			throw e;
-		}
-	}
-	
-	public static ConnectionObj endHandshake( final AbstractXServerManager manager, final Socket socket,
-			final DataInputStream inputStream, final DataOutputStream outputStream, final XServerObj other,
-			final XType otherType ) throws IOException, InterruptedException {
-		try {
-			/*
-			 * End Handshake
-			 */
-			outputStream.writeInt( PacketType.LOGIN_END.packetID );
-			
-			if ( inputStream.readInt() != PacketType.LOGIN_END.packetID ) {
-				manager.getLogger().info( "Handshake failed with (" + socket.getInetAddress().getHostAddress() + ":"
-						+ socket.getPort() + ")" );
-				socket.close();
-				throw new IOException( "Handshake failed" );
-			}
-			
-			other.setType( otherType );
-			ConnectionObj con = new ConnectionObj( manager, socket, inputStream, outputStream, other );
-			manager.getExecutorService().submit( new Runnable() {
-				@Override
-				public void run() {
-					manager.getEventHandler().callEvent( new XServerLoggedInEvent( other ) );
-				}
-			} );
-			
-			return con;
-		} catch ( Exception e ) {
-			inputStream.close();
-			outputStream.close();
-			socket.close();
-			throw e;
-		}
+	public enum TYPE {
+		CLIENT,
+		SERVER;
 	}
 	
 	public static final ConnectionObj connectToServer( final AbstractXServerManager manager, final SocketFactory sf,
@@ -147,71 +36,145 @@ public class ConnectionObj implements Connection {
 		
 		try {
 			
-			final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
-			final DataOutputStream outputStream = new DataOutputStream( socket.getOutputStream() );
+			final NetPacketHandler handler = new NetPacketHandler( socket, manager );
 			
 			/*
-			 * Send own Login
+			 * Authentification of client side
 			 */
-			sendOwnLogin( manager, socket, inputStream, outputStream, other, PacketType.LOGIN_CLIENT );
+			handler.write( new HandshakeAuthentificationPacket( manager.getHomeServer().getName(), manager
+					.getHomeServer().getPassword(), manager.getPlugin().getHomeType() ) );
 			
 			/*
-			 * Check other Login
+			 * Authentification of server side
 			 */
-			Object[] o = receiveOtherLogin( manager, socket, inputStream, outputStream, PacketType.LOGIN_SERVER );
-			XServerObj other2 = ( XServerObj ) o[0];
-			XType otherType = ( XType ) o[1];
+			handler.read();
+			if ( handler.getMyStatus() != NetPacketHandler.State.EXPECTING_HANDSHAKE_ACCEPT ) {
+				String msg = "Other has not accepted handshake (" + socket.getInetAddress().getHostAddress() + ":"
+						+ socket.getPort() + ")";
+				manager.getLogger().info( msg );
+				socket.close();
+				throw new IOException( msg );
+			}
 			
 			/*
-			 * End Handshake
+			 * Finish handshake on server side
 			 */
-			return endHandshake( manager, socket, inputStream, outputStream, other2, otherType );
+			handler.write( new HandshakeAcceptPacket() );
+			
+			/*
+			 * Finish the handshake on client side
+			 */
+			handler.read();
+			if ( handler.getMyStatus() != NetPacketHandler.State.NORMAL && handler.getXserverIfPresent() != null ) {
+				String msg = "Other has not finished handshake (" + socket.getInetAddress().getHostAddress() + ":"
+						+ socket.getPort() + ")";
+				manager.getLogger().info( msg );
+				socket.close();
+				throw new IOException( msg );
+			}
+			
+			if ( other != handler.getXserverIfPresent() ) {
+				String msg = "Connected to wrong server " + other.getName() + " <-> " + handler.getXserverIfPresent();
+				manager.getLogger().info( msg );
+				socket.close();
+				throw new IOException( msg );
+			}
+			
+			/*
+			 * Create valid connection
+			 */
+			ConnectionObj con = new ConnectionObj( manager, socket, other, handler );
+			handler.setConnection( con ); // Important to reference the connection with the handler
+			manager.getExecutorService().submit( new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep( 10 );
+					} catch ( InterruptedException e ) {
+					}
+					manager.getEventHandler().callEvent( new XServerLoggedInEvent( other ) );
+				}
+			} );
+			return con;
 		} catch ( Exception e ) {
 			socket.close();
 			throw e;
 		}
 	}
 	
-	public static final void handleClient( final AbstractXServerManager manager, final Socket socket ) {
-		
-		// manager.getLogger().info( "handleClient" );
+	public static final void handleClient( final AbstractXServerManager manager, final Socket socket )
+			throws SocketException {
+		socket.setSoTimeout( SOCKET_TIMEOUT );
 		
 		manager.getExecutorService().submit( new Runnable() {
 			@Override
 			public void run() {
-				XServerObj other = null;
+				
 				try {
 					
-					socket.setSoTimeout( SOCKET_TIMEOUT );
-					
-					final DataInputStream inputStream = new DataInputStream( socket.getInputStream() );
-					final DataOutputStream outputStream = new DataOutputStream( socket.getOutputStream() );
+					final NetPacketHandler handler = new NetPacketHandler( socket, manager );
 					
 					/*
-					 * Check other Login
+					 * Authentification of client side
 					 */
-					Object[] o = receiveOtherLogin( manager, socket, inputStream, outputStream, PacketType.LOGIN_CLIENT );
-					other = ( XServerObj ) o[0];
-					XType otherType = ( XType ) o[1];
-					
-					/*
-					 * Send own Login
-					 */
-					sendOwnLogin( manager, socket, inputStream, outputStream, other, PacketType.LOGIN_SERVER );
-					
-					/*
-					 * End Handshake
-					 */
-					ConnectionObj con = endHandshake( manager, socket, inputStream, outputStream, other, otherType );
-					other.addConnection( con );
-				} catch ( IOException | InterruptedException e ) {
-					
-					StringBuilder sb = new StringBuilder();
-					sb.append( "Exception while handling connecting client " );
-					if ( other != null ) {
-						sb.append( other.getName() ).append( " " );
+					handler.read();
+					if ( handler.getMyStatus() != NetPacketHandler.State.EXPECTING_HANDSHAKE_ACCEPT
+							&& handler.getXserverIfPresent() != null ) {
+						String msg = "Other has not accepted handshake (" + socket.getInetAddress().getHostAddress()
+								+ ":" + socket.getPort() + ")";
+						manager.getLogger().info( msg );
+						socket.close();
+						throw new IOException( msg );
 					}
-					sb.append( " (" + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ")" );
+					
+					final XServerObj other = handler.getXserverIfPresent();
+					
+					/*
+					 * Authentification of server side
+					 */
+					handler.write( new HandshakeAuthentificationPacket( manager.getHomeServer().getName(), manager
+							.getHomeServer().getPassword(), manager.getPlugin().getHomeType() ) );
+					
+					/*
+					 * Finish handshake on server side
+					 */
+					handler.read();
+					if ( handler.getMyStatus() != NetPacketHandler.State.NORMAL
+							&& handler.getXserverIfPresent() != null ) {
+						String msg = "Other has not finished handshake (" + socket.getInetAddress().getHostAddress()
+								+ ":" + socket.getPort() + ")";
+						manager.getLogger().info( msg );
+						socket.close();
+						throw new IOException( msg );
+					}
+					
+					/*
+					 * Finish the handshake on client side
+					 */
+					handler.write( new HandshakeAcceptPacket() );
+					
+					/*
+					 * Create valid connection
+					 */
+					ConnectionObj con = new ConnectionObj( manager, socket, other, handler );
+					handler.setConnection( con ); // Important to reference the connection with the handler
+					other.addConnection( con );
+					manager.getExecutorService().submit( new Runnable() {
+						@Override
+						public void run() {
+							try {
+								Thread.sleep( 10 );
+							} catch ( InterruptedException e ) {
+							}
+							manager.getEventHandler().callEvent( new XServerLoggedInEvent( other ) );
+						}
+					} );
+					
+				} catch ( Exception e ) {
+					try {
+						socket.close();
+					} catch ( IOException e1 ) {
+					}
 				}
 			}
 		} );
@@ -226,8 +189,6 @@ public class ConnectionObj implements Connection {
 	private final int port;
 	
 	private final Socket socket;
-	private final DataInputStream input;
-	private final DataOutputStream output;
 	
 	private final Receiving receiving;
 	private final Sending sending;
@@ -235,8 +196,7 @@ public class ConnectionObj implements Connection {
 	
 	private final AtomicLong lastUse = new AtomicLong( System.currentTimeMillis() );
 	
-	public ConnectionObj( AbstractXServerManager manager, Socket socket, DataInputStream inputStream,
-			DataOutputStream outputStream, XServerObj xserver ) {
+	public ConnectionObj( AbstractXServerManager manager, Socket socket, XServerObj xserver, NetPacketHandler handler ) {
 		
 		this.manager = manager;
 		this.xserver = xserver;
@@ -245,10 +205,7 @@ public class ConnectionObj implements Connection {
 		this.host = socket.getInetAddress().getHostAddress();
 		this.port = socket.getPort();
 		
-		this.input = inputStream;
-		this.output = outputStream;
-		
-		this.packetHandler = new NetPacketHandler( this, manager );
+		this.packetHandler = handler;
 		
 		this.receiving = new Receiving();
 		this.receiving.start( manager );
@@ -302,8 +259,6 @@ public class ConnectionObj implements Connection {
 		receiving.stopWorker();
 		try {
 			socket.close();
-			input.close();
-			output.close();
 		} finally {
 			if ( this.xserver != null ) {
 				this.manager.getEventHandler().callEvent( new XServerDisconnectEvent( xserver ) );
@@ -378,15 +333,14 @@ public class ConnectionObj implements Connection {
 					
 					if ( p == null ) {
 						if ( !isClosed() ) {
-							new Packet( PacketType.KEEP_ALIVE, new byte[0] ).writeToStream( output ).destroy();
-							;
+							ConnectionObj.this.packetHandler.write( new KeepAlivePacket() );
 							tickPacket();
 						} else {
 							ConnectionObj.this.closeForReal();
 							this.stopWorker();
 						}
 					} else {
-						p.writeToStream( output );
+						ConnectionObj.this.packetHandler.write( p );
 						tickPacket();
 					}
 					p = null;
@@ -431,7 +385,7 @@ public class ConnectionObj implements Connection {
 		public void run() {
 			try {
 				while ( !isStopped() && !isClosed() ) {
-					packetHandler.handle( Packet.readFromSteam( input ) );
+					ConnectionObj.this.packetHandler.read();
 					tickPacket();
 				}
 			} catch ( IOException e ) {
@@ -472,6 +426,10 @@ public class ConnectionObj implements Connection {
 	@Override
 	public long getReceivinglastSecondPackageCount() {
 		return this.receiving.lastSecondPackageCount.get();
+	}
+	
+	protected Socket getSocket() {
+		return this.socket;
 	}
 	
 }

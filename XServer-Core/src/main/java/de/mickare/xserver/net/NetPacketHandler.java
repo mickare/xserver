@@ -1,80 +1,232 @@
 package de.mickare.xserver.net;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
 
 import de.mickare.xserver.AbstractXServerManager;
 import de.mickare.xserver.events.XServerMessageIncomingEvent;
-import de.mickare.xserver.exceptions.NotInitializedException;
+import de.mickare.xserver.net.protocol.DataPacket;
+import de.mickare.xserver.net.protocol.HandshakeAcceptPacket;
+import de.mickare.xserver.net.protocol.HandshakeAuthentificationPacket;
+import de.mickare.xserver.net.protocol.KeepAlivePacket;
+import de.mickare.xserver.net.protocol.PingPacket;
 
-public class NetPacketHandler // extends Thread
+public class NetPacketHandler implements SocketPacketHandler // extends Thread
 {
 	
-	private final ConnectionObj con;
+	public enum State {
+		EXPECTING_HANDSHAKE_AUTHENTIFICATION,
+		EXPECTING_HANDSHAKE_ACCEPT,
+		NORMAL;
+	}
+	
+	private ConnectionObj con = null;
+	private XServerObj xserver = null;
+	private final Socket socket;
 	private final AbstractXServerManager manager;
 	
-	public NetPacketHandler( ConnectionObj con, AbstractXServerManager manager ) {
-		this.con = con;
+	private volatile State status = State.EXPECTING_HANDSHAKE_AUTHENTIFICATION;
+	
+	public NetPacketHandler( Socket socket, AbstractXServerManager manager ) {
+		this.socket = socket;
 		this.manager = manager;
 	}
 	
-	public void handle( Packet p ) throws IOException {
-		
+	private void disconnect() throws IOException {
 		try {
-			
-			if ( p.getPacketID() == PacketType.KEEP_ALIVE.packetID ) // Keep Alive
-			{
-				
-			} else if ( p.getPacketID() == PacketType.DISCONNECT.packetID ) // Disconnect
-			{
-				manager.getLogger().info( "Disconnecting from " + con.getHost() + ":" + con.getPort() );
+			if ( con != null ) {
 				con.disconnect();
-			} else if ( p.getPacketID() == PacketType.PING_REQUEST.packetID ) // PingRequest
-			{
-				con.getXServer().send( new Packet( PacketType.PING_ANSWER, p.getData() ) );
-				
-			} else if ( p.getPacketID() == PacketType.PING_ANSWER.packetID ) // PingAnswer
-			{
-				try ( DataInputStream is = new DataInputStream( new ByteArrayInputStream( p.getData() ) ) ) {
-					PingObj.receive( is.readUTF(), con.getXServer() );
-				}
-			} else if ( p.getPacketID() == PacketType.MESSAGE.packetID ) // Message
-			{
-				// manager.getThreadPool().runTask(new
-				// Runnable() {
-				// public void run() {
-				
-				try {
-					if ( con.getXServer() != null && !con.isClosed() ) {
-						manager.getEventHandler().callEvent( new XServerMessageIncomingEvent( con.getXServer(),
-								manager.readMessage( con.getXServer(), p.getData() ) ) );
-					}
-				} catch ( IOException e ) {
-					
-				}
-				// }
-				// });
-				
-			} else if ( p.getPacketID() == PacketType.Error.packetID ) // Error
-			{
-				manager.getLogger().info( "Connection Error with " + con.getHost() + ":" + con.getPort() );
-				con.disconnect();
-				
-			} else {
-				manager.getLogger().info( "Connection Packet Error with " + con.getHost() + ":" + con.getPort() );
-				con.disconnect();
-				
 			}
-		} catch ( IOException | NotInitializedException e ) {
-			
-			manager.getLogger().severe( e.getMessage() );
-			
-			con.disconnect();
+			socket.close();
+		} finally {
+			this.notifyAll();
 		}
-		p.destroy();
 	}
 	
-
+	public NetPacketHandler read() throws IOException {
+		if ( socket.isClosed() ) {
+			throw new IOException( "Socket is closed!" );
+		}
+		InputStream in = socket.getInputStream();
+		PacketType type = PacketType.getPacket( in.read() );
+		int size = in.read();
+		byte[] buf = new byte[size];
+		in.read( buf );
+		
+		try ( DataInputStream dataIn = new DataInputStream( new ByteArrayInputStream( buf ) ) ) {
+			
+			Packet p = null;
+			switch ( type ) {
+				case DATA:
+					p = DataPacket.readFrom( dataIn );
+					break;
+				case KEEP_ALIVE:
+					p = KeepAlivePacket.readFrom( dataIn );
+					break;
+				case PING:
+					p = PingPacket.readFrom( dataIn );
+					break;
+				case HANDSHAKE_AUTHENTIFICATION:
+					p = HandshakeAuthentificationPacket.readFrom( dataIn );
+					break;
+				case HANDSHAKE_ACCEPT:
+					p = HandshakeAcceptPacket.readFrom( dataIn );
+					break;
+				default:
+					disconnect();
+			}
+			
+			if ( p == null ) {
+				disconnect();
+			} else {
+				p.handle( this );
+			}
+		}
+		return this;
+	}
+	
+	public NetPacketHandler write( Packet p ) throws IOException {
+		if ( socket.isClosed() ) {
+			throw new IOException( "Socket is closed!" );
+		}
+		OutputStream out = socket.getOutputStream();
+		
+		try ( ByteArrayOutputStream b = new ByteArrayOutputStream() ) {
+			try ( DataOutputStream dataOut = new DataOutputStream( b ) ) {
+				p.writeTo( dataOut );
+			}
+			out.write( p.getPacketID() );
+			byte[] buf = b.toByteArray();
+			out.write( buf.length );
+			out.write( buf );
+			out.flush();
+		}
+		return this;
+	}
+	
+	@Override
+	public void handlePacket( DataPacket p ) {
+		if ( status != State.NORMAL || con == null ) {
+			try {
+				this.disconnect();
+			} catch ( IOException e ) {
+			}
+			return;
+		}
+		
+		if ( !con.isClosed() ) {
+			try {
+				manager.getEventHandler().callEvent( new XServerMessageIncomingEvent( con.getXServer(),
+						manager.readMessage( con.getXServer(), p.getData() ) ) );
+				
+			} catch ( IOException e ) {
+				try {
+					this.con.disconnect();
+				} catch ( IOException e1 ) {
+				}
+			}
+		}
+	}
+	
+	@Override
+	public void handlePacket( HandshakeAcceptPacket p ) {
+		
+		if ( status != State.EXPECTING_HANDSHAKE_ACCEPT ) {
+			try {
+				this.disconnect();
+			} catch ( IOException e ) {
+			}
+			return;
+		}
+		status = State.NORMAL;
+		
+	}
+	
+	@Override
+	public void handlePacket( HandshakeAuthentificationPacket p ) {
+		if ( status != State.EXPECTING_HANDSHAKE_AUTHENTIFICATION ) {
+			try {
+				this.disconnect();
+			} catch ( IOException e ) {
+			}
+			return;
+		}
+		
+		final XServerObj other = manager.getServer( p.getName() );
+		
+		if ( other == null || !other.getPassword().equals( p.getPassword() ) ) {
+			
+			String msg = "Other has not accepted handshake (" + socket.getInetAddress().getHostAddress() + ":"
+					+ socket.getPort() + ")";
+			if ( other == null ) {
+				msg += " - XServer \"" + p.getName() + "\" not found";
+			} else {
+				msg += " - wrong password";
+			}
+			manager.getLogger().info( msg );
+			try {
+				this.disconnect();
+			} catch ( IOException e ) {
+			}
+			return;
+		}
+		
+		other.setType( p.getXType() );
+		
+		this.xserver = other;
+		
+		status = State.EXPECTING_HANDSHAKE_ACCEPT;
+	}
+	
+	@Override
+	public void handlePacket( KeepAlivePacket p ) {
+		if ( status != State.NORMAL || con == null ) {
+			try {
+				this.disconnect();
+			} catch ( IOException e ) {
+			}
+			return;
+		}
+		
+	}
+	
+	@Override
+	public void handlePacket( PingPacket p ) {
+		if ( status != State.NORMAL || con == null ) {
+			try {
+				this.disconnect();
+			} catch ( IOException e ) {
+			}
+			return;
+		}
+		
+		if ( p.getDirection() == PingPacket.Direction.PING ) {
+			con.getXServer().send( new PingPacket( PingPacket.Direction.PONG, p.getData() ) );
+		} else {
+			PingObj.receive( p, con.getXServer() );
+		}
+	}
+	
+	public ConnectionObj getConnectionIfPresent() {
+		return con;
+	}
+	
+	protected void setConnection( ConnectionObj con ) {
+		this.con = con;
+	}
+	
+	public State getMyStatus() {
+		return status;
+	}
+	
+	public XServerObj getXserverIfPresent() {
+		return xserver;
+	}
 	
 }

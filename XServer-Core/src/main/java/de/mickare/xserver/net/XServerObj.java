@@ -17,6 +17,8 @@ import de.mickare.xserver.XGroup;
 import de.mickare.xserver.XServerManager;
 import de.mickare.xserver.XType;
 import de.mickare.xserver.events.XServerMessageOutgoingEvent;
+import de.mickare.xserver.net.protocol.DataPacket;
+import de.mickare.xserver.net.protocol.PingPacket;
 import de.mickare.xserver.util.Encryption;
 import de.mickare.xserver.util.MyStringUtils;
 import de.mickare.xserver.util.concurrent.CloseableLock;
@@ -286,7 +288,7 @@ public class XServerObj implements XServer {
 			return false;
 		}
 		
-		send( new Packet( PacketType.MESSAGE, message.getData() ) );
+		send( new DataPacket( message.getData() ) );
 		
 		manager.getEventHandler().callEvent( new XServerMessageOutgoingEvent( this, message ) );
 		return result;
@@ -310,7 +312,7 @@ public class XServerObj implements XServer {
 			b = new ByteArrayOutputStream();
 			out = new DataOutputStream( b );
 			out.writeUTF( ping.getKey() );
-			send( new Packet( PacketType.PING_REQUEST, b.toByteArray() ) );
+			send( new PingPacket( PingPacket.Direction.PING, b.toByteArray() ) );
 		} finally {
 			if ( out != null ) {
 				out.close();
