@@ -52,48 +52,54 @@ public class NetPacketHandler implements SocketPacketHandler // extends Thread
 	}
 	
 	public NetPacketHandler read() throws IOException {
+		
 		if ( socket.isClosed() ) {
 			throw new IOException( "Socket is closed!" );
 		}
 		InputStream in = socket.getInputStream();
-		PacketType type = PacketType.getPacket( in.read() );
-		if ( type == PacketType.BAD_PACKET ) {
-			throw new IOException( "Bad packet!" );
-		}
-		int size = in.read();
-		byte[] buf = new byte[size];
-		in.read( buf );
-		
-		try ( DataInputStream dataIn = new DataInputStream( new ByteArrayInputStream( buf ) ) ) {
+		synchronized ( in ) {
+			PacketType type = PacketType.getPacket( in.read() );
+			if ( type == PacketType.BAD_PACKET ) {
+				throw new IOException( "Bad packet!" );
+			}
+			int size = in.read();
+			if ( size < 0 ) {
+				throw new IOException( "Bad packet!" );
+			}
+			byte[] buf = new byte[size];
+			in.read( buf );
 			
-			Packet p = null;
-			switch ( type ) {
-				case DATA:
-					p = DataPacket.readFrom( dataIn );
-					break;
-				case KEEP_ALIVE:
-					p = KeepAlivePacket.readFrom( dataIn );
-					break;
-				case PING:
-					p = PingPacket.readFrom( dataIn );
-					break;
-				case HANDSHAKE_AUTHENTIFICATION:
-					p = HandshakeAuthentificationPacket.readFrom( dataIn );
-					break;
-				case HANDSHAKE_ACCEPT:
-					p = HandshakeAcceptPacket.readFrom( dataIn );
-					break;
-				default:
+			try ( DataInputStream dataIn = new DataInputStream( new ByteArrayInputStream( buf ) ) ) {
+				
+				Packet p = null;
+				switch ( type ) {
+					case DATA:
+						p = DataPacket.readFrom( dataIn );
+						break;
+					case KEEP_ALIVE:
+						p = KeepAlivePacket.readFrom( dataIn );
+						break;
+					case PING:
+						p = PingPacket.readFrom( dataIn );
+						break;
+					case HANDSHAKE_AUTHENTIFICATION:
+						p = HandshakeAuthentificationPacket.readFrom( dataIn );
+						break;
+					case HANDSHAKE_ACCEPT:
+						p = HandshakeAcceptPacket.readFrom( dataIn );
+						break;
+					default:
+						disconnect();
+				}
+				
+				if ( p == null ) {
 					disconnect();
+				} else {
+					p.handle( this );
+				}
 			}
-			
-			if ( p == null ) {
-				disconnect();
-			} else {
-				p.handle( this );
-			}
+			return this;
 		}
-		return this;
 	}
 	
 	public NetPacketHandler write( Packet p ) throws IOException {
@@ -101,20 +107,21 @@ public class NetPacketHandler implements SocketPacketHandler // extends Thread
 			throw new IOException( "Socket is closed!" );
 		}
 		OutputStream out = socket.getOutputStream();
-		
-		try ( ByteArrayOutputStream b = new ByteArrayOutputStream() ) {
-			byte[] buf = EMPTY_BYTE_ARRAY;
-			try ( DataOutputStream dataOut = new DataOutputStream( b ) ) {
-				p.writeTo( dataOut );
-				dataOut.flush();
-				buf = b.toByteArray();
+		synchronized ( out ) {
+			try ( ByteArrayOutputStream b = new ByteArrayOutputStream() ) {
+				byte[] buf = EMPTY_BYTE_ARRAY;
+				try ( DataOutputStream dataOut = new DataOutputStream( b ) ) {
+					p.writeTo( dataOut );
+					dataOut.flush();
+					buf = b.toByteArray();
+				}
+				out.write( p.getPacketID() );
+				out.write( buf.length );
+				out.write( buf );
+				out.flush();
 			}
-			out.write( p.getPacketID() );
-			out.write( buf.length );
-			out.write( buf );
-			out.flush();
+			return this;
 		}
-		return this;
 	}
 	
 	@Override

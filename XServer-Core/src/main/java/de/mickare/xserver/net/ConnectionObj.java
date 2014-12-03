@@ -2,7 +2,6 @@ package de.mickare.xserver.net;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,7 +18,6 @@ import de.mickare.xserver.net.protocol.KeepAlivePacket;
 
 public class ConnectionObj implements Connection {
 	
-	private final static int SOCKET_TIMEOUT = 3000;
 	private final static int KEEP_ALIVE_PACKETS = 1000;
 	
 	public enum TYPE {
@@ -33,9 +31,11 @@ public class ConnectionObj implements Connection {
 		// manager.getLogger().info( "connectToServer" );
 		
 		final Socket socket = sf.createSocket( other.getHost(), other.getPort() );
-		socket.setSoTimeout( SOCKET_TIMEOUT );
+		socket.setSoTimeout( AbstractXServerManager.SOCKET_TIMEOUT );
 		
 		try {
+			
+			Thread.sleep( 10 );
 			
 			final NetPacketHandler handler = new NetPacketHandler( socket, manager );
 			
@@ -49,7 +49,8 @@ public class ConnectionObj implements Connection {
 			 * Authentification of server side
 			 */
 			handler.read();
-			if ( handler.getMyStatus() != NetPacketHandler.State.EXPECTING_HANDSHAKE_ACCEPT ) {
+			if ( handler.getMyStatus() != NetPacketHandler.State.EXPECTING_HANDSHAKE_ACCEPT
+					|| handler.getXserverIfPresent() == null ) {
 				String msg = "Other has not accepted handshake (" + socket.getInetAddress().getHostAddress() + ":"
 						+ socket.getPort() + ")";
 				manager.getLogger().info( msg );
@@ -66,7 +67,7 @@ public class ConnectionObj implements Connection {
 			 * Finish the handshake on client side
 			 */
 			handler.read();
-			if ( handler.getMyStatus() != NetPacketHandler.State.NORMAL && handler.getXserverIfPresent() != null ) {
+			if ( handler.getMyStatus() != NetPacketHandler.State.NORMAL ) {
 				String msg = "Other has not finished handshake (" + socket.getInetAddress().getHostAddress() + ":"
 						+ socket.getPort() + ")";
 				manager.getLogger().info( msg );
@@ -86,7 +87,7 @@ public class ConnectionObj implements Connection {
 			 */
 			ConnectionObj con = new ConnectionObj( manager, socket, other, handler, TYPE.CLIENT );
 			handler.setConnection( con ); // Important to reference the connection with the handler
-			manager.getExecutorService().submit( new Runnable() {
+			manager.getThreadPool().runTask( new Runnable() {
 				@Override
 				public void run() {
 					try {
@@ -103,16 +104,13 @@ public class ConnectionObj implements Connection {
 		}
 	}
 	
-	public static final void handleClient( final AbstractXServerManager manager, final Socket socket )
-			throws SocketException {
-		socket.setSoTimeout( SOCKET_TIMEOUT );
+	public static final void handleClient( final AbstractXServerManager manager, final Socket socket ) {
 		
-		manager.getExecutorService().submit( new Runnable() {
+		manager.getThreadPool().runTask( new Runnable() {
 			@Override
 			public void run() {
 				
 				try {
-					
 					final NetPacketHandler handler = new NetPacketHandler( socket, manager );
 					
 					/*
@@ -120,7 +118,7 @@ public class ConnectionObj implements Connection {
 					 */
 					handler.read();
 					if ( handler.getMyStatus() != NetPacketHandler.State.EXPECTING_HANDSHAKE_ACCEPT
-							&& handler.getXserverIfPresent() != null ) {
+							|| handler.getXserverIfPresent() == null ) {
 						String msg = "Other has not accepted handshake (" + socket.getInetAddress().getHostAddress()
 								+ ":" + socket.getPort() + ")";
 						manager.getLogger().info( msg );
@@ -140,8 +138,7 @@ public class ConnectionObj implements Connection {
 					 * Finish handshake on server side
 					 */
 					handler.read();
-					if ( handler.getMyStatus() != NetPacketHandler.State.NORMAL
-							&& handler.getXserverIfPresent() != null ) {
+					if ( handler.getMyStatus() != NetPacketHandler.State.NORMAL ) {
 						String msg = "Other has not finished handshake (" + socket.getInetAddress().getHostAddress()
 								+ ":" + socket.getPort() + ")";
 						manager.getLogger().info( msg );
@@ -160,7 +157,7 @@ public class ConnectionObj implements Connection {
 					ConnectionObj con = new ConnectionObj( manager, socket, other, handler, TYPE.SERVER );
 					handler.setConnection( con ); // Important to reference the connection with the handler
 					other.addConnection( con );
-					manager.getExecutorService().submit( new Runnable() {
+					manager.getThreadPool().runTask( new Runnable() {
 						@Override
 						public void run() {
 							try {
@@ -287,7 +284,7 @@ public class ConnectionObj implements Connection {
 		}
 		
 		public void start( AbstractXServerManager manager ) {
-			manager.getExecutorService().submit( this );
+			manager.getThreadPool().runTask( this );
 		}
 		
 		public boolean isStopped() {
@@ -436,7 +433,7 @@ public class ConnectionObj implements Connection {
 	protected Socket getSocket() {
 		return this.socket;
 	}
-
+	
 	public TYPE getConnectionType() {
 		return connectionType;
 	}

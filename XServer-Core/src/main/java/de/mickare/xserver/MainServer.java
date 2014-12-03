@@ -9,7 +9,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import de.mickare.xserver.net.ConnectionObj;
-import de.mickare.xserver.util.MyStringUtils;
 
 public class MainServer implements Runnable {
 	
@@ -51,7 +50,7 @@ public class MainServer implements Runnable {
 					
 				}
 			} catch ( IOException e ) {
-				manager.getLogger().warning( "Exception while connecting: " + e.getMessage() );
+				manager.getLogger().warning( "Exception while accepting client: " + e.getMessage() );
 				if ( socket != null ) {
 					try {
 						socket.close();
@@ -63,10 +62,10 @@ public class MainServer implements Runnable {
 		}
 	}
 	
-	public void start( ExecutorService executorService ) {
+	public void start( ServerThreadPoolExecutor serverThreadPoolExecutor ) {
 		synchronized ( task ) {
 			if ( task.get() == null ) {
-				task.set( executorService.submit( this ) );
+				task.set( serverThreadPoolExecutor.runServerTask( this ) );
 			}
 		}
 	}

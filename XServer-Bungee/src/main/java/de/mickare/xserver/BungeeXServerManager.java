@@ -21,7 +21,7 @@ public class BungeeXServerManager extends AbstractXServerManager {
 			String sql_table_xservers, String sql_table_xgroups, String sql_table_xserversxgroups )
 			throws InvalidConfigurationException, IOException {
 		super( servername, bungeePlugin, connection, sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups,
-				bungeePlugin.getProxy().getScheduler().unsafe().getExecutorService( bungeePlugin ) );
+				new BungeeServerThreadPool( bungeePlugin ) );
 		this.eventhandler = new BungeeEventHandler( bungeePlugin );
 		this.bungeePlugin = bungeePlugin;
 		this.stressListener = new StressTestListener( this );

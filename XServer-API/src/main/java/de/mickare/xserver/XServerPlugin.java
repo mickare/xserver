@@ -7,10 +7,11 @@ public interface XServerPlugin {
 	public Logger getLogger();
 	
 	public void shutdownServer();
-
+	
 	public XServerManager getManager();
 	
 	public long getAutoReconnectTime();
+	
 	public XType getHomeType();
 	
 }

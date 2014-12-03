@@ -27,10 +27,12 @@ import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
 public abstract class AbstractXServerManager extends XServerManager {
 	
+	public final static int SOCKET_TIMEOUT = 3000;
+	
 	private final String sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups;
 	
 	private final XServerPlugin plugin;
-	private ExecutorService executorService;
+	private ServerThreadPoolExecutor executorService;
 	private SocketFactory sf;
 	private MainServer mainserver;
 	
@@ -50,7 +52,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 	
 	protected AbstractXServerManager( String servername, XServerPlugin plugin, MySQL connection,
 			String sql_table_xservers, String sql_table_xgroups, String sql_table_xserversxgroups,
-			ExecutorService executorService ) throws InvalidConfigurationException, IOException {
+			ServerThreadPoolExecutor executorService ) throws InvalidConfigurationException, IOException {
 		this.plugin = plugin;
 		this.executorService = executorService;
 		// this.stpool = new ServerThreadPoolExecutorObj();
@@ -91,7 +93,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 			reconnectAll_soft();
 			if ( !isReconnectClockRunning() ) {
 				reconnectClockRunning = true;
-				executorService.execute( new Runnable() {
+				executorService.runServerTask(  new Runnable() {
 					@Override
 					public void run() {
 						try {
@@ -114,7 +116,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 	 */
 	@Override
 	public void start_async() {
-		executorService.execute( new Runnable() {
+		executorService.runServerTask( new Runnable() {
 			public void run() {
 				try {
 					start();
@@ -155,7 +157,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 	public void reconnectAll_soft() {
 		try ( CloseableLock cs = serversLock.readLock().open() ) {
 			for ( final XServerObj s : servers.values() ) {
-				executorService.execute( new Runnable() {
+				executorService.runServerTask( new Runnable() {
 					public void run() {
 						if ( !s.isConnected() ) {
 							try {
@@ -184,7 +186,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 	public void reconnectAll_forced() {
 		try ( CloseableLock cs = serversLock.readLock().open() ) {
 			for ( final XServerObj s : servers.values() ) {
-				executorService.execute( new Runnable() {
+				executorService.runServerTask( new Runnable() {
 					public void run() {
 						try {
 							s.disconnect();
@@ -249,7 +251,6 @@ public abstract class AbstractXServerManager extends XServerManager {
 				
 				// Reestablish connection
 				connection.reconnect();
-				;
 				
 				// Get all servers
 				
@@ -337,16 +338,17 @@ public abstract class AbstractXServerManager extends XServerManager {
 				
 				connection.disconnect();
 				
-				plugin.getLogger().warning( this.servers.size() + " XServers loaded" );
+				plugin.getLogger().info( "Home-Server: " + homeServer.getName() + " on port " + homeServer.getPort() );
+				plugin.getLogger().info( this.servers.size() + " XServers loaded" );
 				
 				ServerSocket ss = ServerSocketFactory.getDefault().createServerSocket();
 				ss.setReuseAddress( true );
 				ss.setPerformancePreferences( 2, 1, 0 );
-				ss.setSoTimeout(3100);
+				ss.setSoTimeout( SOCKET_TIMEOUT );
 				ss.bind( new InetSocketAddress( homeServer.getPort() ), 500 );
 				
 				mainserver = new MainServer( ss, this );
-				mainserver.start( this.getExecutorService() );
+				mainserver.start( this.getThreadPool() );
 				
 			}
 		}
@@ -415,7 +417,7 @@ public abstract class AbstractXServerManager extends XServerManager {
 	 * @see de.mickare.xserver.AbstractXServerManager#getExecutorService()
 	 */
 	@Override
-	public ExecutorService getExecutorService() {
+	public ServerThreadPoolExecutor getThreadPool() {
 		return executorService;
 	}
 	
