@@ -47,7 +47,7 @@ public class MainServer implements Runnable {
 					
 				}
 			} catch ( IOException e ) {
-				manager.getLogger().warning( "Exception while connecting: " + e.getMessage() + "\n"
+				manager.getLogger().warning( "Exception while client connects: " + e.getMessage() + "\n"
 						+ MyStringUtils.stackTraceToString( e ) );
 			}
 		}

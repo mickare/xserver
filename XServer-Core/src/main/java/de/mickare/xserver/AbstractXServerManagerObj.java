@@ -94,7 +94,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 			reconnectAll_soft();
 			if ( !isReconnectClockRunning() ) {
 				reconnectClockRunning = true;
-				stpool.runTask(  new Runnable() {
+				stpool.runTask( new Runnable() {
 					@Override
 					public void run() {
 						try {
@@ -207,16 +207,22 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 	 * @see de.mickare.xserver.AbstractXServerManager#stop()
 	 */
 	@Override
-	public void stop() throws IOException {
-		try ( CloseableLock cs = serversLock.readLock().open() ) {
+	public void stop() {
+		reconnectClockRunning = false;
+		try {
 			mainserver.close();
-			// executorService.shutDown();
-			reconnectClockRunning = false;
-			
-			for ( XServerObj s : servers.values() ) {
-				s.disconnect();
+		} catch ( IOException e ) {
+			this.getLogger().warning( "An exception occured while stopping xserver server!\n" + e.getMessage() );
+		} finally {
+			try ( CloseableLock cs = serversLock.writeLock().open() ) {
+				// executorService.shutDown();
+				
+				for ( XServerObj s : servers.values() ) {
+					s.disconnect();
+					s.setDeprecated();
+				}
+				
 			}
-			
 		}
 	}
 	

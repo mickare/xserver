@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import de.mickare.xserver.AbstractXServerManager;
 import de.mickare.xserver.AbstractXServerManagerObj;
@@ -114,9 +115,17 @@ public class XServerObj implements XServer {
 	 */
 	@Override
 	public boolean isConnected() {
-		try (CloseableLock c = conLock.readLock().open()) {
-			return connection != null ? connection.isLoggedIn() : false;
+		try {
+			if(conLock.readLock().tryLock( 500, TimeUnit.MILLISECONDS )) {
+				try {
+					return connection != null ? connection.isLoggedIn() : false;
+				} finally {
+					conLock.readLock().unlock();
+				}
+			}
+		} catch ( InterruptedException e ) {
 		}
+		return false;
 	}
 
 	/*

@@ -39,7 +39,7 @@ public class BukkitXServerManager extends XServerManager {
 	}
 	
 	@Override
-	public void stop() throws IOException {
+	public void stop() {
 		try {
 			this.getThreadPool().shutDown();
 		} finally {
