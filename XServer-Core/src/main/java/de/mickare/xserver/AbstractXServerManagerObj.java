@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import javax.net.ServerSocketFactory;
@@ -256,43 +256,49 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 				
 				// Get all servers
 				
-				Map<Integer, XServerObj> idMap = new HashMap<Integer, XServerObj>();
+				final Map<Integer, XServerObj> idMap = new HashMap<Integer, XServerObj>();
 				
-				try ( ResultSet rs = connection.query( "SELECT * FROM " + sql_table_xservers ) ) {
-					while ( rs.next() ) {
-						int id = rs.getInt( "ID" );
-						String servername = rs.getString( "NAME" );
-						String[] hostip = rs.getString( "ADRESS" ).split( ":" );
-						String pw = rs.getString( "PW" );
-						
-						if ( hostip.length < 2 ) {
-							plugin.getLogger().warning( "XServer \"" + servername
-									+ "\" has an invalid address! (host:port)" );
-							continue;
-						}
-						
-						String host = hostip[0];
-						if ( hostip.length > 2 ) {
-							for ( int i = 1; i < hostip.length - 1; i++ ) {
-								host += ":" + hostip[i];
-							}
-						}
-						int ip = 20000;
+				connection.query( new Consumer<ResultSet>() {
+					@Override
+					public void accept( ResultSet rs ) {
 						try {
-							ip = Integer.valueOf( hostip[hostip.length - 1] );
-						} catch ( NumberFormatException nfe ) {
-							plugin.getLogger().warning( "XServer \"" + servername
-									+ "\" has an invalid address! (host:port)" );
-							continue;
+							while ( rs.next() ) {
+								int id = rs.getInt( "ID" );
+								String servername = rs.getString( "NAME" );
+								String[] hostip = rs.getString( "ADRESS" ).split( ":" );
+								String pw = rs.getString( "PW" );
+								
+								if ( hostip.length < 2 ) {
+									plugin.getLogger().warning( "XServer \"" + servername
+											+ "\" has an invalid address! (host:port)" );
+									continue;
+								}
+								
+								String host = hostip[0];
+								if ( hostip.length > 2 ) {
+									for ( int i = 1; i < hostip.length - 1; i++ ) {
+										host += ":" + hostip[i];
+									}
+								}
+								int ip = 20000;
+								try {
+									ip = Integer.valueOf( hostip[hostip.length - 1] );
+								} catch ( NumberFormatException nfe ) {
+									plugin.getLogger().warning( "XServer \"" + servername
+											+ "\" has an invalid address! (host:port)" );
+									continue;
+								}
+								XServerObj result = new XServerObj( servername, host, ip, pw,
+										AbstractXServerManagerObj.this );
+								servers.put( servername, result );
+								idMap.put( id, result );
+							}
+						} catch ( Exception e ) {
+							plugin.getLogger().severe( e.getMessage() );
+							throw new RuntimeException( "Couldn't load XServer List form Database!", e );
 						}
-						XServerObj result = new XServerObj( servername, host, ip, pw, this );
-						servers.put( servername, result );
-						idMap.put( id, result );
 					}
-				} catch ( Exception e ) {
-					plugin.getLogger().severe( e.getMessage() );
-					throw new RuntimeException( "Couldn't load XServer List form Database!", e );
-				}
+				}, "SELECT * FROM " + sql_table_xservers );
 				
 				homeServer = getServer( this.homeServerName );
 				
@@ -304,39 +310,50 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 				
 				this.groups.clear();
 				
-				Map<Integer, XGroup> tempgroups = new HashMap<Integer, XGroup>();
+				final Map<Integer, XGroup> tempgroups = new HashMap<Integer, XGroup>();
 				
-				try ( ResultSet rs = connection.query( "SELECT * FROM " + sql_table_xgroups ) ) {
-					while ( rs.next() ) {
-						int groupId = rs.getInt( "groupID" );
-						String name = rs.getString( "name" );
-						XGroupObj o = new XGroupObj( groupId, name );
-						this.groups.put( name, o );
-						tempgroups.put( groupId, o );
+				connection.query( new Consumer<ResultSet>() {
+					@Override
+					public void accept( ResultSet rs ) {
+						try {
+							while ( rs.next() ) {
+								int groupId = rs.getInt( "groupID" );
+								String name = rs.getString( "name" );
+								XGroupObj o = new XGroupObj( groupId, name );
+								AbstractXServerManagerObj.this.groups.put( name, o );
+								tempgroups.put( groupId, o );
+							}
+							
+						} catch ( Exception e ) {
+							plugin.getLogger().severe( e.getMessage() );
+							throw new RuntimeException( "Couldn't load XServer Groups form Database!", e );
+						}
 					}
-				} catch ( Exception e ) {
-					plugin.getLogger().severe( e.getMessage() );
-					throw new RuntimeException( "Couldn't load XServer Groups form Database!", e );
-				}
+				}, "SELECT * FROM " + sql_table_xgroups );
 				
 				// Relations to groups
 				
-				try ( ResultSet rs = connection.query( "SELECT * FROM " + sql_table_xserversxgroups ) ) {
-					while ( rs.next() ) {
-						int serverId = rs.getInt( "serverID" );
-						int groupId = rs.getInt( "groupId" );
-						
-						XServerObj x = idMap.get( serverId );
-						XGroup g = tempgroups.get( groupId );
-						if ( x != null && g != null ) {
-							x.addGroup( g );
+				connection.query( new Consumer<ResultSet>() {
+					@Override
+					public void accept( ResultSet rs ) {
+						try {
+							while ( rs.next() ) {
+								int serverId = rs.getInt( "serverID" );
+								int groupId = rs.getInt( "groupId" );
+								
+								XServerObj x = idMap.get( serverId );
+								XGroup g = tempgroups.get( groupId );
+								if ( x != null && g != null ) {
+									x.addGroup( g );
+								}
+								
+							}
+						} catch ( Exception e ) {
+							plugin.getLogger().severe( e.getMessage() );
+							throw new RuntimeException( "Couldn't load XServer Group-Relations form Database!", e );
 						}
-						
 					}
-				} catch ( Exception e ) {
-					plugin.getLogger().severe( e.getMessage() );
-					throw new RuntimeException( "Couldn't load XServer Group-Relations form Database!", e );
-				}
+				}, "SELECT * FROM " + sql_table_xserversxgroups );
 				
 				connection.disconnect();
 				

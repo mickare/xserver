@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -97,31 +98,31 @@ public class MySQL {
 		}
 	}
 	
-	public ResultSet query( String qry ) {
-		ResultSet rs = null;
+	public void query( Consumer<ResultSet> consumer, String qry ) {
 		try ( PreparedStatement pstmt = connection.prepareStatement( qry ) ) {
-			rs = pstmt.executeQuery( qry );
+			try ( ResultSet rs = pstmt.executeQuery( qry ) ) {
+				consumer.accept( rs );
+			}
 		} catch ( Exception ex ) {
 			logger.log( Level.SEVERE, ex.getMessage() );
 			// Bukkit.getLogger().severe(qry);
 			// Bukkit.getLogger().severe(java.util.Arrays.toString(ex.getStackTrace()));
 		}
-		return rs;
 	}
 	
-	public ResultSet query( String qry, String... values ) {
-		ResultSet rs = null;
+	public void query( Consumer<ResultSet> consumer, String qry, String... values ) {
 		try ( PreparedStatement pstmt = connection.prepareStatement( qry ) ) {
 			for ( int i = 0; i < values.length; i++ ) {
 				pstmt.setString( i + 1, values[i] );
 			}
-			rs = pstmt.executeQuery( qry );
+			try ( ResultSet rs = pstmt.executeQuery( qry ) ) {
+				consumer.accept( rs );
+			}
 		} catch ( Exception ex ) {
 			logger.log( Level.SEVERE, ex.getMessage() );
 			// Bukkit.getLogger().severe(qry);
 			// Bukkit.getLogger().severe(java.util.Arrays.toString(ex.getStackTrace()));
 		}
-		return rs;
 	}
 	
 	public Connection getConnection() {
