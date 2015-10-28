@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import javax.net.ServerSocketFactory;
@@ -19,6 +18,7 @@ import de.mickare.xserver.exceptions.InvalidConfigurationException;
 import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.net.XServer;
 import de.mickare.xserver.net.XServerObj;
+import de.mickare.xserver.util.Consumer;
 import de.mickare.xserver.util.MySQL;
 import de.mickare.xserver.util.MyStringUtils;
 import de.mickare.xserver.util.TableInstall;
