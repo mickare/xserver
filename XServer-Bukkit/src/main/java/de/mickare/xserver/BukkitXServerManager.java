@@ -40,11 +40,8 @@ public class BukkitXServerManager extends XServerManager {
 	
 	@Override
 	public void stop() {
-		try {
-			this.getThreadPool().shutDown();
-		} finally {
-			super.stop();
-		}
+		super.stop();
+		this.getThreadPool().shutDown();
 	}
 	
 }

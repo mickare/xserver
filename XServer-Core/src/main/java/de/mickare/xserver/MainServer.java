@@ -23,10 +23,13 @@ public class MainServer implements Runnable {
 	
 	public void close() throws IOException {
 		synchronized ( task ) {
-			this.server.close();
-			if ( this.task.get() != null ) {
-				this.task.get().cancel( true );
-				this.task.set( null );
+			try {
+				this.server.close();
+			} finally {
+				if ( this.task.get() != null ) {
+					this.task.get().cancel( true );
+					this.task.set( null );
+				}
 			}
 		}
 	}
