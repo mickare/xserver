@@ -1,6 +1,6 @@
 name: XServer
 main: de.mickare.xserver.BukkitXServerPlugin
-version: 2.0.2
+version: 2.0.3
 author: mickare
 description: XServer Communication Interface, that plugins can use to send messages to other servers.
 commands:

@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>de.mickare.xserver</groupId>
 		<artifactId>XServer-parent</artifactId>
-		<version>2.0.2-SNAPSHOT</version>
+		<version>2.0.3-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -26,11 +26,10 @@
 			<version>3.8.1</version>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>de.mickare.xserver</groupId>
 			<artifactId>XServer-API</artifactId>
-			<version>2.0.2-SNAPSHOT</version>
+			<version>${parent.version}</version>
 		</dependency>
 	</dependencies>
 
@@ -41,7 +40,7 @@
 			</snapshots>
 			<id>rs-public</id>
 			<name>Rennschnitzel public repository</name>
-			<url>http://repo.rennschnitzel.de:8081/nexus/content/groups/public/</url>
+			<url>http://nexus.spacier.de/content/groups/public/</url>
 		</repository>
 	</repositories>
 
@@ -49,12 +48,12 @@
 		<repository>
 			<id>rs-public</id>
 			<name>Internal Releases</name>
-			<url>http://repo.rennschnitzel.de:8081/nexus/content/repositories/rs-public/</url>
+			<url>http://nexus.spacier.de/content/repositories/rs-public/</url>
 		</repository>
 		<snapshotRepository>
 			<id>rs-public</id>
 			<name>Internal Releases</name>
-			<url>http://repo.rennschnitzel.de:8081/nexus/content/repositories/rs-public/</url>
+			<url>http://nexus.spacier.de/content/repositories/rs-public/</url>
 		</snapshotRepository>
 	</distributionManagement>
 
@@ -81,12 +80,12 @@
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
 					<finalName>dumpster-diver</finalName>
-                	<appendAssemblyId>false</appendAssemblyId>
-                	<archive>
-                    <manifest>
-                        <mainClass>DumpsterDiver</mainClass>
-                    </manifest>
-                </archive>
+					<appendAssemblyId>false</appendAssemblyId>
+					<archive>
+						<manifest>
+							<mainClass>DumpsterDiver</mainClass>
+						</manifest>
+					</archive>
 				</configuration>
 				<executions>
 					<execution>
@@ -97,7 +96,7 @@
 						</goals>
 					</execution>
 				</executions>
-				
+
 			</plugin>
 		</plugins>
 	</build>
