@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package de.mickare.xserver.protocol;
+
+// A 128-bit id, transferred as two 64-bit longs
+message UUID {
+    sint64 least_significant_bits = 1;
+    sint64 most_significant_bits = 2;
+}

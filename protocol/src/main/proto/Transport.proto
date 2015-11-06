@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package de.mickare.xserver.protocol;
+
+import "Auth.proto";
+import "Error.proto";
+import "Network.proto";
+import "ComponentUUID.proto";
+import "ComponentFstObject.proto";
+import "google/protobuf/any.proto";
+
+
+//enum PacketType {
+//	ERROR = 0;
+//	AUTH_CHALLENGE = 1;
+//	AUTH_RESPONE = 2;
+//	AUTH_SUCCESS = 3;
+//	MSG_BYTE = 4;
+//	MSG_OBJECT = 5;
+//	NET_INFO = 6;
+//}
+
+message Packet {
+	reserved 2 to 9;
+	reserved 13 to 19;
+	reserved 22 to 29;
+	reserved 33 to 39;
+	oneof value {
+		ErrorMessage error = 1;
+		AuthChallenge authChallenge = 10;
+		AuthResponse authResponse = 11;
+		AuthSuccess authSuccess = 12;
+		Message message = 20;
+		Broadcast broadcast = 21;
+		NetworkInformation netInfo = 30;
+		ConnectionAdd netConAdd = 31;
+		ConnectionRemove netConRemove = 32;
+	}
+}
+
+message Message {
+
+	message Data {
+		
+	}
+
+	Server sender = 1;
+	Server receiver = 2;
+	int32 identifier = 3;
+	oneof data {
+		bytes byteValue = 4;
+		FstObject objectValue = 5;
+		google.protobuf.Any protoValue = 6;
+	}
+}
+
+message Broadcast {
+
+	message Data {
+		
+	}
+
+	Server sender = 1;
+	int32 identifier = 2;
+	oneof data {
+		bytes byteValue = 3;
+		FstObject objectValue = 4;
+		google.protobuf.Any protoValue = 5;
+	}
+}
+

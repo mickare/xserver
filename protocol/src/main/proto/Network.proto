@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package de.mickare.xserver.protocol;
+
+message Server {
+	fixed64 id = 1;
+	string name = 2;
+}
+
+message Connection {
+	Server master = 1;
+	Server slave = 2;
+	uint32 rating = 3;
+}
+
+message ConnectionAdd {
+	Connection connection = 1;
+}
+
+message ConnectionRemove {
+	Connection connection = 1;
+}
+
+message NetworkInformation {
+	repeated Server servers = 1;
+	repeated Connection connections = 2;
+}
+

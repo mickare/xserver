@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package de.mickare.xserver.protocol;
+
+message FstObject {
+
+	string type = 1;
+	bytes data = 2;
+	
+}
