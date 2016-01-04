@@ -19,22 +19,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
-	<build>
-		<defaultGoal>install</defaultGoal>
-		<finalName>XServer-API</finalName>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.3</version>
-				<configuration>
-					<source>${jdk.version}</source>
-					<target>${jdk.version}</target>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -61,5 +45,21 @@
 			<url>http://repo.rennschnitzel.de:8081/nexus/content/repositories/rs-public/</url>
 		</snapshotRepository>
 	</distributionManagement>
+
+	<build>
+		<defaultGoal>install</defaultGoal>
+		<finalName>XServer-API</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.3</version>
+				<configuration>
+					<source>${jdk.version}</source>
+					<target>${jdk.version}</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>

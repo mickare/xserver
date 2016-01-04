@@ -13,6 +13,8 @@ message ErrorMessage {
 		OVERLOADED = 5;
 		IS_BOOTSTRAPPING = 6;
 		CONFIG_ERROR = 7;
+		SESSION_ALREADY_USED = 8;
+		CANCELLED = 9;
 	}
 
 	Type type = 1;

@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package de.mickare.xserver.protocol;
+
+import "NetworkProto.proto";
+
+message Login {
+	int32 protocolVersion = 1;
+	int32 serverId = 2;
+	string name = 3;
+	fixed32 session = 4;
+}
+
+message AuthChallenge {
+	bytes token = 1;
+}
+
+message AuthResponse {
+	bytes token = 1;
+}
+
+message AuthSuccess {
+	int32 generatedClientId = 1;
+}
+
+message ActionRequest {
+	message Info {
+	}
+	message Connect {
+		Server client = 1;
+		bool forced = 2;
+	}
+	oneof action {
+		Info info = 1;
+		Connect connect = 2;
+	}
+}
+
+message ActionResponse {
+	message Info {
+		Server server = 1;
+		NetworkInformation info = 2;		
+	}
+	message Connect {
+		message Forward {
+			Server server = 1;
+			repeated Server targets = 2;
+		}
+		oneof action {
+			Bridge upgrade = 1;
+			Forward forward = 2;
+		}
+	}
+	
+	oneof response {
+		bool deny = 1;
+		Info info = 2;
+		Connect connect = 3;
+	}
+}

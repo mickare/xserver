@@ -21,6 +21,7 @@
 		<module>core</module>
 		<module>bukkit</module>
 		<module>bungee</module>
+		<module>prototype</module>
 	</modules>
 
 	<distributionManagement>

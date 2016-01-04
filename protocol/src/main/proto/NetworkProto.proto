@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package de.mickare.xserver.protocol;
+
+message Server {
+	fixed32 id = 1;
+	fixed32 session = 2;
+	string name = 3;
+	string ip = 4;
+	int32 port = 5;
+	int32 protocolVersion = 6;
+	int32 maxConnections = 7;
+}
+
+
+message Bridge {
+	Server master = 1;
+	Server slave = 2;
+	int32 rating = 3;
+}
+
+message Connection {
+	Bridge bridge = 1;
+	Server server = 2;
+	Server client = 3;
+}
+
+message Disconnection {
+	enum Reason {
+		ERROR = 0;
+		SHUTDOWN = 1;
+		DUPPLICATE = 2;
+		OTHER = 3;
+	}
+	Bridge bridge = 1;
+	Reason reason = 2;
+	string msg = 3;
+}
+
+message NetworkInformation {
+	repeated Server servers = 1;
+	repeated Bridge bridges = 2;
+}
+
+message Heartbeat {
+}

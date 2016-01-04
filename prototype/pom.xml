@@ -9,10 +9,10 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>XServer-core</artifactId>
+	<artifactId>XServer-prototype</artifactId>
 	<packaging>jar</packaging>
 
-	<name>XServer-Core</name>
+	<name>XServer-prototype</name>
 	<url>xserver.mickare.de</url>
 
 	<properties>
@@ -27,11 +27,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>de.mickare.xserver</groupId>
-			<artifactId>XServer-api</artifactId>
-			<version>${project.parent.version}</version>
-		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
