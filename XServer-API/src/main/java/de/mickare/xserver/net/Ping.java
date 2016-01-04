@@ -5,23 +5,23 @@ import java.util.Collection;
 import de.mickare.xserver.user.ComSender;
 
 public interface Ping {
-	
-	public abstract boolean start();
 
-	public abstract void add(XServer server);
+  public abstract boolean start();
 
-	public abstract void addAll(Collection<XServer> servers);
+  public abstract void add(XServer server);
 
-	public abstract void receive(XServer server);
+  public abstract void addAll(Collection<XServer> servers);
 
-	public abstract boolean isPending();
+  public abstract void receive(XServer server);
 
-	public abstract String getFormatedString();
+  public abstract boolean isPending();
 
-	public abstract ComSender getSender();
+  public abstract String getFormatedString();
 
-	public abstract String getKey();
+  public abstract ComSender getSender();
 
-	public abstract long getStarted();
+  public abstract String getKey();
+
+  public abstract long getStarted();
 
 }

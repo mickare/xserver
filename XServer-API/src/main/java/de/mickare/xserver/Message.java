@@ -6,29 +6,33 @@ import de.mickare.xserver.net.XServer;
 
 public interface Message {
 
-	/**
-	 * Get Sender Server Name
-	 * @return sender name
-	 */
-	public abstract XServer getSender();
+  /**
+   * Get Sender Server Name
+   * 
+   * @return sender name
+   */
+  public abstract XServer getSender();
 
-	/**
-	 * SubChannel
-	 * @return subchannel name
-	 */
-	public abstract String getSubChannel();
+  /**
+   * SubChannel
+   * 
+   * @return subchannel name
+   */
+  public abstract String getSubChannel();
 
-	/**
-	 * Get the content of this message...
-	 * @return byte array
-	 */
-	public abstract byte[] getContent();
+  /**
+   * Get the content of this message...
+   * 
+   * @return byte array
+   */
+  public abstract byte[] getContent();
 
-	/**
-	 * Get the compiled byte array of this message...
-	 * @return byte array
-	 * @throws IOException
-	 */
-	public abstract byte[] getData() throws IOException;
+  /**
+   * Get the compiled byte array of this message...
+   * 
+   * @return byte array
+   * @throws IOException
+   */
+  public abstract byte[] getData() throws IOException;
 
 }

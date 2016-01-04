@@ -9,8 +9,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface XEventHandler {
 
-	boolean sync() default true;
+  boolean sync() default true;
 
-	String channel() default "";
-	
+  String channel() default "";
+
 }

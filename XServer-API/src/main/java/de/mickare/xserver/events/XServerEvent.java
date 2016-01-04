@@ -2,26 +2,26 @@ package de.mickare.xserver.events;
 
 public class XServerEvent {
 
-	private final String text;
-	
-	public XServerEvent() {
-		text = "";
-	}
-	
-	public XServerEvent(String text) {
-		this.text = text;
-	}
+  private final String text;
 
-	public String getText() {
-		return text;
-	}
+  public XServerEvent() {
+    text = "";
+  }
 
-	public void postCall() {
-		
-	}
-	
-	public String getChannel() {
-		return "";
-	}
-	
+  public XServerEvent(String text) {
+    this.text = text;
+  }
+
+  public String getText() {
+    return text;
+  }
+
+  public void postCall() {
+
+  }
+
+  public String getChannel() {
+    return "";
+  }
+
 }

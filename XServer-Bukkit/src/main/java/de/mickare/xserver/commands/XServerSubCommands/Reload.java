@@ -13,30 +13,29 @@ import de.mickare.xserver.exceptions.NotInitializedException;
 
 public class Reload extends SubCommand {
 
-	public Reload(BukkitXServerPlugin plugin) {
-		super(plugin, "reload", "", "Reloads the server list and reconnects.");
-		// TODO Auto-generated constructor stub
-	}
-	
-	@Override
-	public boolean onCommand(CommandSender sender, Command cmd, String label,
-			String[] args) {
-		try {
-			getPlugin().getManager().reload();
-			sender.sendMessage("Reload done and now connecting to servers...");
-			getPlugin().getManager().getThreadPool().runTask(new Runnable() {
-				public void run() {
-					try {
-						XServerManager.getInstance().reconnectAll_forced();
-					} catch (NotInitializedException e) {
-						getPlugin().getLogger().severe(e.getMessage());
-					}
-				}});
-		} catch (IOException e1)
-		{
-			sender.sendMessage(ChatColor.RED + "XServer ERROR: " + e1.getMessage());
-		}
-		return true;
-	}
+  public Reload(BukkitXServerPlugin plugin) {
+    super(plugin, "reload", "", "Reloads the server list and reconnects.");
+    // TODO Auto-generated constructor stub
+  }
+
+  @Override
+  public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    try {
+      getPlugin().getManager().reload();
+      sender.sendMessage("Reload done and now connecting to servers...");
+      getPlugin().getManager().getThreadPool().runTask(new Runnable() {
+        public void run() {
+          try {
+            XServerManager.getInstance().reconnectAll_forced();
+          } catch (NotInitializedException e) {
+            getPlugin().getLogger().severe(e.getMessage());
+          }
+        }
+      });
+    } catch (IOException e1) {
+      sender.sendMessage(ChatColor.RED + "XServer ERROR: " + e1.getMessage());
+    }
+    return true;
+  }
 
 }

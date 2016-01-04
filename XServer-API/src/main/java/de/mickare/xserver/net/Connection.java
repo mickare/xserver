@@ -6,46 +6,44 @@ import java.util.Queue;
 
 public interface Connection {
 
-	public enum stats
-	{
-		disconnected, connecting, connected, error
-	}
-	
-	public abstract void ping(Ping ping) throws InterruptedException,
-			IOException;
+  public enum stats {
+    disconnected, connecting, connected, error
+  }
 
-	public abstract boolean isConnected();
+  public abstract void ping(Ping ping) throws InterruptedException, IOException;
 
-	public abstract void disconnect();
+  public abstract boolean isConnected();
 
-	public abstract void errorDisconnect();
+  public abstract void disconnect();
 
-	public abstract String getHost();
+  public abstract void errorDisconnect();
 
-	public abstract int getPort();
+  public abstract String getHost();
 
-	public abstract boolean send(Packet packet);
+  public abstract int getPort();
 
-	public abstract boolean sendAll(Collection<Packet> packets);
+  public abstract boolean send(Packet packet);
 
-	public abstract stats getStatus();
+  public abstract boolean sendAll(Collection<Packet> packets);
 
-	public abstract XServer getXserver();
+  public abstract stats getStatus();
 
-	public abstract Queue<Packet> getPendingPackets();
+  public abstract XServer getXserver();
 
-	public abstract boolean isLoggedIn();
+  public abstract Queue<Packet> getPendingPackets();
 
-	public abstract boolean isLoggingIn();
+  public abstract boolean isLoggedIn();
 
-	public abstract String toString();
+  public abstract boolean isLoggingIn();
 
-	public abstract long getSendingRecordSecondPackageCount();
+  public abstract String toString();
 
-	public abstract long getSendinglastSecondPackageCount();
+  public abstract long getSendingRecordSecondPackageCount();
 
-	public abstract long getReceivingRecordSecondPackageCount();
+  public abstract long getSendinglastSecondPackageCount();
 
-	public abstract long getReceivinglastSecondPackageCount();
+  public abstract long getReceivingRecordSecondPackageCount();
+
+  public abstract long getReceivinglastSecondPackageCount();
 
 }

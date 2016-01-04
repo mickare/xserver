@@ -1,12 +1,11 @@
 package de.mickare.xserver.user;
 
-public interface ComSender
-{
+public interface ComSender {
 
-	public String getName();
+  public String getName();
 
-	public boolean hasPermission(String perm);
+  public boolean hasPermission(String perm);
 
-	public void sendMessage(String message);
+  public void sendMessage(String message);
 
 }

@@ -44,7 +44,7 @@ public class MainServer implements Runnable {
       } catch (SocketTimeoutException ste) {
         // ignore
       } catch (IOException e) {
-        if (!isClosed() || !"Socket closed".equals(e.getMessage()) ) {
+        if (!isClosed() || !"Socket closed".equals(e.getMessage())) {
           // Only log if not shutdown. This prevents misleading issue reports on github.
           manager.getLogger().log(Level.WARNING, "Exception while client connects: " + e.getMessage(), e);
         }
