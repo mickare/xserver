@@ -88,6 +88,9 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     }
   }
 
+  public boolean isDebugging() {
+    return this.debug;
+  }
   
   public void setDebugging(boolean debug) {
     this.debug = debug;
