@@ -50,7 +50,7 @@ public class MainServer implements Runnable {
     while (!isClosed()) {
       try {
         Socket socket = server.accept();
-        if (!isClosed()) {
+        if (isClosed()) {
           socket.close();
         } else {
           new ConnectionObj(socket, manager);
