@@ -30,7 +30,7 @@ public class XServerObj implements XServer {
   private final String password;
 
   private volatile boolean deprecated = false;
-  private volatile boolean open = false;
+  // private volatile boolean open = false;
 
   private Connection connection = null;
   private Connection connection2 = null; // Fix for HomeServer that is not
@@ -41,8 +41,6 @@ public class XServerObj implements XServer {
   private XType type = XType.Other;
 
   private final Set<XGroup> groups = new HashSet<XGroup>();
-
-  // private final CacheList<Packet> pendingPackets = new CacheList<Packet>( MESSAGE_CACHE_SIZE );
 
   private final AbstractXServerManagerObj manager;
 
@@ -74,39 +72,35 @@ public class XServerObj implements XServer {
       if (!valid()) {
         return;
       }
-      if (isConnected()) {
-        this.disconnect();
-      }
+      manager.debugInfo("Connecting to " + this.name + " ...");
       new ConnectionObj(manager.getSocketFactory(), host, port, this, manager);
     }
   }
 
-  public void setConnection(Connection con) {
+  protected void setConnection(Connection con) {
     try (CloseableLock c = conLock.writeLock().open()) {
-      if (this.connection != con) {
-        this.disconnect();
+      if (this.connection != null && this.connection != con) {
+        this.connection.disconnect();
       }
+      manager.debugInfo("Connected to " + this.name);
       this.connection = con;
     }
-    open = true;
+    // open = true;
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see de.mickare.xserver.net.XServer#setReloginConnection(de.mickare.xserver.net.Connection)
-   */
-  @Override
-  public void setReloginConnection(Connection con) {
-    if (manager.getHomeServer() == this) {
-      try (CloseableLock c = conLock.writeLock().open()) {
-        if (this.connection2 != con && (this.connection2 != null ? this.connection2.isConnected() : false)) {
-          this.disconnect();
+  protected void setLoginConnection(Connection con) {
+    try (CloseableLock c = conLock.writeLock().open()) {
+      if (manager.getHomeServer() == this) {
+        if (connection2 != con) {
+          if (this.connection2 != null ? this.connection2.isSocketOpen() : false) {
+            this.connection2.disconnect();
+          }
         }
+        manager.debugInfo("Connected to " + this.name + " (self connected)");
         this.connection2 = con;
+      } else {
+        setConnection(con);
       }
-    } else {
-      setConnection(con);
     }
   }
 
@@ -118,7 +112,7 @@ public class XServerObj implements XServer {
   @Override
   public boolean isConnected() {
     try {
-      if (open && conLock.readLock().tryLock(500, TimeUnit.MILLISECONDS)) {
+      if (conLock.readLock().tryLock(500, TimeUnit.MILLISECONDS)) {
         try {
           return connection != null ? connection.isLoggedIn() : false;
         } finally {
@@ -137,19 +131,20 @@ public class XServerObj implements XServer {
    */
   @Override
   public void disconnect() {
-    open = false;
+    // open = false;
     try (CloseableLock c = conLock.writeLock().open()) {
-      if (connection != null) {
+      if (connection != null || connection2 != null) {
         this.manager.debugInfo("Disconnecting " + this.name + "...");
-        connection.disconnect();
+        if (connection != null) {
+          connection.disconnect();
+        }
+        if (connection2 != null) {
+          connection2.disconnect();
+        }
+        connection = null;
+        connection2 = null;
         this.manager.debugInfo(this.name + " disconnected");
-        /*
-         * synchronized (pendingPackets) { for (Packet p : this.connection.getPendingPackets()) { if
-         * (p.getPacketID() == PacketType.Message.packetID) { this.pendingPackets.push( p ); } } }
-         */
       }
-      connection = null;
-      connection2 = null;
     }
   }
 
@@ -204,14 +199,22 @@ public class XServerObj implements XServer {
     if (!valid()) {
       return false;
     }
-    if (!isConnected()) {
-      return false;
-    }
+    // if(!open) {
+    // return false;
+    // }
 
-    try (CloseableLock c = conLock.readLock().open()) {
-      if (open && connection.send(new Packet(PacketType.Message, message.getData()))) {
-        result = true;
+
+    try {
+      if (conLock.readLock().tryLock(500, TimeUnit.MILLISECONDS)) {
+        try {
+          if (isConnected()) {
+            result = connection.send(new Packet(PacketType.Message, message.getData()));
+          }
+        } finally {
+          conLock.readLock().unlock();
+        }
       }
+    } catch (InterruptedException e) {
     }
 
     manager.getEventHandler().callEvent(new XServerMessageOutgoingEvent(this, message));
@@ -225,11 +228,18 @@ public class XServerObj implements XServer {
    * @see de.mickare.xserver.net.XServer#ping(de.mickare.xserver.net.Ping)
    */
   @Override
-  public void ping(Ping ping) throws InterruptedException, IOException {
-    try (CloseableLock c = conLock.readLock().open()) {
-      if (isConnected()) {
-        connection.ping(ping);
+  public void ping(Ping ping) throws InterruptedException, IOException {    
+    try {
+      if (conLock.readLock().tryLock(500, TimeUnit.MILLISECONDS)) {
+        try {
+          if (isConnected()) {
+            connection.ping(ping);
+          }
+        } finally {
+          conLock.readLock().unlock();
+        }
       }
+    } catch (InterruptedException e) {
     }
   }
 

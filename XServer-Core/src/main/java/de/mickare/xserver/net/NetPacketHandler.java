@@ -80,8 +80,9 @@ public class NetPacketHandler // extends Thread
 					if ( s != null && s.getPassword().equals( password ) ) {
 						s.setType( xtype );
 						sendAcceptedLoginRequest();
-						con.setReloginXserver( s );
-						con.setStatus( Connection.stats.connected );
+									
+						con.setLoginXserver( s );                        
+						con.setStatus( Connection.Status.connected );
 						
 						s.getManager().getLogger().info( "Login Request from " + name + " accepted!" );
 						s.flushCache();
@@ -114,8 +115,10 @@ public class NetPacketHandler // extends Thread
 					
 					if ( s != null && s.getPassword().equals( password ) ) {
 						s.setType( xtype );
-						con.setXserver( s );
-						con.setStatus( Connection.stats.connected );
+						
+						con.setXserver( s );						
+						con.setStatus( Connection.Status.connected );
+						
 						s.getManager().getLogger().info( "Login Reply accepted from " + s.getName() );
 						s.flushCache();
 						s.getManager().getEventHandler().callEvent( new XServerLoggedInEvent( s ) );
@@ -144,7 +147,7 @@ public class NetPacketHandler // extends Thread
 				// public void run() {
 				
 				try {
-					if ( con.getXserver() != null && con.isConnected() && con.isLoggedIn() ) {
+					if ( con.getXserver() != null && con.isSocketOpen() && con.isLoggedIn() ) {
 						manager.getEventHandler().callEvent( new XServerMessageIncomingEvent( con.getXserver(),
 								manager.readMessage( con.getXserver(), p.getData() ) ) );
 					}

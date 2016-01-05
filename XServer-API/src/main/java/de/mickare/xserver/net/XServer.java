@@ -23,21 +23,6 @@ public interface XServer {
   public abstract void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException;
 
   /**
-   * Set the connection of this server
-   * 
-   * @param con is the open connection
-   */
-  public abstract void setConnection(Connection con);
-
-  /**
-   * Set the connection of this server on a rebouncing and successful Login Request (Dual Login,
-   * both servers needs to login on eachother)
-   * 
-   * @param con is the open connection
-   */
-  public abstract void setReloginConnection(Connection con);
-
-  /**
    * Returns the connection status
    * 
    * @return true if connected, otherwise false

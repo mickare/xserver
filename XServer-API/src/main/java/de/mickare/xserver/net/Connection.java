@@ -6,13 +6,23 @@ import java.util.Queue;
 
 public interface Connection {
 
-  public enum stats {
-    disconnected, connecting, connected, error
+  public enum Status {
+    disconnected(true), connecting(false), connected(false), error(true);
+    
+    private final boolean finished;
+    
+    private Status(boolean finished) {
+      this.finished = finished;
+    }
+    
+    public boolean isFinished() {
+      return finished;
+    }
   }
 
   public abstract void ping(Ping ping) throws InterruptedException, IOException;
 
-  public abstract boolean isConnected();
+  public abstract boolean isSocketOpen();
 
   public abstract void disconnect();
 
@@ -26,7 +36,7 @@ public interface Connection {
 
   public abstract boolean sendAll(Collection<Packet> packets);
 
-  public abstract stats getStatus();
+  public abstract Status getStatus();
 
   public abstract XServer getXserver();
 

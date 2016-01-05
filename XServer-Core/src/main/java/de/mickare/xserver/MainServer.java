@@ -6,59 +6,53 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import de.mickare.xserver.net.ConnectionObj;
 
-public class MainServer implements Runnable {
+public class MainServer {
 
-  private final ServerSocket server;
   private final AbstractXServerManagerObj manager;
-  private final AtomicReference<Future<?>> task = new AtomicReference<Future<?>>(null);
-
-  private volatile boolean open = false;
+  private final ServerSocket server;  
+  private volatile Future<?> task = null;
+  private volatile boolean running = false;
 
   protected MainServer(ServerSocket server, AbstractXServerManagerObj manager) {
-    // super( "XServer Main Server Thread" );
     this.server = server;
     this.manager = manager;
   }
 
-  public synchronized void close() throws IOException {
-    open = false;
-    try {
-      if (!this.server.isClosed()) {
-        this.manager.debugInfo("Closing MainServer...");
-        this.server.close();
-        this.manager.debugInfo("MainServer closed");
+  public final synchronized void stop() throws IOException {
+    if (running) {
+      this.manager.debugInfo("Stopping MainServer...");
+      running = false;
+
+      if (this.task != null) {
+        this.task.cancel(true);
       }
-    } finally {
-      if (this.task.get() != null) {
-        this.task.get().cancel(true);
-        this.task.set(null);
-      }
+
+      this.server.close();
     }
   }
 
-  public boolean isClosed() {
-    return !open && this.server.isClosed();
+  public final boolean isRunning() {
+    return running && !this.server.isClosed();
   }
 
-  @Override
-  public void run() {
-    while (!isClosed()) {
+  protected final void run() {
+    this.manager.debugInfo("MainServer started");
+    while (isRunning()) {
       try {
-        Socket socket = server.accept();
-        if (isClosed()) {
-          socket.close();
-        } else {
+        final Socket socket = server.accept();
+        if (isRunning()) {
           new ConnectionObj(socket, manager);
+        } else {
+          socket.close();
         }
       } catch (SocketTimeoutException ste) {
         // ignore
       } catch (SocketException e) {
-        if (!"socket closed".equals(e.getMessage()) || !isClosed()) {
+        if (running || !"socket closed".equals(e.getMessage())) {
           manager.getLogger().log(Level.WARNING, "Exception while client connects: " + e.getMessage(), e);
         }
       } catch (IOException e) {
@@ -66,14 +60,18 @@ public class MainServer implements Runnable {
         manager.getLogger().log(Level.WARNING, "Exception while client connects: " + e.getMessage(), e);
       }
     }
+    this.manager.debugInfo("MainServer stopped");
   }
 
-  public synchronized void start(ServerThreadPoolExecutor stpool) {
-    if (task.get() == null) {
+  public final synchronized void start(final ServerThreadPoolExecutor stpool) {
+    if (!running && task == null) {
       this.manager.debugInfo("Starting MainServer...");
-      open = true;
-      task.set(stpool.runServerTask(this));
-      this.manager.debugInfo("MainServer closed");
+      running = true;
+      this.task = stpool.runServerTask(new Runnable() {
+        public void run() {
+          MainServer.this.run();
+        }
+      });
     }
   }
 

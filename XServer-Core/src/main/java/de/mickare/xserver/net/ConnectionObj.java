@@ -11,32 +11,26 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.SocketFactory;
 
 import de.mickare.xserver.AbstractXServerManagerObj;
 import de.mickare.xserver.events.XServerDisconnectEvent;
 import de.mickare.xserver.exceptions.NotInitializedException;
-import de.mickare.xserver.util.concurrent.CloseableLock;
-import de.mickare.xserver.util.concurrent.CloseableReadWriteLock;
-import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
 public class ConnectionObj implements Connection {
 
   private final static int CAPACITY = 16384;
   private final static int SOCKET_TIMEOUT = 5000;
 
-  private ReentrantReadWriteLock statusLock = new ReentrantReadWriteLock();
-  private stats status = stats.connecting;
+  private volatile Status status = Status.connecting;
 
   private final String host;
   private final int port;
 
-  private CloseableReadWriteLock xserverLock = new CloseableReentrantReadWriteLock();
-  private XServer xserver;
+  private final AtomicReference<XServerObj> xserver = new AtomicReference<>(null);
 
   private final Socket socket;
   private final DataInputStream input;
@@ -59,10 +53,10 @@ public class ConnectionObj implements Connection {
    * @throws InterruptedException
    * @throws NotInitializedException
    */
-  public ConnectionObj(SocketFactory sf, String host, int port, XServer xserver, AbstractXServerManagerObj manager)
+  public ConnectionObj(SocketFactory sf, String host, int port, XServerObj xserver, AbstractXServerManagerObj manager)
       throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
 
-    this.xserver = xserver;
+    this.xserver.set(xserver);
 
     this.host = host;
     this.port = port;
@@ -96,6 +90,10 @@ public class ConnectionObj implements Connection {
    * @throws NotInitializedException
    */
   public ConnectionObj(Socket socket, AbstractXServerManagerObj manager) throws IOException {
+
+    if (socket == null) {
+      throw new NullPointerException("socket is null");
+    }
 
     this.host = socket.getInetAddress().getHostAddress();
     this.port = socket.getPort();
@@ -143,8 +141,8 @@ public class ConnectionObj implements Connection {
    * @see de.mickare.xserver.net.Connection#isConnected()
    */
   @Override
-  public boolean isConnected() {
-    return socket != null ? !socket.isClosed() : false;
+  public boolean isSocketOpen() {
+    return !socket.isClosed();
   }
 
   /*
@@ -154,7 +152,7 @@ public class ConnectionObj implements Connection {
    */
   @Override
   public void disconnect() {
-    setStatus(stats.disconnected);
+    Status old = setStatus(Status.disconnected);
     sending.interrupt();
     receiving.interrupt();
     // packetHandler.interrupt();
@@ -164,11 +162,11 @@ public class ConnectionObj implements Connection {
       input.close();
       output.close();
     } catch (IOException e) {
+    }
 
-    } finally {
-      if (this.xserver != null) {
-        this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
-      }
+    XServer serv = this.getXserver();
+    if (!old.isFinished() && serv != null) {
+      serv.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(serv));
     }
   }
 
@@ -179,7 +177,7 @@ public class ConnectionObj implements Connection {
    */
   @Override
   public void errorDisconnect() {
-    setStatus(stats.error);
+    Status old = setStatus(Status.error);
     sending.interrupt();
     receiving.interrupt();
     // packetHandler.interrupt();
@@ -189,11 +187,11 @@ public class ConnectionObj implements Connection {
       input.close();
       output.close();
     } catch (IOException e) {
+    }
 
-    } finally {
-      if (this.xserver != null) {
-        this.xserver.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(xserver));
-      }
+    XServer serv = this.getXserver();
+    if (!old.isFinished() && this.xserver != null) {
+      serv.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(serv));
     }
   }
 
@@ -294,7 +292,7 @@ public class ConnectionObj implements Connection {
     @Override
     public void run() {
       try {
-        while (!isInterrupted() && isConnected()) {
+        while (!isInterrupted() && isSocketOpen()) {
 
           Packet p = pendingSendingPackets.poll(1000, TimeUnit.MILLISECONDS);
 
@@ -355,7 +353,7 @@ public class ConnectionObj implements Connection {
     @Override
     public void run() {
       try {
-        while (!isInterrupted() && isConnected()) {
+        while (!isInterrupted() && isSocketOpen()) {
           packetHandler.handle(Packet.readFromSteam(input));
           tickPacket();
         }
@@ -376,22 +374,14 @@ public class ConnectionObj implements Connection {
    * @see de.mickare.xserver.net.Connection#getStatus()
    */
   @Override
-  public stats getStatus() {
-    statusLock.readLock().lock();
-    try {
-      return status;
-    } finally {
-      statusLock.readLock().unlock();
-    }
+  public Status getStatus() {
+    return status;
   }
 
-  protected void setStatus(stats status) {
-    statusLock.writeLock().lock();
-    try {
-      this.status = status;
-    } finally {
-      statusLock.writeLock().unlock();
-    }
+  protected Status setStatus(Status status) {
+    Status old = this.status;
+    this.status = status;
+    return old;
   }
 
   /*
@@ -401,23 +391,17 @@ public class ConnectionObj implements Connection {
    */
   @Override
   public XServer getXserver() {
-    try (CloseableLock c = xserverLock.readLock().open()) {
-      return xserver;
-    }
+    return xserver.get();
   }
 
-  protected void setXserver(XServer xserver) {
-    try (CloseableLock c = xserverLock.writeLock().open()) {
-      this.xserver = xserver;
-      xserver.setConnection(this);
-    }
+  protected void setXserver(XServerObj xserver) {
+    this.xserver.set(xserver);
+    xserver.setConnection(this);
   }
 
-  protected void setReloginXserver(XServer xserver) {
-    try (CloseableLock c = xserverLock.writeLock().open()) {
-      this.xserver = xserver;
-      xserver.setReloginConnection(this);
-    }
+  protected void setLoginXserver(XServerObj xserver) {
+    this.xserver.set(xserver);
+    xserver.setLoginConnection(this);
   }
 
   /*
@@ -437,7 +421,7 @@ public class ConnectionObj implements Connection {
    */
   @Override
   public boolean isLoggedIn() {
-    return isConnected() ? stats.connected.equals(getStatus()) : false;
+    return isSocketOpen() ? Status.connected == getStatus() : false;
   }
 
   /*
@@ -447,7 +431,7 @@ public class ConnectionObj implements Connection {
    */
   @Override
   public boolean isLoggingIn() {
-    return isConnected() ? stats.connecting.equals(getStatus()) : false;
+    return isSocketOpen() ? Status.connecting == getStatus() : false;
   }
 
   /*

@@ -30,7 +30,7 @@ import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 public abstract class AbstractXServerManagerObj implements AbstractXServerManager {
 
   public final static int SOCKET_TIMEOUT = 3000;
-  
+
   boolean debug = false;
 
   private final String sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups;
@@ -81,9 +81,9 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     }
 
   }
-  
+
   public void debugInfo(String msg) {
-    if(debug) {
+    if (debug) {
       this.getLogger().info(msg);
     }
   }
@@ -91,12 +91,12 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
   public boolean isDebugging() {
     return this.debug;
   }
-  
+
   public void setDebugging(boolean debug) {
     this.debug = debug;
   }
-  
-  private synchronized boolean isReconnectClockRunning() {
+
+  private boolean isReconnectClockRunning() {
     return reconnectClockRunning;
   }
 
@@ -109,20 +109,23 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
   public void start() throws IOException {
     try (CloseableLock cs = serversLock.readLock().open()) {
       reconnectAll_soft();
-      if (!isReconnectClockRunning()) {
-        reconnectClockRunning = true;
-        stpool.runTask(new Runnable() {
-          @Override
-          public void run() {
-            try {
-              while (isReconnectClockRunning()) {
-                reconnectAll_soft();
-                Thread.sleep(plugin.getAutoReconnectTime());
+      synchronized (this) {
+        if (!isReconnectClockRunning()) {
+          reconnectClockRunning = true;
+          stpool.runTask(new Runnable() {
+            @Override
+            public void run() {
+              try {
+                Thread.sleep(plugin.getAutoReconnectTime());    
+                while (isReconnectClockRunning()) {                  
+                  reconnectAll_soft();
+                  Thread.sleep(plugin.getAutoReconnectTime());
+                }
+              } catch (InterruptedException e) {
               }
-            } catch (InterruptedException e) {
             }
-          }
-        });
+          });
+        }
       }
     }
   }
@@ -229,7 +232,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     reconnectClockRunning = false;
     closed = true;
     try {
-      mainserver.close();
+      mainserver.stop();
     } catch (IOException e) {
       this.getLogger().warning("An exception occured while stopping xserver server!\n" + e.getMessage());
     }
@@ -256,10 +259,11 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     }
     try (CloseableLock ch = homeLock.writeLock().open()) {
       try (CloseableLock cs = serversLock.writeLock().open()) {
+        notConnectedServers.clear();
 
         if (mainserver != null) {
           try {
-            mainserver.close();
+            mainserver.stop();
           } catch (IOException e) {
             // this.plugin.getLogger().info( e.getClass().getName() + ": " + e.getMessage() + "\n" +
             // MyStringUtils.stackTraceToString( e ) );
@@ -372,8 +376,11 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
           }
         }, "SELECT * FROM " + sql_table_xserversxgroups);
 
+        // End of queries
         connection.disconnect();
 
+        // Start MainServer
+        
         ServerSocket ss = ServerSocketFactory.getDefault().createServerSocket();
         ss.setReuseAddress(true);
         ss.setPerformancePreferences(0, 1, 1);
@@ -383,6 +390,8 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
         mainserver = new MainServer(ss, this);
         mainserver.start(this.getThreadPool());
 
+        // Connect the xservers
+        
         start_async();
 
       }
