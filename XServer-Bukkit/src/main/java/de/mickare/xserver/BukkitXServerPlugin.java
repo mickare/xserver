@@ -81,6 +81,8 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
       this.getServer().shutdown();
       // this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");
     }
+    
+    xmanager.setDebugging(this.getConfig().getBoolean("debug", false));
 
     // Register Commands
     new XServerCommands(this);

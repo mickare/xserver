@@ -10,6 +10,7 @@
 #) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=33 ;
 
 servername: 'proxy'
+debug: false
 
 mysql:
    User: user

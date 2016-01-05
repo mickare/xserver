@@ -30,6 +30,8 @@ import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 public abstract class AbstractXServerManagerObj implements AbstractXServerManager {
 
   public final static int SOCKET_TIMEOUT = 3000;
+  
+  boolean debug = false;
 
   private final String sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups;
 
@@ -79,7 +81,18 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     }
 
   }
+  
+  public void debugInfo(String msg) {
+    if(debug) {
+      this.getLogger().info(msg);
+    }
+  }
 
+  
+  public void setDebugging(boolean debug) {
+    this.debug = debug;
+  }
+  
   private synchronized boolean isReconnectClockRunning() {
     return reconnectClockRunning;
   }
@@ -209,6 +222,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void stop() {
+    this.debugInfo("Stopping XServerManager...");
     reconnectClockRunning = false;
     closed = true;
     try {
@@ -224,6 +238,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
       s.setDeprecated();
     }
 
+    this.debugInfo("Stopping XServerManager stopped");
   }
 
   /*

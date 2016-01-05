@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,34 +37,38 @@ public class EventBus<T> {
     this.myhandler = myhandler;
   }
 
-  public void post(final XServerEvent event) {
+  private Map<Object, Method[]> getHandlers(final XServerEvent event) {
     try (CloseableLock c = lock.readLock().open()) {
-      final Map<Object, Method[]> handlers = eventToHandler.get(event.getClass());
-      if (handlers != null) {
-        for (final Map.Entry<Object, Method[]> handler : handlers.entrySet()) {
-          for (final Method method : handler.getValue()) {
-            final String channel = channeled.get(method);
-            if (channel != null && !channel.isEmpty()) {
-              if (!channel.equals(event.getChannel())) {
-                continue;
+      return eventToHandler.get(event.getClass());
+    }
+  }
+
+  public void post(final XServerEvent event) {
+    final Map<Object, Method[]> handlers = getHandlers(event);
+    if (handlers != null) {
+      for (final Map.Entry<Object, Method[]> handler : handlers.entrySet()) {
+        for (final Method method : handler.getValue()) {
+          final String channel = channeled.get(method);
+          if (channel != null && !channel.isEmpty()) {
+            if (!channel.equals(event.getChannel())) {
+              continue;
+            }
+          }
+          myhandler.runTask(synced.get(method), plugins.get(method), new Runnable() {
+            @Override
+            public void run() {
+              try {
+                method.invoke(handler.getKey(), event);
+              } catch (IllegalAccessException ex) {
+                throw new Error("Method became inaccessible: " + event, ex);
+              } catch (IllegalArgumentException ex) {
+                throw new Error("Method rejected target/argument: " + event, ex);
+              } catch (InvocationTargetException ex) {
+                logger.log(Level.WARNING, MessageFormat.format("Error dispatching event {0} to listener {1}", event, handler.getKey()),
+                    ex.getCause());
               }
             }
-            myhandler.runTask(synced.get(method), plugins.get(method), new Runnable() {
-              @Override
-              public void run() {
-                try {
-                  method.invoke(handler.getKey(), event);
-                } catch (IllegalAccessException ex) {
-                  throw new Error("Method became inaccessible: " + event, ex);
-                } catch (IllegalArgumentException ex) {
-                  throw new Error("Method rejected target/argument: " + event, ex);
-                } catch (InvocationTargetException ex) {
-                  logger.log(Level.WARNING, MessageFormat.format("Error dispatching event {0} to listener {1}", event, handler.getKey()),
-                      ex.getCause());
-                }
-              }
-            });
-          }
+          });
         }
       }
     }
@@ -100,7 +105,7 @@ public class EventBus<T> {
       for (Map.Entry<Class<?>, Set<Method>> e : handler.entrySet()) {
         Map<Object, Method[]> a = eventToHandler.get(e.getKey());
         if (a == null) {
-          a = new HashMap<>();
+          a = new ConcurrentHashMap<>();
           eventToHandler.put(e.getKey(), a);
         }
 

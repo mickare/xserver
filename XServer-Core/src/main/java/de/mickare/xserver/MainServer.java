@@ -23,7 +23,11 @@ public class MainServer implements Runnable {
 
   public synchronized void close() throws IOException {
     try {
-      this.server.close();
+      if(!this.server.isClosed()) {
+        this.manager.debugInfo("Closing MainServer...");
+        this.server.close();
+        this.manager.debugInfo("MainServer closed");
+      }
     } finally {
       if (this.task.get() != null) {
         this.task.get().cancel(true);
@@ -54,7 +58,9 @@ public class MainServer implements Runnable {
 
   public synchronized void start(ServerThreadPoolExecutor stpool) {
     if (task.get() == null) {
+      this.manager.debugInfo("Starting MainServer...");
       task.set(stpool.runServerTask(this));
+      this.manager.debugInfo("MainServer closed");
     }
   }
 

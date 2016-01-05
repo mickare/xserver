@@ -75,6 +75,8 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
       // "stop");
     }
 
+    xmanager.setDebugging(this.getConfig().getBoolean("debug", false));
+    
     // Register Commands
     this.getProxy().getPluginManager().registerCommand(this, new XServerCommands(this));
 

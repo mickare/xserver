@@ -30,6 +30,7 @@ public class XServerObj implements XServer {
   private final String password;
 
   private volatile boolean deprecated = false;
+  private volatile boolean open = false;
 
   private Connection connection = null;
   private Connection connection2 = null; // Fix for HomeServer that is not
@@ -87,6 +88,7 @@ public class XServerObj implements XServer {
       }
       this.connection = con;
     }
+    open = true;
   }
 
   /*
@@ -116,7 +118,7 @@ public class XServerObj implements XServer {
   @Override
   public boolean isConnected() {
     try {
-      if (conLock.readLock().tryLock(500, TimeUnit.MILLISECONDS)) {
+      if (open && conLock.readLock().tryLock(500, TimeUnit.MILLISECONDS)) {
         try {
           return connection != null ? connection.isLoggedIn() : false;
         } finally {
@@ -135,16 +137,19 @@ public class XServerObj implements XServer {
    */
   @Override
   public void disconnect() {
+    open = false;
     try (CloseableLock c = conLock.writeLock().open()) {
       if (connection != null) {
+        this.manager.debugInfo("Disconnecting " + this.name + "...");
         connection.disconnect();
+        this.manager.debugInfo(this.name + " disconnected");
         /*
          * synchronized (pendingPackets) { for (Packet p : this.connection.getPendingPackets()) { if
          * (p.getPacketID() == PacketType.Message.packetID) { this.pendingPackets.push( p ); } } }
          */
-        connection = null;
-        connection2 = null;
       }
+      connection = null;
+      connection2 = null;
     }
   }
 
@@ -204,7 +209,7 @@ public class XServerObj implements XServer {
     }
 
     try (CloseableLock c = conLock.readLock().open()) {
-      if (connection.send(new Packet(PacketType.Message, message.getData()))) {
+      if (open && connection.send(new Packet(PacketType.Message, message.getData()))) {
         result = true;
       }
     }

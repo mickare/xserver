@@ -11,6 +11,7 @@
 
 useMotdForServername: false
 servername: 'proxy'
+debug: false
 
 mysql:
    User: user
