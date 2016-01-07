@@ -69,7 +69,7 @@ public class XServerObj implements XServer {
   @Override
   public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
     try (CloseableLock c = conLock.writeLock().open()) {
-      if (!valid()) {
+      if (!valid() && !this.manager.isClosed()) {
         return;
       }
       manager.debugInfo("Connecting to " + this.name + " ...");

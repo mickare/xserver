@@ -1,6 +1,7 @@
 package de.mickare.xserver;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -8,17 +9,27 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 
+import javax.net.ServerSocketFactory;
+
 import de.mickare.xserver.net.ConnectionObj;
 
 public class MainServer {
 
+  public final static int SOCKET_TIMEOUT = 1000;
+
   private final AbstractXServerManagerObj manager;
-  private final ServerSocket server;  
+  private final ServerSocket socket;
   private volatile Future<?> task = null;
   private volatile boolean running = false;
 
-  protected MainServer(ServerSocket server, AbstractXServerManagerObj manager) {
-    this.server = server;
+  protected MainServer(int port, AbstractXServerManagerObj manager) throws IOException {
+
+    socket = ServerSocketFactory.getDefault().createServerSocket();
+    socket.setReuseAddress(true);
+    socket.setPerformancePreferences(0, 1, 1);
+    socket.setSoTimeout(SOCKET_TIMEOUT);
+    socket.bind(new InetSocketAddress(port), 500);
+
     this.manager = manager;
   }
 
@@ -31,24 +42,36 @@ public class MainServer {
         this.task.cancel(true);
       }
 
-      this.server.close();
+      this.socket.close();
     }
   }
 
   public final boolean isRunning() {
-    return running && !this.server.isClosed();
+    return running && !this.socket.isClosed();
   }
 
   protected final void run() {
     this.manager.debugInfo("MainServer started");
     while (isRunning()) {
       try {
-        final Socket socket = server.accept();
-        if (isRunning()) {
-          new ConnectionObj(socket, manager);
-        } else {
-          socket.close();
+        final Socket temp = socket.accept();
+        
+        try {
+          if (isRunning()) {
+            new ConnectionObj(temp, manager);
+          } else {
+            temp.close();
+          }
+        } catch (Exception e) {
+          
+          try {
+            temp.close();
+          } catch (IOException ie) {
+          }
+          
+          throw e;
         }
+        
       } catch (SocketTimeoutException ste) {
         // ignore
       } catch (SocketException e) {

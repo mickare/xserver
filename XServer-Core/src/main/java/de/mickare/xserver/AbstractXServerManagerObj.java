@@ -1,8 +1,6 @@
 package de.mickare.xserver;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.sql.ResultSet;
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,7 +10,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import javax.net.ServerSocketFactory;
 import javax.net.SocketFactory;
 
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
@@ -28,8 +25,6 @@ import de.mickare.xserver.util.concurrent.CloseableReadWriteLock;
 import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
 public abstract class AbstractXServerManagerObj implements AbstractXServerManager {
-
-  public final static int SOCKET_TIMEOUT = 3000;
 
   boolean debug = false;
 
@@ -81,6 +76,10 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     }
 
   }
+  
+  public boolean isClosed() {
+    return this.closed;
+  }
 
   public void debugInfo(String msg) {
     if (debug) {
@@ -96,10 +95,6 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     this.debug = debug;
   }
 
-  private boolean isReconnectClockRunning() {
-    return reconnectClockRunning;
-  }
-
   /*
    * (non-Javadoc)
    * 
@@ -107,17 +102,20 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void start() throws IOException {
+    if (closed) {
+      return;
+    }
     try (CloseableLock cs = serversLock.readLock().open()) {
       reconnectAll_soft();
       synchronized (this) {
-        if (!isReconnectClockRunning()) {
+        if (!reconnectClockRunning && !closed) {
           reconnectClockRunning = true;
           stpool.runTask(new Runnable() {
             @Override
             public void run() {
               try {
-                Thread.sleep(plugin.getAutoReconnectTime());    
-                while (isReconnectClockRunning()) {                  
+                Thread.sleep(plugin.getAutoReconnectTime());
+                while (reconnectClockRunning && !closed) {
                   reconnectAll_soft();
                   Thread.sleep(plugin.getAutoReconnectTime());
                 }
@@ -137,6 +135,9 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void start_async() {
+    if (closed) {
+      return;
+    }
     stpool.runTask(new Runnable() {
       public void run() {
         try {
@@ -176,11 +177,14 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void reconnectAll_soft() {
+    if (closed) {
+      return;
+    }
     try (CloseableLock cs = serversLock.readLock().open()) {
       for (final XServerObj s : servers.values()) {
         stpool.runTask(new Runnable() {
           public void run() {
-            if (!s.isConnected()) {
+            if (!s.isConnected() && !closed) {
               try {
                 s.connect();
                 synchronized (notConnectedServers) {
@@ -203,10 +207,16 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void reconnectAll_forced() {
+    if (closed) {
+      return;
+    }
     try (CloseableLock cs = serversLock.readLock().open()) {
       for (final XServerObj s : servers.values()) {
         stpool.runTask(new Runnable() {
           public void run() {
+            if (closed) {
+              return;
+            }
             try {
               s.connect();
               synchronized (notConnectedServers) {
@@ -244,7 +254,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
       s.setDeprecated();
     }
 
-    this.debugInfo("Stopping XServerManager stopped");
+    this.debugInfo("XServerManager stopped");
   }
 
   /*
@@ -260,6 +270,10 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     try (CloseableLock ch = homeLock.writeLock().open()) {
       try (CloseableLock cs = serversLock.writeLock().open()) {
         notConnectedServers.clear();
+
+        if (closed) {
+          return;
+        }
 
         if (mainserver != null) {
           try {
@@ -379,19 +393,17 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
         // End of queries
         connection.disconnect();
 
-        // Start MainServer
-        
-        ServerSocket ss = ServerSocketFactory.getDefault().createServerSocket();
-        ss.setReuseAddress(true);
-        ss.setPerformancePreferences(0, 1, 1);
-        ss.setSoTimeout(SOCKET_TIMEOUT);
-        ss.bind(new InetSocketAddress(homeServer.getPort()), 500);
 
-        mainserver = new MainServer(ss, this);
+        if (closed) {
+          return;
+        }
+
+        // Start MainServer
+        mainserver = new MainServer(homeServer.getPort(), this);
         mainserver.start(this.getThreadPool());
 
         // Connect the xservers
-        
+
         start_async();
 
       }
