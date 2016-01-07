@@ -35,9 +35,9 @@ public class XServerObj implements XServer {
   private Connection connection = null;
   private Connection connection2 = null; // Fix for HomeServer that is not
                                          // connectable.
-  private CloseableReadWriteLock conLock = new CloseableReentrantReadWriteLock();
+  private CloseableReadWriteLock conLock = new CloseableReentrantReadWriteLock(true);
 
-  private CloseableReadWriteLock typeLock = new CloseableReentrantReadWriteLock();
+  private CloseableReadWriteLock typeLock = new CloseableReentrantReadWriteLock(true);
   private XType type = XType.Other;
 
   private final Set<XGroup> groups = new HashSet<XGroup>();
