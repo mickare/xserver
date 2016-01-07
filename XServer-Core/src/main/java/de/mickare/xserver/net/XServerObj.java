@@ -69,7 +69,7 @@ public class XServerObj implements XServer {
   @Override
   public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
     try (CloseableLock c = conLock.writeLock().open()) {
-      if (!valid() && !this.manager.isClosed()) {
+      if (!valid() || this.manager.isClosed()) {
         return;
       }
       manager.debugInfo("Connecting to " + this.name + " ...");
@@ -196,7 +196,7 @@ public class XServerObj implements XServer {
   @Override
   public boolean sendMessage(Message message) throws IOException {
     boolean result = false;
-    if (!valid()) {
+    if (!valid() || this.manager.isClosed()) {
       return false;
     }
     // if(!open) {
@@ -228,7 +228,10 @@ public class XServerObj implements XServer {
    * @see de.mickare.xserver.net.XServer#ping(de.mickare.xserver.net.Ping)
    */
   @Override
-  public void ping(Ping ping) throws InterruptedException, IOException {    
+  public void ping(Ping ping) throws InterruptedException, IOException {
+    if (!valid() || this.manager.isClosed()) {
+      return;
+    }
     try {
       if (conLock.readLock().tryLock(500, TimeUnit.MILLISECONDS)) {
         try {
