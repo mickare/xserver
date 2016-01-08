@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import javax.net.SocketFactory;
@@ -44,7 +45,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
   private final Map<String, XServerObj> servers = new ConcurrentHashMap<String, XServerObj>();
   private final Map<String, XGroup> groups = new ConcurrentHashMap<String, XGroup>();
 
-  private final Map<XServer, Integer> notConnectedServers = Collections.synchronizedMap(new HashMap<XServer, Integer>());
+  private final Map<XServer, AtomicInteger> notConnectedServers = new ConcurrentHashMap<XServer, AtomicInteger>();
 
   private volatile boolean reconnectClockRunning = false;
 
@@ -76,7 +77,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     }
 
   }
-  
+
   public boolean isClosed() {
     return this.closed;
   }
@@ -97,7 +98,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#start()
    */
   @Override
@@ -105,9 +106,8 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     if (closed) {
       return;
     }
-    try (CloseableLock cs = serversLock.readLock().open()) {
       reconnectAll_soft();
-      synchronized (this) {
+      synchronized(this) {
         if (!reconnectClockRunning && !closed) {
           reconnectClockRunning = true;
           stpool.runTask(new Runnable() {
@@ -125,12 +125,11 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
           });
         }
       }
-    }
   }
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#start_async()
    */
   @Override
@@ -150,29 +149,23 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     });
   }
 
-  private synchronized void notifyNotConnected(XServer s, Exception e) {
-    synchronized (notConnectedServers) {
-      int n = 0;
-      if (notConnectedServers.containsKey(s)) {
-        n = notConnectedServers.get(s).intValue();
+  private void notifyNotConnected(XServer s, Exception e) {
+      AtomicInteger n;
+      synchronized(notConnectedServers) {
+          n = notConnectedServers.get(s);
+          if(n == null) {
+              n = new AtomicInteger(0);
+              notConnectedServers.put(s, n);
+          }
       }
-
-      if (n++ % 100 == 0) {
+      if (n.incrementAndGet() % 100 == 0) {
         plugin.getLogger().info("Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}");
-        // plugin.getLogger().info( "Connection to " + s.getName() + " failed! {Cause: " +
-        // e.getMessage() + "}"
-        // + "\n" + MyStringUtils.stackTraceToString( e ) );
       }
-
-      // logger.warning("Connection to " + s.getName() + " failed!\n" +
-      // e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
-      notConnectedServers.put(s, new Integer(n));
-    }
   }
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#reconnectAll_soft()
    */
   @Override
@@ -187,9 +180,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
             if (!s.isConnected() && !closed) {
               try {
                 s.connect();
-                synchronized (notConnectedServers) {
-                  notConnectedServers.remove(s);
-                }
+                notConnectedServers.remove(s);
               } catch (IOException | InterruptedException | NotInitializedException e) {
                 notifyNotConnected(s, e);
               }
@@ -202,7 +193,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#reconnectAll_forced()
    */
   @Override
@@ -219,9 +210,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
             }
             try {
               s.connect();
-              synchronized (notConnectedServers) {
-                notConnectedServers.remove(s);
-              }
+              notConnectedServers.remove(s);
             } catch (IOException | InterruptedException | NotInitializedException e) {
               notifyNotConnected(s, e);
             }
@@ -233,7 +222,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#stop()
    */
   @Override
@@ -249,17 +238,25 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     // try ( CloseableLock cs = serversLock.writeLock().open() ) {
     // executorService.shutDown();
 
-    for (XServerObj s : servers.values()) {
-      s.disconnect();
-      s.setDeprecated();
-    }
+    try (CloseableLock cs = serversLock.readLock().open()) {
+        this.debugInfo("Deprecating servers...");
+        for (XServerObj s : servers.values()) {
+          s.setDeprecated();
+          if(debug)
+            this.debugInfo(s.getName() + " deprecated");
+        }
 
+        this.debugInfo("Disconnecting servers...");
+        for (XServerObj s : servers.values()) {
+          s.disconnect();
+        }
+    }
     this.debugInfo("XServerManager stopped");
   }
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#reload()
    */
   @Override
@@ -267,6 +264,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     if (closed) {
       return;
     }
+    this.debugInfo("XServerManager reloading...");
     try (CloseableLock ch = homeLock.writeLock().open()) {
       try (CloseableLock cs = serversLock.writeLock().open()) {
         notConnectedServers.clear();
@@ -408,11 +406,12 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
       }
     }
+    this.debugInfo("XServerManager reloaded");
   }
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getHomeServer()
    */
   @Override
@@ -424,7 +423,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getServer(java.lang.String)
    */
   @Override
@@ -449,7 +448,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getPlugin()
    */
   @Override
@@ -459,7 +458,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getLogger()
    */
   @Override
@@ -469,7 +468,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getExecutorService()
    */
   @Override
@@ -479,7 +478,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getSocketFactory()
    */
   @Override
@@ -489,7 +488,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getXServer(java.lang.String)
    */
   @Override
@@ -501,7 +500,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getServers()
    */
   @Override
@@ -513,7 +512,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getServernames()
    */
   @Override
@@ -525,7 +524,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getServerIgnoreCase(java.lang.String)
    */
   @Override
@@ -542,7 +541,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getServer(java.lang.String, int)
    */
   @Override
@@ -559,7 +558,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getHomeServerName()
    */
   @Override
@@ -569,7 +568,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#createMessage(java.lang.String, byte[])
    */
   @Override
@@ -579,7 +578,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#readMessage(de.mickare.xserver.net.XServer,
    * byte[])
    */
@@ -590,7 +589,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#getEventHandler()
    */
   @Override
@@ -598,7 +597,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.AbstractXServerManager#registerOwnListeners()
    */
   @Override

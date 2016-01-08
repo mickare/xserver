@@ -63,13 +63,13 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#connect()
    */
   @Override
   public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
     try (CloseableLock c = conLock.writeLock().open()) {
-      if (!valid() || this.manager.isClosed()) {
+      if ( this.manager.isClosed() || !valid()) {
         return;
       }
       manager.debugInfo("Connecting to " + this.name + " ...");
@@ -106,7 +106,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#isConnected()
    */
   @Override
@@ -126,7 +126,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#disconnect()
    */
   @Override
@@ -150,7 +150,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getName()
    */
   @Override
@@ -160,7 +160,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getHost()
    */
   @Override
@@ -170,7 +170,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getPort()
    */
   @Override
@@ -180,7 +180,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getPassword()
    */
   @Override
@@ -190,13 +190,13 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#sendMessage(de.mickare.xserver.Message)
    */
   @Override
   public boolean sendMessage(Message message) throws IOException {
     boolean result = false;
-    if (!valid() || this.manager.isClosed()) {
+    if (this.manager.isClosed() || !valid()) {
       return false;
     }
     // if(!open) {
@@ -224,7 +224,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#ping(de.mickare.xserver.net.Ping)
    */
   @Override
@@ -248,24 +248,24 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#flushCache()
    */
   @Override
   public void flushCache() {
     /*
      * try (CloseableLock c = conLock.readLock().open()) { if (isConnected()) {
-     * 
+     *
      * synchronized (pendingPackets) { Packet p = pendingPackets.pollLast(); while (p != null) {
      * connection.send( p ); p = pendingPackets.pollLast(); } }
-     * 
+     *
      * } }
      */
   }
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getType()
    */
   @Override
@@ -283,7 +283,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getManager()
    */
   @Override
@@ -293,7 +293,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getSendingRecordSecondPackageCount()
    */
   @Override
@@ -311,7 +311,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getSendinglastSecondPackageCount()
    */
   @Override
@@ -329,7 +329,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getReceivingRecordSecondPackageCount()
    */
   @Override
@@ -347,7 +347,7 @@ public class XServerObj implements XServer {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.XServer#getReceivinglastSecondPackageCount()
    */
   @Override

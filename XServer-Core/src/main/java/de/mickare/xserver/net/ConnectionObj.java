@@ -23,7 +23,7 @@ import de.mickare.xserver.exceptions.NotInitializedException;
 public class ConnectionObj implements Connection {
 
   private final static int CAPACITY = 16384;
-  private final static int SOCKET_TIMEOUT = 5000;
+  private final static int SOCKET_TIMEOUT = 3000;
 
   private volatile Status status = Status.connecting;
 
@@ -44,7 +44,7 @@ public class ConnectionObj implements Connection {
 
   /**
    * Create a new Connection to another Server (sends a Login Request)
-   * 
+   *
    * @param sf
    * @param host
    * @param port
@@ -84,7 +84,7 @@ public class ConnectionObj implements Connection {
 
   /**
    * Receive a new Connection from another Server (response to a Login Request)
-   * 
+   *
    * @param socket
    * @throws IOException
    * @throws NotInitializedException
@@ -116,7 +116,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#ping(de.mickare.xserver.net.Ping)
    */
   @Override
@@ -137,7 +137,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#isConnected()
    */
   @Override
@@ -145,59 +145,51 @@ public class ConnectionObj implements Connection {
     return !socket.isClosed();
   }
 
+  private void stop(Status endStatus) {
+      if(this.status != Status.disconnected && this.status != Status.error) {
+          return;
+      }
+      Status old = setStatus(endStatus);
+      sending.interrupt();
+      receiving.interrupt();
+      // packetHandler.interrupt();
+
+      try {
+        socket.close();
+        input.close();
+        output.close();
+      } catch (IOException e) {
+      }
+
+      XServer serv = this.getXserver();
+      if (!old.isFinished() && serv != null) {
+        serv.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(serv));
+      }
+  }
+
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#disconnect()
    */
   @Override
   public void disconnect() {
-    Status old = setStatus(Status.disconnected);
-    sending.interrupt();
-    receiving.interrupt();
-    // packetHandler.interrupt();
-
-    try {
-      socket.close();
-      input.close();
-      output.close();
-    } catch (IOException e) {
-    }
-
-    XServer serv = this.getXserver();
-    if (!old.isFinished() && serv != null) {
-      serv.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(serv));
-    }
+      stop(Status.disconnected);
   }
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#errorDisconnect()
    */
   @Override
   public void errorDisconnect() {
-    Status old = setStatus(Status.error);
-    sending.interrupt();
-    receiving.interrupt();
-    // packetHandler.interrupt();
-
-    try {
-      socket.close();
-      input.close();
-      output.close();
-    } catch (IOException e) {
-    }
-
-    XServer serv = this.getXserver();
-    if (!old.isFinished() && this.xserver != null) {
-      serv.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(serv));
-    }
+      stop(Status.error);
   }
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#getHost()
    */
   @Override
@@ -207,7 +199,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#getPort()
    */
   @Override
@@ -217,7 +209,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#send(de.mickare.xserver.net.Packet)
    */
   @Override
@@ -227,7 +219,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#sendAll(java.util.Collection)
    */
   @Override
@@ -370,7 +362,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#getStatus()
    */
   @Override
@@ -386,7 +378,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#getXserver()
    */
   @Override
@@ -406,7 +398,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#getPendingPackets()
    */
   @Override
@@ -416,7 +408,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#isLoggedIn()
    */
   @Override
@@ -426,7 +418,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#isLoggingIn()
    */
   @Override
@@ -436,7 +428,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#toString()
    */
   @Override
@@ -449,7 +441,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#getSendingRecordSecondPackageCount()
    */
   @Override
@@ -459,7 +451,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#getSendinglastSecondPackageCount()
    */
   @Override
@@ -469,7 +461,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#getReceivingRecordSecondPackageCount()
    */
   @Override
@@ -479,7 +471,7 @@ public class ConnectionObj implements Connection {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.net.Connection#getReceivinglastSecondPackageCount()
    */
   @Override

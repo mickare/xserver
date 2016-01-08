@@ -32,7 +32,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.EventHandler#getListeners()
    */
   @Override
@@ -42,7 +42,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.EventHandler#registerListener(T, de.mickare.xserver.XServerListener)
    */
   @Override
@@ -63,7 +63,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.EventHandler#unregisterListener(de.mickare.xserver.XServerListener)
    */
   @Override
@@ -74,7 +74,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.EventHandler#unregisterAll(T)
    */
   @Override
@@ -87,7 +87,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.EventHandler#unregisterAll(de.mickare.xserver.XServerListenerPlugin)
    */
   @Override
@@ -103,7 +103,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.EventHandler#unregisterAll()
    */
   @Override
@@ -116,7 +116,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see de.mickare.xserver.EventHandler#callEvent(de.mickare.xserver.events.XServerEvent)
    */
   @Override
@@ -130,7 +130,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
     bus.post(event);
     event.postCall();
 
-    long elapsed = start - System.nanoTime();
+    long elapsed = System.nanoTime() - start;
     if (elapsed > 250000) {
       this.logger.log(Level.WARNING, "Event {0} took more {1}ns to process!", new Object[] {event, elapsed});
     }
