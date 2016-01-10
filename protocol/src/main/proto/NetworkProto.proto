@@ -2,8 +2,10 @@ syntax = "proto3";
 
 package de.mickare.xserver.protocol;
 
+import "ComponentUUID.proto";
+
 message Server {
-	fixed32 id = 1;
+	UUID id = 1;
 	fixed32 session = 2;
 	string name = 3;
 	string ip = 4;
@@ -42,5 +44,3 @@ message NetworkInformation {
 	repeated Bridge bridges = 2;
 }
 
-message Heartbeat {
-}

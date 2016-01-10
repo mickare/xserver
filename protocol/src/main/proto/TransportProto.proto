@@ -2,34 +2,43 @@ syntax = "proto3";
 
 package de.mickare.xserver.protocol;
 
-import "ErrorProto.proto";
 import "HandshakeProto.proto";
 import "NetworkProto.proto";
 import "ComponentUUID.proto";
-import "ComponentFstObject.proto";
 import "google/protobuf/any.proto";
-
 
 message Packet {
 	oneof value {
-		ErrorMessage error = 1;
+		# Basic
+		HeartbeatMessage heartbeat = 1;
 		CloseMessage close = 2;
 		
+		# Handshake
 		Login login = 10;
-		AuthChallenge authChallenge = 11;
+		AuthChallengeMessage authChallenge = 11;
 		AuthResponse authResponse = 12;
 		AuthSuccess authSuccess = 13;
 		ActionRequest actionRequest = 14;
 		ActionResponse actionResponse = 15;
 		
-		Message message = 20;
-		Broadcast broadcast = 21;
-		
-		NetworkInformation netInfo = 30;
-		Connection connection = 31;
-		Disconnection disconnection = 32;
-		Heartbeat heartbeat = 33;
+		ChannelRegister channelRegister = 20;
+		ChannelMessage channelMessage = 21;
+		ChannelForwarding channelForwarding = 22;
 	}
+}
+
+message HeartbeatMessage {
+}
+
+message ErrorMessage {
+	enum Type {
+		SERVER_ERROR = 0;
+		PROTOCOL_ERROR = 1;
+		UNAUTHORIZED = 2;
+		UNAVAILABLE = 3;
+	}
+	Type type = 1;
+	string text = 2;
 }
 
 message CloseMessage {
@@ -40,27 +49,27 @@ message CloseMessage {
 	}
 }
 
-message Message {
-
-	Server sender = 1;
-	Server receiver = 2;
-	int32 identifier = 3;
-	oneof data {
-		bytes byteValue = 4;
-		FstObject objectValue = 5;
-		google.protobuf.Any protoValue = 6;
-	}
+message ChannelRegister {
+	int32 channelId = 1;
+	string name = 1;
 }
 
-message Broadcast {
+message ChannelMessage {
+	int32 channelId = 1;
+	bytes data = 2;
+}
 
-	Server sender = 1;
-	int32 identifier = 2;
-	oneof data {
-		bytes byteValue = 3;
-		FstObject objectValue = 4;
-		google.protobuf.Any protoValue = 5;
-	}
+message Target {
+	boolean all = 1;
+	repeated UUID receiverIds = 2;
+	repeated string groups = 3;
+}
+
+message ChannelForwarding {
+	UUID senderId = 1;
+	Target target = 2;
+	uint32 messageId = 3;
+	ChannelMessage message = 4;
 }
 
 

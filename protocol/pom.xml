@@ -77,6 +77,8 @@
 						<configuration>
 							<protocArtifact>com.google.protobuf:protoc:3.0.0-beta-1:exe:${os.detected.classifier}</protocArtifact>
 							<protoSourceRoot>${project.basedir}/src/main/proto/</protoSourceRoot>
+							<checkStaleness>true</checkStaleness>
+							<staleMillis>10000</staleMillis>
 						</configuration>
 					</execution>
 				</executions>
