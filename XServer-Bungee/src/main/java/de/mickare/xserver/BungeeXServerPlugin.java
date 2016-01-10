@@ -3,14 +3,14 @@ package de.mickare.xserver;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import org.mcstats.Metrics;
+import org.mcstats.MetricsLite;
 
-import net.md_5.bungee.api.plugin.Plugin;
 import de.mickare.xserver.commands.XServerCommands;
 import de.mickare.xserver.config.ConfigAccessor;
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
 import de.mickare.xserver.util.MySQL;
 import de.mickare.xserver.util.MyStringUtils;
+import net.md_5.bungee.api.plugin.Plugin;
 
 public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
 
@@ -86,7 +86,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
     this.getProxy().getPluginManager().registerCommand(this, new XServerCommands(this));
 
     try {
-      Metrics metrics = new Metrics(this);
+      MetricsLite metrics = new MetricsLite(this);
       metrics.start();
     } catch (IOException e) {
       // Failed to submit the stats :-(

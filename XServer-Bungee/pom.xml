@@ -45,8 +45,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.mcstats.bungee</groupId>
-			<artifactId>metrics</artifactId>
-			<version>R7</version>
+			<artifactId>metrics-lite</artifactId>
+			<version>R8-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
@@ -69,6 +69,9 @@
 			<url>http://nexus.spacier.de/content/groups/public/</url>
 		</repository>
 		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
 			<id>Plugin Metrics</id>
 			<url>http://repo.mcstats.org/content/repositories/public</url>
 		</repository>
