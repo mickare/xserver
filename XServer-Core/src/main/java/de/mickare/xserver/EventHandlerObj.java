@@ -131,8 +131,8 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
     event.postCall();
 
     long elapsed = System.nanoTime() - start;
-    if (elapsed > 250000) {
-      this.logger.log(Level.WARNING, "Event {0} took more {1}ns to process!", new Object[] {event, elapsed});
+    if (elapsed > 500000) {
+      this.logger.log(Level.WARNING, "Event {0} took {1}ns to process!", new Object[] {event, elapsed});
     }
     return event;
   }
