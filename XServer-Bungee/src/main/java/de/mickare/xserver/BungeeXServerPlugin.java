@@ -3,8 +3,6 @@ package de.mickare.xserver;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import org.mcstats.MetricsLite;
-
 import de.mickare.xserver.commands.XServerCommands;
 import de.mickare.xserver.config.ConfigAccessor;
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
@@ -26,6 +24,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
   private ConfigAccessor config;
 
   private boolean debug = false;
+  private BungeeMetricsLite metrics = null;
 
   @Override
   public void onDisable() {
@@ -41,6 +40,10 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
 
     if (cfgconnection != null) {
       cfgconnection.disconnect();
+    }
+
+    if (this.metrics != null) {
+      metrics.stop();
     }
 
     log.info(getDescription().getName() + " disabled!");
@@ -85,12 +88,8 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
     // Register Commands
     this.getProxy().getPluginManager().registerCommand(this, new XServerCommands(this));
 
-    try {
-      MetricsLite metrics = new MetricsLite(this);
-      metrics.start();
-    } catch (IOException e) {
-      // Failed to submit the stats :-(
-    }
+    metrics = new BungeeMetricsLite(this);
+    metrics.start();
 
     log.info(getDescription().getName() + " enabled!");
   }

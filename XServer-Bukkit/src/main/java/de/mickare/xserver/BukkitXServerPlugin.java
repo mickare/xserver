@@ -24,7 +24,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
   private XServerManager xmanager;
 
   private boolean debug = false;
-
+  
   @Override
   public void onDisable() {
     log = this.getLogger();
