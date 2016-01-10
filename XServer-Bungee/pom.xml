@@ -43,6 +43,12 @@
 			<artifactId>XServer-Core</artifactId>
 			<version>${parent.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.mcstats.bungee</groupId>
+			<artifactId>metrics</artifactId>
+			<version>R7</version>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 
 	<repositories>
@@ -61,6 +67,10 @@
 			<id>rs-public</id>
 			<name>Rennschnitzel public repository</name>
 			<url>http://nexus.spacier.de/content/groups/public/</url>
+		</repository>
+		<repository>
+			<id>Plugin Metrics</id>
+			<url>http://repo.mcstats.org/content/repositories/public</url>
 		</repository>
 	</repositories>
 
@@ -94,7 +104,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>2.2</version>
+				<version>2.3</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -106,8 +116,15 @@
 							<artifactSet>
 								<includes>
 									<include>de.mickare.xserver:*</include>
+									<include>org.mcstats.*:*</include>
 								</includes>
 							</artifactSet>
+							<relocations>
+								<relocation>
+									<pattern>org.mcstats</pattern>
+									<shadedPattern>de.mickare.xserver</shadedPattern>
+								</relocation>
+							</relocations>
 						</configuration>
 					</execution>
 				</executions>

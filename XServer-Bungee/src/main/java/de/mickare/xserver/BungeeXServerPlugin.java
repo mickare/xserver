@@ -3,6 +3,8 @@ package de.mickare.xserver;
 import java.io.IOException;
 import java.util.logging.Logger;
 
+import org.mcstats.Metrics;
+
 import net.md_5.bungee.api.plugin.Plugin;
 import de.mickare.xserver.commands.XServerCommands;
 import de.mickare.xserver.config.ConfigAccessor;
@@ -24,7 +26,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
   private ConfigAccessor config;
 
   private boolean debug = false;
-  
+
   @Override
   public void onDisable() {
     log = this.getLogger();
@@ -51,7 +53,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
     log.info("--------- Proxy XServer ---------");
     log.info("----------  enabling   ----------");
     setDebugging(this.getConfig().getBoolean("debug", false));
-    
+
     servername = this.getConfig().getString("servername");
 
     String user = this.getConfig().getString("mysql.User");
@@ -79,9 +81,16 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
       // "stop");
     }
 
-    
+
     // Register Commands
     this.getProxy().getPluginManager().registerCommand(this, new XServerCommands(this));
+
+    try {
+      Metrics metrics = new Metrics(this);
+      metrics.start();
+    } catch (IOException e) {
+      // Failed to submit the stats :-(
+    }
 
     log.info(getDescription().getName() + " enabled!");
   }

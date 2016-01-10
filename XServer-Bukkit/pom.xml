@@ -43,6 +43,12 @@
 			<version>LATEST</version>
 			<optional>true</optional>
 		</dependency>
+		<dependency>
+			<groupId>org.mcstats.bukkit</groupId>
+			<artifactId>metrics</artifactId>
+			<version>R7</version>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 
 	<repositories>
@@ -61,6 +67,10 @@
 			<id>rs-public</id>
 			<name>Rennschnitzel public repository</name>
 			<url>http://nexus.spacier.de/content/groups/public/</url>
+		</repository>
+		<repository>
+			<id>Plugin Metrics</id>
+			<url>http://repo.mcstats.org/content/repositories/public</url>
 		</repository>
 	</repositories>
 
@@ -106,8 +116,15 @@
 							<artifactSet>
 								<includes>
 									<include>de.mickare.xserver:*</include>
+									<include>org.mcstats.*:*</include>
 								</includes>
 							</artifactSet>
+							<relocations>
+								<relocation>
+									<pattern>org.mcstats</pattern>
+									<shadedPattern>de.mickare.xserver</shadedPattern>
+								</relocation>
+							</relocations>
 						</configuration>
 					</execution>
 				</executions>

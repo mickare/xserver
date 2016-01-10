@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import org.mcstats.Metrics;
 
 import de.mickare.xserver.commands.XServerCommands;
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
@@ -86,9 +87,15 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
       // this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");
     }
 
-
     // Register Commands
     new XServerCommands(this);
+
+    try {
+      Metrics metrics = new Metrics(this);
+      metrics.start();
+    } catch (IOException e) {
+      // Failed to submit the stats :-(
+    }
 
     log.info(getDescription().getName() + " enabled!");
   }
