@@ -19,7 +19,6 @@ import de.mickare.xserver.net.XServer;
 import de.mickare.xserver.net.XServerObj;
 import de.mickare.xserver.util.Consumer;
 import de.mickare.xserver.util.MySQL;
-import de.mickare.xserver.util.MyStringUtils;
 import de.mickare.xserver.util.TableInstall;
 import de.mickare.xserver.util.concurrent.CloseableLock;
 import de.mickare.xserver.util.concurrent.CloseableReadWriteLock;
@@ -27,7 +26,13 @@ import de.mickare.xserver.util.concurrent.CloseableReentrantReadWriteLock;
 
 public abstract class AbstractXServerManagerObj implements AbstractXServerManager {
 
-  boolean debug = false;
+  public static enum State {
+    NEW, RUNNING, STOPPED;
+  }
+  
+  private volatile State state = State.NEW;
+  
+  private boolean debug = false;
 
   private final String sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups;
 
@@ -46,10 +51,6 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
   private final Map<String, XGroup> groups = new ConcurrentHashMap<String, XGroup>();
 
   private final Map<XServer, AtomicInteger> notConnectedServers = new ConcurrentHashMap<XServer, AtomicInteger>();
-
-  private volatile boolean reconnectClockRunning = false;
-
-  private volatile boolean closed = false;
 
   protected AbstractXServerManagerObj(String servername, XServerPlugin plugin, MySQL connection, String sql_table_xservers,
       String sql_table_xgroups, String sql_table_xserversxgroups, ServerThreadPoolExecutor stpool)
@@ -78,8 +79,8 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   }
 
-  public boolean isClosed() {
-    return this.closed;
+  public boolean isRunning() {
+    return this.state == State.RUNNING;
   }
 
   public void debugInfo(String msg) {
@@ -102,29 +103,23 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    * @see de.mickare.xserver.AbstractXServerManager#start()
    */
   @Override
-  public void start() throws IOException {
-    if (closed) {
-      return;
+  public synchronized void start() {
+    if (this.state != State.NEW) {
+      throw new IllegalStateException("Not NEW!");
     }
-      reconnectAll_soft();
-      synchronized(this) {
-        if (!reconnectClockRunning && !closed) {
-          reconnectClockRunning = true;
-          stpool.runTask(new Runnable() {
-            @Override
-            public void run() {
-              try {
-                Thread.sleep(plugin.getAutoReconnectTime());
-                while (reconnectClockRunning && !closed) {
-                  reconnectAll_soft();
-                  Thread.sleep(plugin.getAutoReconnectTime());
-                }
-              } catch (InterruptedException e) {
-              }
-            }
-          });
+    this.state = State.RUNNING;
+    stpool.runTask(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          while (isRunning()) {
+            reconnectAll_soft();
+            Thread.sleep(plugin.getAutoReconnectTime());
+          }
+        } catch (InterruptedException e) {
         }
       }
+    });
   }
 
   /*
@@ -134,19 +129,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void start_async() {
-    if (closed) {
-      return;
-    }
-    stpool.runTask(new Runnable() {
-      public void run() {
-        try {
-          start();
-        } catch (Exception e) {
-          plugin.getLogger().severe("XServer not started correctly!" + e.getMessage() + "\n" + MyStringUtils.stackTraceToString(e));
-          plugin.shutdownServer();
-        }
-      }
-    });
+    this.start();
   }
 
   private void notifyNotConnected(XServer s, Exception e) {
@@ -170,21 +153,19 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void reconnectAll_soft() {
-    if (closed) {
+    if (!isRunning()) {
       return;
     }
     try (CloseableLock cs = serversLock.readLock().open()) {
       for (final XServerObj s : servers.values()) {
         stpool.runTask(new Runnable() {
           public void run() {
-            if (!s.isConnected() && !closed) {
               try {
-                s.connect();
+                s.connectSoft();
                 notConnectedServers.remove(s);
               } catch (IOException | InterruptedException | NotInitializedException e) {
                 notifyNotConnected(s, e);
               }
-            }
           }
         });
       }
@@ -198,16 +179,13 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void reconnectAll_forced() {
-    if (closed) {
+    if (!isRunning()) {
       return;
     }
     try (CloseableLock cs = serversLock.readLock().open()) {
       for (final XServerObj s : servers.values()) {
         stpool.runTask(new Runnable() {
           public void run() {
-            if (closed) {
-              return;
-            }
             try {
               s.connect();
               notConnectedServers.remove(s);
@@ -226,10 +204,13 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    * @see de.mickare.xserver.AbstractXServerManager#stop()
    */
   @Override
-  public void stop() {
+  public synchronized void stop() {
+    if(this.state == State.STOPPED) {
+      return;
+    }
     this.debugInfo("Stopping XServerManager...");
-    reconnectClockRunning = false;
-    closed = true;
+    this.state = State.STOPPED;
+
     try {
       mainserver.stop();
     } catch (IOException e) {
@@ -261,7 +242,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void reload() throws IOException {
-    if (closed) {
+    if (this.state != State.STOPPED) {
       return;
     }
     this.debugInfo("XServerManager reloading...");
@@ -269,7 +250,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
       try (CloseableLock cs = serversLock.writeLock().open()) {
         notConnectedServers.clear();
 
-        if (closed) {
+        if (this.state != State.STOPPED) {
           return;
         }
 
@@ -392,7 +373,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
         connection.disconnect();
 
 
-        if (closed) {
+        if (this.state != State.STOPPED) {
           return;
         }
 
@@ -402,7 +383,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
         // Connect the xservers
 
-        start_async();
+        reconnectAll_soft();
 
       }
     }

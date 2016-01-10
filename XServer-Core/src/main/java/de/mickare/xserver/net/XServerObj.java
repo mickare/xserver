@@ -69,11 +69,19 @@ public class XServerObj implements XServer {
   @Override
   public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
     try (CloseableLock c = conLock.writeLock().open()) {
-      if ( this.manager.isClosed() || !valid()) {
+      if ( !this.manager.isRunning() || !valid()) {
         return;
       }
       manager.debugInfo("Connecting to " + this.name + " ...");
       new ConnectionObj(manager.getSocketFactory(), host, port, this, manager);
+    }
+  }
+  
+  public void connectSoft() throws UnknownHostException, NotInitializedException, IOException, InterruptedException {
+    try (CloseableLock c = conLock.writeLock().open()) {
+      if(!this.isConnected()) {
+        this.connect();
+      }
     }
   }
 
@@ -196,7 +204,7 @@ public class XServerObj implements XServer {
   @Override
   public boolean sendMessage(Message message) throws IOException {
     boolean result = false;
-    if (this.manager.isClosed() || !valid()) {
+    if (!this.manager.isRunning() || !valid()) {
       return false;
     }
     // if(!open) {
@@ -229,7 +237,7 @@ public class XServerObj implements XServer {
    */
   @Override
   public void ping(Ping ping) throws InterruptedException, IOException {
-    if (!valid() || this.manager.isClosed()) {
+    if (!valid() || !this.manager.isRunning()) {
       return;
     }
     try {
