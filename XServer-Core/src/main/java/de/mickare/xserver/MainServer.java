@@ -55,7 +55,7 @@ public class MainServer {
     while (isRunning()) {
       try {
         final Socket temp = socket.accept();
-        
+
         try {
           if (isRunning()) {
             new ConnectionObj(temp, manager);
@@ -63,15 +63,15 @@ public class MainServer {
             temp.close();
           }
         } catch (Exception e) {
-          
+
           try {
             temp.close();
           } catch (IOException ie) {
           }
-          
+
           throw e;
         }
-        
+
       } catch (SocketTimeoutException ste) {
         // ignore
       } catch (SocketException e) {
@@ -86,7 +86,7 @@ public class MainServer {
     this.manager.debugInfo("MainServer stopped");
   }
 
-  public final synchronized void start(final ServerThreadPoolExecutor stpool) {
+  public final synchronized MainServer start(final ServerThreadPoolExecutor stpool) {
     if (!running && task == null) {
       this.manager.debugInfo("Starting MainServer...");
       running = true;
@@ -96,6 +96,7 @@ public class MainServer {
         }
       });
     }
+    return this;
   }
 
 }

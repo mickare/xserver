@@ -19,6 +19,7 @@ import javax.net.SocketFactory;
 import de.mickare.xserver.AbstractXServerManagerObj;
 import de.mickare.xserver.events.XServerDisconnectEvent;
 import de.mickare.xserver.exceptions.NotInitializedException;
+import de.mickare.xserver.util.InterruptableRunnable;
 
 public class ConnectionObj implements Connection {
 
@@ -72,10 +73,10 @@ public class ConnectionObj implements Connection {
     this.packetHandler = new NetPacketHandler(this, manager);
 
     this.receiving = new Receiving();
-    this.receiving.start(manager);
+    this.receiving.start(manager.getThreadPool());
 
     this.sending = new Sending();
-    this.sending.start(manager);
+    this.sending.start(manager.getThreadPool());
 
     this.packetHandler.sendFirstLoginRequest();
 
@@ -107,8 +108,8 @@ public class ConnectionObj implements Connection {
     this.receiving = new Receiving();
     this.sending = new Sending();
 
-    this.receiving.start(manager);
-    this.sending.start(manager);
+    this.receiving.start(manager.getThreadPool());
+    this.sending.start(manager.getThreadPool());
     // this.packetHandler.start();
 
     // manager.getLogger().info("New Connection from: " + host + ":" + port);
@@ -231,31 +232,6 @@ public class ConnectionObj implements Connection {
     return result;
   }
 
-  private abstract class InterruptableRunnable implements Runnable {
-    private volatile boolean interrupted = false;
-    private final String name;
-
-    private InterruptableRunnable(String name) {
-      this.name = name;
-    }
-
-    public void start(AbstractXServerManagerObj manager) {
-      manager.getThreadPool().runTask(this);
-    }
-
-    public boolean isInterrupted() {
-      return interrupted;
-    }
-
-    public void interrupt() {
-      this.interrupted = true;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-  }
 
   private class Sending extends InterruptableRunnable {
 

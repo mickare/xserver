@@ -18,6 +18,7 @@ import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.net.XServer;
 import de.mickare.xserver.net.XServerObj;
 import de.mickare.xserver.util.Consumer;
+import de.mickare.xserver.util.InterruptableRunnable;
 import de.mickare.xserver.util.MySQL;
 import de.mickare.xserver.util.TableInstall;
 import de.mickare.xserver.util.concurrent.CloseableLock;
@@ -29,10 +30,9 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
   public static enum State {
     NEW, RUNNING, STOPPED;
   }
-  
+
   private volatile State state = State.NEW;
-  
-  private boolean debug = false;
+  private InterruptableRunnable reconnectTask = null;
 
   private final String sql_table_xservers, sql_table_xgroups, sql_table_xserversxgroups;
 
@@ -43,7 +43,6 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   private final MySQL connection;
   private final String homeServerName;
-  private CloseableReadWriteLock homeLock = new CloseableReentrantReadWriteLock(true);
   private XServerObj homeServer;
   private CloseableReadWriteLock serversLock = new CloseableReentrantReadWriteLock(true);
 
@@ -73,10 +72,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     // Loading
 
     this.reload();
-    if (homeServer == null) {
-      throw new InvalidConfigurationException("Server information for \"" + servername + "\" was not found!");
-    }
-
+    this.start();
   }
 
   public boolean isRunning() {
@@ -84,146 +80,156 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
   }
 
   public void debugInfo(String msg) {
-    if (debug) {
+    if (plugin.isDebugging()) {
       this.getLogger().info(msg);
     }
   }
 
   public boolean isDebugging() {
-    return this.debug;
+    return plugin.isDebugging();
   }
 
-  public void setDebugging(boolean debug) {
-    this.debug = debug;
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see de.mickare.xserver.AbstractXServerManager#start()
-   */
   @Override
-  public synchronized void start() {
-    if (this.state != State.NEW) {
-      throw new IllegalStateException("Not NEW!");
+  public synchronized void start() throws IOException {
+    if (this.state == State.RUNNING) {
+      return;
     }
-    this.state = State.RUNNING;
-    stpool.runTask(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          while (isRunning()) {
-            reconnectAll_soft();
-            Thread.sleep(plugin.getAutoReconnectTime());
-          }
-        } catch (InterruptedException e) {
-        }
+    try {
+      if (this.homeServer == null) {
+        throw new IllegalStateException("Home Server is null!");
       }
-    });
+      this.debugInfo("Starting XServerManager...");
+      this.state = State.RUNNING;
+      
+      this.mainserver = new MainServer(this.homeServer.getPort(), this).start(this.stpool);
+
+      if (this.reconnectTask != null) {
+        this.reconnectTask.interrupt();
+      }
+      this.reconnectTask = new InterruptableRunnable("Reconnect Task") {
+        @Override
+        public void run() {
+          try {
+            while (!this.isInterrupted() && isRunning()) {
+              reconnectAll_soft();
+              Thread.sleep(plugin.getAutoReconnectTime());
+            }
+          } catch (InterruptedException e) {
+          }
+        }
+      };
+      this.reconnectTask.start(this.getThreadPool());
+      this.debugInfo("XServerManager started");
+    } catch (Exception e) {
+      this.state = State.STOPPED;
+      throw e;
+    }
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see de.mickare.xserver.AbstractXServerManager#start_async()
-   */
   @Override
   public void start_async() {
-    this.start();
+    try {
+      this.start();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void notifyNotConnected(XServer s, Exception e) {
-      AtomicInteger n;
-      synchronized(notConnectedServers) {
-          n = notConnectedServers.get(s);
-          if(n == null) {
-              n = new AtomicInteger(0);
-              notConnectedServers.put(s, n);
-          }
+    AtomicInteger n;
+    synchronized (notConnectedServers) {
+      n = notConnectedServers.get(s);
+      if (n == null) {
+        n = new AtomicInteger(0);
+        notConnectedServers.put(s, n);
       }
-      if (n.incrementAndGet() % 100 == 0) {
-        plugin.getLogger().info("Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}");
-      }
+    }
+    if (n.incrementAndGet() % 100 == 0) {
+      plugin.getLogger().info("Connection to " + s.getName() + " failed! {Cause: " + e.getMessage() + "}");
+    }
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see de.mickare.xserver.AbstractXServerManager#reconnectAll_soft()
-   */
   @Override
   public void reconnectAll_soft() {
     if (!isRunning()) {
       return;
     }
-    try (CloseableLock cs = serversLock.readLock().open()) {
-      for (final XServerObj s : servers.values()) {
-        stpool.runTask(new Runnable() {
-          public void run() {
-              try {
-                s.connectSoft();
-                notConnectedServers.remove(s);
-              } catch (IOException | InterruptedException | NotInitializedException e) {
-                notifyNotConnected(s, e);
-              }
+    stpool.runTask(new Runnable() {
+      public void run() {
+        debugInfo("Reconnecting softly...");
+        Set<XServerObj> temp;
+        try (CloseableLock cs = serversLock.readLock().open()) {
+          temp = new HashSet<>(servers.values());
+        }
+        for (final XServerObj s : temp) {
+          try {
+            s.connectSoft();
+            notConnectedServers.remove(s);
+          } catch (NotInitializedException | IOException | InterruptedException e) {
+            notifyNotConnected(s, e);
           }
-        });
+        }
       }
-    }
+    });
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see de.mickare.xserver.AbstractXServerManager#reconnectAll_forced()
-   */
   @Override
   public void reconnectAll_forced() {
     if (!isRunning()) {
       return;
     }
-    try (CloseableLock cs = serversLock.readLock().open()) {
-      for (final XServerObj s : servers.values()) {
-        stpool.runTask(new Runnable() {
-          public void run() {
-            try {
-              s.connect();
-              notConnectedServers.remove(s);
-            } catch (IOException | InterruptedException | NotInitializedException e) {
-              notifyNotConnected(s, e);
-            }
+    stpool.runTask(new Runnable() {
+      public void run() {
+        debugInfo("Reconnecting forced...");
+        Set<XServerObj> temp;
+        try (CloseableLock cs = serversLock.readLock().open()) {
+          temp = new HashSet<>(servers.values());
+        }
+        for (final XServerObj s : temp) {
+          try {
+            s.connect();
+            notConnectedServers.remove(s);
+          } catch (NotInitializedException | IOException | InterruptedException e) {
+            notifyNotConnected(s, e);
           }
-        });
+        }
       }
-    }
+    });
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see de.mickare.xserver.AbstractXServerManager#stop()
-   */
   @Override
   public synchronized void stop() {
-    if(this.state == State.STOPPED) {
+    if (this.state == State.STOPPED) {
       return;
     }
     this.debugInfo("Stopping XServerManager...");
+    State oldState = this.state;
     this.state = State.STOPPED;
 
-    try {
-      mainserver.stop();
-    } catch (IOException e) {
-      this.getLogger().warning("An exception occured while stopping xserver server!\n" + e.getMessage());
-    }
-    // try ( CloseableLock cs = serversLock.writeLock().open() ) {
-    // executorService.shutDown();
 
-    try (CloseableLock cs = serversLock.readLock().open()) {
+    if (oldState == State.NEW) {
+      this.state = State.STOPPED;
+      // nothing
+    } else if (oldState == State.RUNNING) {
+      this.state = State.STOPPED;
+
+      if (this.reconnectTask != null) {
+        this.reconnectTask.interrupt();
+      }
+
+      if (mainserver != null) {
+        try {
+          mainserver.stop();
+        } catch (IOException e) {
+          this.getLogger().warning("An exception occured while stopping xserver server!\n" + e.getMessage());
+        }
+      }
+
+      try (CloseableLock cs = serversLock.readLock().open()) {
         this.debugInfo("Deprecating servers...");
         for (XServerObj s : servers.values()) {
           s.setDeprecated();
-          if(debug)
+          if (this.isDebugging())
             this.debugInfo(s.getName() + " deprecated");
         }
 
@@ -231,6 +237,10 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
         for (XServerObj s : servers.values()) {
           s.disconnect();
         }
+      }
+
+      notConnectedServers.clear();
+
     }
     this.debugInfo("XServerManager stopped");
   }
@@ -241,153 +251,130 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    * @see de.mickare.xserver.AbstractXServerManager#reload()
    */
   @Override
-  public void reload() throws IOException {
-    if (this.state == State.STOPPED) {
-      return;
-    }
+  public synchronized void reload() throws IOException {
     this.debugInfo("XServerManager reloading...");
-    try (CloseableLock ch = homeLock.writeLock().open()) {
-      try (CloseableLock cs = serversLock.writeLock().open()) {
-        notConnectedServers.clear();
+    final State oldState = this.state;
+    try (CloseableLock cs = serversLock.writeLock().open()) {
+      this.stop();
 
-        if (this.state == State.STOPPED) {
-          return;
-        }
+      // Reestablish connection
+      connection.reconnect();;
 
-        if (mainserver != null) {
+      // Get all servers
+      final Map<Integer, XServerObj> idMap = new HashMap<Integer, XServerObj>();
+
+      this.debugInfo("Loading XServers...");
+      connection.query(new Consumer<ResultSet>() {
+        @Override
+        public void accept(ResultSet rs) {
           try {
-            mainserver.stop();
-          } catch (IOException e) {
-            // this.plugin.getLogger().info( e.getClass().getName() + ": " + e.getMessage() + "\n" +
-            // MyStringUtils.stackTraceToString( e ) );
-          }
-        }
-        for (XServerObj s : servers.values()) {
-          s.setDeprecated();
-          s.disconnect();
-        }
-        servers.clear();
+            while (rs.next()) {
+              int id = rs.getInt("ID");
+              String servername = rs.getString("NAME");
+              String[] hostip = rs.getString("ADRESS").split(":");
+              String pw = rs.getString("PW");
 
-        // Reestablish connection
-        connection.reconnect();;
-
-        // Get all servers
-
-        final Map<Integer, XServerObj> idMap = new HashMap<Integer, XServerObj>();
-
-        connection.query(new Consumer<ResultSet>() {
-          @Override
-          public void accept(ResultSet rs) {
-            try {
-              while (rs.next()) {
-                int id = rs.getInt("ID");
-                String servername = rs.getString("NAME");
-                String[] hostip = rs.getString("ADRESS").split(":");
-                String pw = rs.getString("PW");
-
-                if (hostip.length < 2) {
-                  plugin.getLogger().warning("XServer \"" + servername + "\" has an invalid address! (host:port)");
-                  continue;
-                }
-
-                String host = hostip[0];
-                if (hostip.length > 2) {
-                  for (int i = 1; i < hostip.length - 1; i++) {
-                    host += ":" + hostip[i];
-                  }
-                }
-                int ip = 20000;
-                try {
-                  ip = Integer.valueOf(hostip[hostip.length - 1]);
-                } catch (NumberFormatException nfe) {
-                  plugin.getLogger().warning("XServer \"" + servername + "\" has an invalid address! (host:port)");
-                  continue;
-                }
-                XServerObj result = new XServerObj(servername, host, ip, pw, AbstractXServerManagerObj.this);
-                servers.put(servername, result);
-                idMap.put(id, result);
-              }
-            } catch (Exception e) {
-              plugin.getLogger().severe(e.getMessage());
-              throw new RuntimeException("Couldn't load XServer List form Database!", e);
-            }
-          }
-        }, "SELECT * FROM " + sql_table_xservers);
-
-        homeServer = getServer(this.homeServerName);
-
-        if (homeServer == null) {
-          throw new IllegalArgumentException("The home server \"" + this.homeServerName + "\" wasn't found!");
-        }
-
-        // Groups
-
-        this.groups.clear();
-
-        final Map<Integer, XGroup> tempgroups = new HashMap<Integer, XGroup>();
-
-        connection.query(new Consumer<ResultSet>() {
-          @Override
-          public void accept(ResultSet rs) {
-            try {
-              while (rs.next()) {
-                int groupId = rs.getInt("groupID");
-                String name = rs.getString("name");
-                XGroupObj o = new XGroupObj(groupId, name);
-                AbstractXServerManagerObj.this.groups.put(name, o);
-                tempgroups.put(groupId, o);
+              if (hostip.length < 2) {
+                plugin.getLogger().warning("XServer \"" + servername + "\" has an invalid address! (host:port)");
+                continue;
               }
 
-            } catch (Exception e) {
-              plugin.getLogger().severe(e.getMessage());
-              throw new RuntimeException("Couldn't load XServer Groups form Database!", e);
-            }
-          }
-        }, "SELECT * FROM " + sql_table_xgroups);
-
-        // Relations to groups
-
-        connection.query(new Consumer<ResultSet>() {
-          @Override
-          public void accept(ResultSet rs) {
-            try {
-              while (rs.next()) {
-                int serverId = rs.getInt("serverID");
-                int groupId = rs.getInt("groupId");
-
-                XServerObj x = idMap.get(serverId);
-                XGroup g = tempgroups.get(groupId);
-                if (x != null && g != null) {
-                  x.addGroup(g);
+              String host = hostip[0];
+              if (hostip.length > 2) {
+                for (int i = 1; i < hostip.length - 1; i++) {
+                  host += ":" + hostip[i];
                 }
-
               }
-            } catch (Exception e) {
-              plugin.getLogger().severe(e.getMessage());
-              throw new RuntimeException("Couldn't load XServer Group-Relations form Database!", e);
+              int ip = 20000;
+              try {
+                ip = Integer.valueOf(hostip[hostip.length - 1]);
+              } catch (NumberFormatException nfe) {
+                plugin.getLogger().warning("XServer \"" + servername + "\" has an invalid address! (host:port)");
+                continue;
+              }
+              XServerObj result = new XServerObj(servername, host, ip, pw, AbstractXServerManagerObj.this);
+              servers.put(servername, result);
+              idMap.put(id, result);
             }
+          } catch (Exception e) {
+            plugin.getLogger().severe(e.getMessage());
+            throw new RuntimeException("Couldn't load XServer List form Database!", e);
           }
-        }, "SELECT * FROM " + sql_table_xserversxgroups);
-
-        // End of queries
-        connection.disconnect();
-
-
-        if (this.state == State.STOPPED) {
-          return;
         }
+      }, "SELECT * FROM " + sql_table_xservers);
+      if (this.isDebugging()) {
+        this.debugInfo(this.servers.size() + " XServers loaded");
+      }
 
-        // Start MainServer
-        mainserver = new MainServer(homeServer.getPort(), this);
-        mainserver.start(this.getThreadPool());
+      // home server
 
-        // Connect the xservers
+      this.homeServer = getServer(this.homeServerName);
+      if (this.homeServer == null) {
+        throw new IllegalStateException("The home server \"" + this.homeServerName + "\" wasn't found!");
+      }
+      this.debugInfo("Home Server found: " + this.homeServer.getName());
 
-        reconnectAll_soft();
+      // Groups
+      this.debugInfo("Loading Groups...");
+      this.groups.clear();
+      final Map<Integer, XGroup> tempgroups = new HashMap<Integer, XGroup>();
+      connection.query(new Consumer<ResultSet>() {
 
+        @Override
+        public void accept(ResultSet rs) {
+          try {
+            while (rs.next()) {
+              int groupId = rs.getInt("groupID");
+              String name = rs.getString("name");
+              XGroupObj o = new XGroupObj(groupId, name);
+              AbstractXServerManagerObj.this.groups.put(name, o);
+              tempgroups.put(groupId, o);
+            }
+
+          } catch (Exception e) {
+            plugin.getLogger().severe(e.getMessage());
+            throw new RuntimeException("Couldn't load XServer Groups form Database!", e);
+          }
+        }
+      }, "SELECT * FROM " + sql_table_xgroups);
+      if (this.isDebugging()) {
+        this.debugInfo(tempgroups.size() + " Groups loaded");
+      }
+
+      // Relations to groups
+      this.debugInfo("Loading Group-Server relations...");
+      connection.query(new Consumer<ResultSet>() {
+        @Override
+        public void accept(ResultSet rs) {
+          try {
+            while (rs.next()) {
+              int serverId = rs.getInt("serverID");
+              int groupId = rs.getInt("groupId");
+
+              XServerObj x = idMap.get(serverId);
+              XGroup g = tempgroups.get(groupId);
+              if (x != null && g != null) {
+                x.addGroup(g);
+              }
+
+            }
+          } catch (Exception e) {
+            plugin.getLogger().severe(e.getMessage());
+            throw new RuntimeException("Couldn't load XServer Group-Relations form Database!", e);
+          }
+        }
+      }, "SELECT * FROM " + sql_table_xserversxgroups);
+
+      // End of queries
+      connection.disconnect();
+
+      if (oldState == State.RUNNING) {
+        this.debugInfo("Restarting XServerManager...");
+        this.start();
       }
     }
     this.debugInfo("XServerManager reloaded");
+
   }
 
   /*
@@ -397,7 +384,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public XServerObj getHomeServer() {
-    try (CloseableLock ch = homeLock.readLock().open()) {
+    try (CloseableLock ch = serversLock.readLock().open()) {
       return homeServer;
     }
   }

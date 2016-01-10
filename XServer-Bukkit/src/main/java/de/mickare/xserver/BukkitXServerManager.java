@@ -37,10 +37,4 @@ public class BukkitXServerManager extends XServerManager {
     this.getEventHandler().registerListener(bukkitPlugin, stressListener);
   }
 
-  @Override
-  public void stop() {
-    super.stop();
-    this.getThreadPool().shutDown();
-  }
-
 }

@@ -1,7 +1,6 @@
 package de.mickare.xserver;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
 
 import de.mickare.xserver.exceptions.InvalidConfigurationException;
 import de.mickare.xserver.exceptions.NotInitializedException;

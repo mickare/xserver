@@ -67,19 +67,19 @@ public class XServerObj implements XServer {
    * @see de.mickare.xserver.net.XServer#connect()
    */
   @Override
-  public void connect() throws UnknownHostException, IOException, InterruptedException, NotInitializedException {
+  public void connect() throws IOException, InterruptedException, NotInitializedException {
     try (CloseableLock c = conLock.writeLock().open()) {
-      if ( !this.manager.isRunning() || !valid()) {
+      if (!this.manager.isRunning() || !valid()) {
         return;
       }
       manager.debugInfo("Connecting to " + this.name + " ...");
       new ConnectionObj(manager.getSocketFactory(), host, port, this, manager);
     }
   }
-  
-  public void connectSoft() throws UnknownHostException, NotInitializedException, IOException, InterruptedException {
+
+  public void connectSoft() throws NotInitializedException, IOException, InterruptedException {
     try (CloseableLock c = conLock.writeLock().open()) {
-      if(!this.isConnected()) {
+      if (!this.isConnected()) {
         this.connect();
       }
     }
@@ -387,7 +387,7 @@ public class XServerObj implements XServer {
 
   private boolean valid() {
     if (deprecated) {
-      this.manager.getLogger().warning("This XServer Object \"" + this.name + "\" is deprecated!\n"
+      manager.debugInfo("This XServer Object \"" + this.name + "\" is deprecated!\n"
           + MyStringUtils.stackTraceToString(Thread.currentThread().getStackTrace()));
       return false;
     }

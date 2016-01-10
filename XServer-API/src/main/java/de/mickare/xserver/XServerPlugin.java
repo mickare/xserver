@@ -13,5 +13,9 @@ public interface XServerPlugin {
   public long getAutoReconnectTime();
 
   public XType getHomeType();
+  
+  boolean isDebugging();
+  
+  void setDebugging(boolean debug);
 
 }

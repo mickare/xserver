@@ -22,6 +22,8 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
   private MySQL cfgconnection = null;
   private XServerManager xmanager;
 
+  private boolean debug = false;
+
   @Override
   public void onDisable() {
     log = this.getLogger();
@@ -31,6 +33,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
 
     if (xmanager != null) {
       xmanager.stop();
+      xmanager.getThreadPool().shutDown();
     }
 
     if (cfgconnection != null) {
@@ -46,6 +49,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
     log.info("---------------------------------");
     log.info("------------ XServer ------------");
     log.info("----------  enabling   ----------");
+    setDebugging(this.getConfig().getBoolean("debug", false));
 
     this.saveDefaultConfig();
 
@@ -81,8 +85,7 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
       this.getServer().shutdown();
       // this.getServer().dispatchCommand(this.getServer().getConsoleSender(), "stop");
     }
-    
-    xmanager.setDebugging(this.getConfig().getBoolean("debug", false));
+
 
     // Register Commands
     new XServerCommands(this);
@@ -108,6 +111,16 @@ public class BukkitXServerPlugin extends JavaPlugin implements XServerPlugin {
   @Override
   public XType getHomeType() {
     return HOMETYPE;
+  }
+
+  @Override
+  public boolean isDebugging() {
+    return this.debug;
+  }
+
+  @Override
+  public void setDebugging(boolean debug) {
+    this.debug = debug;
   }
 
 }

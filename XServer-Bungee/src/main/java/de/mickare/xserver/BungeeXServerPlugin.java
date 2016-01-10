@@ -23,6 +23,8 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
   private BungeeXServerManager xmanager;
   private ConfigAccessor config;
 
+  private boolean debug = false;
+  
   @Override
   public void onDisable() {
     log = this.getLogger();
@@ -32,6 +34,7 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
 
     if (xmanager != null) {
       xmanager.stop();
+      xmanager.getThreadPool().shutDown();
     }
 
     if (cfgconnection != null) {
@@ -47,7 +50,8 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
     log.info("---------------------------------");
     log.info("--------- Proxy XServer ---------");
     log.info("----------  enabling   ----------");
-
+    setDebugging(this.getConfig().getBoolean("debug", false));
+    
     servername = this.getConfig().getString("servername");
 
     String user = this.getConfig().getString("mysql.User");
@@ -75,7 +79,6 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
       // "stop");
     }
 
-    xmanager.setDebugging(this.getConfig().getBoolean("debug", false));
     
     // Register Commands
     this.getProxy().getPluginManager().registerCommand(this, new XServerCommands(this));
@@ -109,6 +112,16 @@ public class BungeeXServerPlugin extends Plugin implements XServerPlugin {
   @Override
   public XType getHomeType() {
     return HOMETYPE;
+  }
+
+  @Override
+  public boolean isDebugging() {
+    return this.debug;
+  }
+
+  @Override
+  public void setDebugging(boolean debug) {
+    this.debug = debug;
   }
 
 }
