@@ -242,7 +242,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public void reload() throws IOException {
-    if (this.state != State.STOPPED) {
+    if (this.state == State.STOPPED) {
       return;
     }
     this.debugInfo("XServerManager reloading...");
@@ -250,7 +250,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
       try (CloseableLock cs = serversLock.writeLock().open()) {
         notConnectedServers.clear();
 
-        if (this.state != State.STOPPED) {
+        if (this.state == State.STOPPED) {
           return;
         }
 
@@ -373,7 +373,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
         connection.disconnect();
 
 
-        if (this.state != State.STOPPED) {
+        if (this.state == State.STOPPED) {
           return;
         }
 
