@@ -162,8 +162,9 @@ public class ConnectionObj implements Connection {
       } catch (IOException e) {
       }
 
-      XServer serv = this.getXserver();
+      XServerObj serv = this.getXserver();
       if (!old.isFinished() && serv != null) {
+        serv.unsetConnection(this);
         serv.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(serv));
       }
   }
@@ -262,7 +263,7 @@ public class ConnectionObj implements Connection {
       try {
         while (!isInterrupted() && isSocketOpen()) {
 
-          Packet p = pendingSendingPackets.poll(1000, TimeUnit.MILLISECONDS);
+          Packet p = pendingSendingPackets.poll(500, TimeUnit.MILLISECONDS);
 
           if (isInterrupted()) {
             return;
@@ -358,7 +359,7 @@ public class ConnectionObj implements Connection {
    * @see de.mickare.xserver.net.Connection#getXserver()
    */
   @Override
-  public XServer getXserver() {
+  public XServerObj getXserver() {
     return xserver.get();
   }
 

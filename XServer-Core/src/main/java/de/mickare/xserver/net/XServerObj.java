@@ -1,7 +1,6 @@
 package de.mickare.xserver.net;
 
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -78,9 +77,25 @@ public class XServerObj implements XServer {
   }
 
   public void connectSoft() throws NotInitializedException, IOException, InterruptedException {
+    try (CloseableLock c = conLock.readLock().open()) {
+      if (this.isConnected()) {
+        return;
+      }
+      if (this.connection != null && this.connection.isLoggingIn()) {
+        return;
+      }
+    }
+    this.connect();
+  }
+
+
+  protected void unsetConnection(ConnectionObj con) {
     try (CloseableLock c = conLock.writeLock().open()) {
-      if (!this.isConnected()) {
-        this.connect();
+      if (this.connection == con) {
+        this.connection = null;
+      }
+      if (this.connection2 == con) {
+        this.connection2 = null;
       }
     }
   }
@@ -211,18 +226,21 @@ public class XServerObj implements XServer {
     // return false;
     // }
 
-
+    Connection con = null;
     try {
       if (conLock.readLock().tryLock(500, TimeUnit.MILLISECONDS)) {
         try {
           if (isConnected()) {
-            result = connection.send(new Packet(PacketType.Message, message.getData()));
+            con = this.connection;
           }
         } finally {
           conLock.readLock().unlock();
         }
       }
     } catch (InterruptedException e) {
+    }
+    if (con != null) {
+      result = connection.send(new Packet(PacketType.Message, message.getData()));
     }
 
     manager.getEventHandler().callEvent(new XServerMessageOutgoingEvent(this, message));
@@ -240,17 +258,22 @@ public class XServerObj implements XServer {
     if (!valid() || !this.manager.isRunning()) {
       return;
     }
+
+    Connection con = null;
     try {
       if (conLock.readLock().tryLock(500, TimeUnit.MILLISECONDS)) {
         try {
           if (isConnected()) {
-            connection.ping(ping);
+            con = this.connection;
           }
         } finally {
           conLock.readLock().unlock();
         }
       }
     } catch (InterruptedException e) {
+    }
+    if (con != null) {
+      con.ping(ping);
     }
   }
 
@@ -408,5 +431,6 @@ public class XServerObj implements XServer {
   public XServer getCurrentXServer() {
     return this.manager.getXServer(name);
   }
+
 
 }
