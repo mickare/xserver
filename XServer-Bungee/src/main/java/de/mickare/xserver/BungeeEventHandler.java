@@ -4,10 +4,10 @@ import net.md_5.bungee.api.plugin.Plugin;
 
 public class BungeeEventHandler extends EventHandlerObj<Plugin> {
 
-  private final Plugin plugin;
+  private final BungeeXServerPlugin plugin;
 
-  protected BungeeEventHandler(Plugin plugin) {
-    super(plugin.getLogger());
+  protected BungeeEventHandler(BungeeXServerPlugin plugin) {
+    super(plugin);
     this.plugin = plugin;
   }
 

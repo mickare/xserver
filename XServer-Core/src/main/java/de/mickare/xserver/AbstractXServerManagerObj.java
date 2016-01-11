@@ -100,7 +100,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
       }
       this.debugInfo("Starting XServerManager...");
       this.state = State.RUNNING;
-      
+
       this.mainserver = new MainServer(this.homeServer.getPort(), this).start(this.stpool);
 
       if (this.reconnectTask != null) {
@@ -377,11 +377,6 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see de.mickare.xserver.AbstractXServerManager#getHomeServer()
-   */
   @Override
   public XServerObj getHomeServer() {
     try (CloseableLock ch = serversLock.readLock().open()) {
@@ -389,13 +384,11 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     }
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see de.mickare.xserver.AbstractXServerManager#getServer(java.lang.String)
-   */
   @Override
   public XServerObj getServer(String servername) {
+    if (servername == null) {
+      throw new IllegalArgumentException("servername is null");
+    }
     // try (CloseableLock cs = serversLock.readLock().open()) {
     return servers.get(servername);
     // }
@@ -461,6 +454,9 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
    */
   @Override
   public XServerObj getXServer(String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("servername is null");
+    }
     // try (CloseableLock cs = serversLock.readLock().open()) {
     return servers.get(name);
     // }
@@ -580,6 +576,9 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   @Override
   public XGroup getGroupByName(String name) {
+    if (name == null) {
+      return null;
+    }
     return this.groups.get(name);
   }
 

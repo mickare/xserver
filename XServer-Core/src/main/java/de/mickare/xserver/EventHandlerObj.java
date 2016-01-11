@@ -13,12 +13,12 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
 
   private final HashMap<XServerListener, XServerListenerPlugin<T>> listeners = new HashMap<XServerListener, XServerListenerPlugin<T>>();
 
-  private final Logger logger;
+  private final XServerPlugin plugin;
   private final EventBus<T> bus;
 
-  protected EventHandlerObj(Logger logger) {
-    this.logger = logger;
-    bus = new EventBus<T>(this, logger);
+  protected EventHandlerObj(XServerPlugin plugin) {
+    this.plugin = plugin;
+    bus = new EventBus<T>(this, plugin.getLogger());
   }
 
   protected XServerListenerPlugin<T> getListPlugin(T original) {
@@ -131,8 +131,8 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
     event.postCall();
 
     long elapsed = System.nanoTime() - start;
-    if (elapsed > 500000) {
-      this.logger.log(Level.WARNING, "Event {0} took {1}ns to process!", new Object[] {event, elapsed});
+    if (elapsed > 500000 && this.plugin.isDebugging()) {
+      this.plugin.getLogger().log(Level.WARNING, "Event {0} took {1}ns to process!", new Object[] {event, elapsed});
     }
     return event;
   }

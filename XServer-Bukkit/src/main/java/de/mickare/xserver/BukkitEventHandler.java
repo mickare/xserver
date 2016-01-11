@@ -9,12 +9,12 @@ public class BukkitEventHandler extends EventHandlerObj<JavaPlugin> {
   // Spray those Sync tasks over some ticks...
   private static final int SYNCTASK_SPRAY = 100;
 
-  private final JavaPlugin plugin;
+  private final BukkitXServerPlugin plugin;
 
   private AtomicInteger syncTasksCount = new AtomicInteger(0);
 
-  protected BukkitEventHandler(JavaPlugin plugin) {
-    super(plugin.getLogger());
+  protected BukkitEventHandler(BukkitXServerPlugin plugin) {
+    super(plugin);
     this.plugin = plugin;
     plugin.getServer().getScheduler().runTaskTimer(plugin, new Runnable() {
       @Override
