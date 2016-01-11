@@ -31,8 +31,8 @@ public class XServerObj implements XServer {
   private volatile boolean deprecated = false;
   // private volatile boolean open = false;
 
-  private Connection connection = null;
-  private Connection connection2 = null; // Fix for HomeServer that is not
+  private volatile Connection connection = null;
+  private volatile Connection connection2 = null; // Fix for HomeServer that is not
                                          // connectable.
   private CloseableReadWriteLock conLock = new CloseableReentrantReadWriteLock(true);
 

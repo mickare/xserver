@@ -18,18 +18,14 @@ public class MainServer {
   public final static int SOCKET_TIMEOUT = 1000;
 
   private final AbstractXServerManagerObj manager;
-  private final ServerSocket socket;
+  private ServerSocket socket;
   private volatile Future<?> task = null;
   private volatile boolean running = false;
 
+  private final int port;
+  
   protected MainServer(int port, AbstractXServerManagerObj manager) throws IOException {
-
-    socket = ServerSocketFactory.getDefault().createServerSocket();
-    socket.setReuseAddress(true);
-    socket.setPerformancePreferences(0, 1, 1);
-    socket.setSoTimeout(SOCKET_TIMEOUT);
-    socket.bind(new InetSocketAddress(port), 500);
-
+    this.port = port;
     this.manager = manager;
   }
 
@@ -85,9 +81,17 @@ public class MainServer {
     this.manager.debugInfo("MainServer stopped");
   }
 
-  public final synchronized MainServer start(final ServerThreadPoolExecutor stpool) {
+  public final synchronized MainServer start(final ServerThreadPoolExecutor stpool) throws IOException {
     if (!running && task == null) {
       this.manager.debugInfo("Starting MainServer...");
+      
+
+      socket = ServerSocketFactory.getDefault().createServerSocket();
+      socket.setReuseAddress(true);
+      socket.setPerformancePreferences(0, 1, 1);
+      socket.setSoTimeout(SOCKET_TIMEOUT);
+      socket.bind(new InetSocketAddress(port), 500);
+      
       running = true;
       this.task = stpool.runServerTask(new Runnable() {
         public void run() {
