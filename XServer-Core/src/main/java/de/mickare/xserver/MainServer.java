@@ -56,21 +56,20 @@ public class MainServer {
       try {
         final Socket temp = socket.accept();
 
-        try {
-          if (isRunning()) {
-            new ConnectionObj(temp, manager);
-          } else {
-            temp.close();
-          }
-        } catch (Exception e) {
-
+        if (isRunning()) {
           try {
-            temp.close();
-          } catch (IOException ie) {
+            new ConnectionObj(temp, manager);
+          } catch (Exception e) {
+            try {
+              temp.close();
+            } catch (IOException ie) {
+            }
+            throw e;
           }
-
-          throw e;
+        } else {
+          temp.close();
         }
+
 
       } catch (SocketTimeoutException ste) {
         // ignore

@@ -206,16 +206,15 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     State oldState = this.state;
     this.state = State.STOPPED;
 
+    if (this.reconnectTask != null) {
+      this.reconnectTask.interrupt();
+    }
 
     if (oldState == State.NEW) {
       this.state = State.STOPPED;
       // nothing
     } else if (oldState == State.RUNNING) {
       this.state = State.STOPPED;
-
-      if (this.reconnectTask != null) {
-        this.reconnectTask.interrupt();
-      }
 
       if (mainserver != null) {
         try {

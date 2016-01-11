@@ -77,14 +77,12 @@ public class XServerObj implements XServer {
   }
 
   public void connectSoft() throws NotInitializedException, IOException, InterruptedException {
-    try (CloseableLock c = conLock.readLock().open()) {
-      if (this.isConnected()) {
-        return;
-      }
-      if (this.connection != null && this.connection.isLoggingIn()) {
-        return;
-      }
+    if (this.isConnected()) {
+      return;
     }
+    // if (this.connection != null && this.connection.isLoggingIn()) {
+    // return;
+    // }
     this.connect();
   }
 
