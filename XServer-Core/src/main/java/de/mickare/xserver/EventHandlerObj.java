@@ -4,14 +4,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import de.mickare.xserver.events.XServerEvent;
 
 public abstract class EventHandlerObj<T> implements EventHandler<T> {
 
-  private final HashMap<XServerListener, XServerListenerPlugin<T>> listeners = new HashMap<XServerListener, XServerListenerPlugin<T>>();
+  private final Map<XServerListener, XServerListenerPlugin<T>> listeners =
+      new ConcurrentHashMap<XServerListener, XServerListenerPlugin<T>>();
 
   private final XServerPlugin plugin;
   private final EventBus<T> bus;
@@ -21,7 +22,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
     bus = new EventBus<T>(this, plugin.getLogger());
   }
 
-  protected XServerListenerPlugin<T> getListPlugin(T original) {
+  protected synchronized XServerListenerPlugin<T> getListPlugin(T original) {
     for (XServerListenerPlugin<T> lp : listeners.values()) {
       if (lp.getPlugin() == original) {
         return lp;
@@ -36,7 +37,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
    * @see de.mickare.xserver.EventHandler#getListeners()
    */
   @Override
-  public Map<XServerListener, XServerListenerPlugin<T>> getListeners() {
+  public synchronized Map<XServerListener, XServerListenerPlugin<T>> getListeners() {
     return new HashMap<XServerListener, XServerListenerPlugin<T>>(listeners);
   }
 
@@ -49,7 +50,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
   public abstract void registerListener(T plugin, XServerListener lis);
 
   @Override
-  public void registerListenerUnsafe(Object o, XServerListener lis) throws IllegalArgumentException {
+  public synchronized void registerListenerUnsafe(Object o, XServerListener lis) throws IllegalArgumentException {
     registerListener(checkPluginType(o), lis);
 
   }
@@ -120,7 +121,7 @@ public abstract class EventHandlerObj<T> implements EventHandler<T> {
    * @see de.mickare.xserver.EventHandler#callEvent(de.mickare.xserver.events.XServerEvent)
    */
   @Override
-  public synchronized XServerEvent callEvent(final XServerEvent event) {
+  public XServerEvent callEvent(final XServerEvent event) {
 
     if (event == null) {
       throw new IllegalArgumentException("event can't be null");
