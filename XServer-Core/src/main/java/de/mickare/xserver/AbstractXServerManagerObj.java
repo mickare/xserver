@@ -387,7 +387,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
   @Override
   public XServerObj getServer(String servername) {
     if (servername == null) {
-      throw new IllegalArgumentException("servername is null");
+      return null;
     }
     // try (CloseableLock cs = serversLock.readLock().open()) {
     return servers.get(servername);
@@ -455,7 +455,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
   @Override
   public XServerObj getXServer(String name) {
     if (name == null) {
-      throw new IllegalArgumentException("servername is null");
+      return null;
     }
     // try (CloseableLock cs = serversLock.readLock().open()) {
     return servers.get(name);
