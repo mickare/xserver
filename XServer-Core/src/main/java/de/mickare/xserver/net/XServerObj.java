@@ -66,14 +66,14 @@ public class XServerObj implements XServer {
    * @see de.mickare.xserver.net.XServer#connect()
    */
   @Override
-  public void connect() throws IOException, InterruptedException, NotInitializedException {
-    try (CloseableLock c = conLock.writeLock().open()) {
+  public synchronized void connect() throws IOException, InterruptedException, NotInitializedException {
+    //try (CloseableLock c = conLock.writeLock().open()) {
       if (!this.manager.isRunning() || !valid()) {
         return;
       }
       manager.debugInfo("Connecting to " + this.name + " ...");
       new ConnectionObj(manager.getSocketFactory(), host, port, this, manager);
-    }
+    //}
   }
 
   public void connectSoft() throws NotInitializedException, IOException, InterruptedException {
@@ -238,7 +238,7 @@ public class XServerObj implements XServer {
     } catch (InterruptedException e) {
     }
     if (con != null) {
-      result = connection.send(new Packet(PacketType.Message, message.getData()));
+      result = con.send(new Packet(PacketType.Message, message.getData()));
     }
 
     manager.getEventHandler().callEvent(new XServerMessageOutgoingEvent(this, message));

@@ -147,26 +147,28 @@ public class ConnectionObj implements Connection {
   }
 
   private void stop(Status endStatus) {
-      if(this.status != Status.disconnected && this.status != Status.error) {
-          return;
-      }
-      Status old = setStatus(endStatus);
-      sending.interrupt();
-      receiving.interrupt();
-      // packetHandler.interrupt();
+    //if (this.status != Status.disconnected && this.status != Status.error) {
+    //  return;
+    //}
+    Status old = setStatus(endStatus);
+    sending.interrupt();
+    receiving.interrupt();
+    // packetHandler.interrupt();
 
-      try {
-        socket.close();
-        input.close();
-        output.close();
-      } catch (IOException e) {
-      }
+    try {
+      socket.close();
+      input.close();
+      output.close();
+    } catch (IOException e) {
+    }
 
-      XServerObj serv = this.getXserver();
-      if (!old.isFinished() && serv != null) {
-        serv.unsetConnection(this);
+    XServerObj serv = this.getXserver();
+    if (serv != null) {
+      serv.unsetConnection(this);
+      if (!old.isFinished()) {
         serv.getManager().getEventHandler().callEvent(new XServerDisconnectEvent(serv));
       }
+    }
   }
 
   /*
@@ -176,7 +178,7 @@ public class ConnectionObj implements Connection {
    */
   @Override
   public void disconnect() {
-      stop(Status.disconnected);
+    stop(Status.disconnected);
   }
 
   /*
@@ -186,7 +188,7 @@ public class ConnectionObj implements Connection {
    */
   @Override
   public void errorDisconnect() {
-      stop(Status.error);
+    stop(Status.error);
   }
 
   /*

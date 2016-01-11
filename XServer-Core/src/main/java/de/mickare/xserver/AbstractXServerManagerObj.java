@@ -121,7 +121,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
       this.reconnectTask.start(this.getThreadPool());
       this.debugInfo("XServerManager started");
     } catch (Exception e) {
-      this.state = State.STOPPED;
+      this.stop();
       throw e;
     }
   }
@@ -199,9 +199,6 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
 
   @Override
   public synchronized void stop() {
-    if (this.state == State.STOPPED) {
-      return;
-    }
     this.debugInfo("Stopping XServerManager...");
     State oldState = this.state;
     this.state = State.STOPPED;
