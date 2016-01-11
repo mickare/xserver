@@ -33,7 +33,7 @@ public class XServerObj implements XServer {
 
   private volatile Connection connection = null;
   private volatile Connection connection2 = null; // Fix for HomeServer that is not
-                                         // connectable.
+  // connectable.
   private CloseableReadWriteLock conLock = new CloseableReentrantReadWriteLock(true);
 
   private CloseableReadWriteLock typeLock = new CloseableReentrantReadWriteLock(true);
@@ -67,13 +67,13 @@ public class XServerObj implements XServer {
    */
   @Override
   public synchronized void connect() throws IOException, InterruptedException, NotInitializedException {
-    //try (CloseableLock c = conLock.writeLock().open()) {
-      if (!this.manager.isRunning() || !valid()) {
-        return;
-      }
-      manager.debugInfo("Connecting to " + this.name + " ...");
-      new ConnectionObj(manager.getSocketFactory(), host, port, this, manager);
-    //}
+    // try (CloseableLock c = conLock.writeLock().open()) {
+    if (!this.manager.isRunning() || !valid()) {
+      return;
+    }
+    manager.debugInfo("Connecting to " + this.name + " ...");
+    new ConnectionObj(manager.getSocketFactory(), host, port, this, manager);
+    // }
   }
 
   public void connectSoft() throws NotInitializedException, IOException, InterruptedException {
@@ -112,14 +112,16 @@ public class XServerObj implements XServer {
   protected void setLoginConnection(Connection con) {
     try (CloseableLock c = conLock.writeLock().open()) {
       if (manager.getHomeServer() == this) {
-        if (connection2 != con) {
-          if (this.connection2 != null ? this.connection2.isSocketOpen() : false) {
-            this.connection2.disconnect();
-          }
+        if (connection2 != con && this.connection2 != null) {
+          this.connection2.disconnect();
         }
         manager.debugInfo("Connected to " + this.name + " (self connected)");
         this.connection2 = con;
       } else {
+        if (this.connection2 != null) {
+          this.connection2.disconnect();
+          this.connection2 = null;
+        }
         setConnection(con);
       }
     }
@@ -316,7 +318,7 @@ public class XServerObj implements XServer {
    * @see de.mickare.xserver.net.XServer#getManager()
    */
   @Override
-  public AbstractXServerManager getManager() {
+  public AbstractXServerManagerObj getManager() {
     return manager;
   }
 
@@ -406,7 +408,7 @@ public class XServerObj implements XServer {
     return this.groups.contains(group);
   }
 
-  private boolean valid() {
+  protected boolean valid() {
     if (deprecated) {
       manager.debugInfo("This XServer Object \"" + this.name + "\" is deprecated!\n"
           + MyStringUtils.stackTraceToString(Thread.currentThread().getStackTrace()));

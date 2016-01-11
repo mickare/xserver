@@ -17,6 +17,7 @@ import de.mickare.xserver.exceptions.InvalidConfigurationException;
 import de.mickare.xserver.exceptions.NotInitializedException;
 import de.mickare.xserver.net.XServer;
 import de.mickare.xserver.net.XServerObj;
+import de.mickare.xserver.net.XServerObjHome;
 import de.mickare.xserver.util.Consumer;
 import de.mickare.xserver.util.InterruptableRunnable;
 import de.mickare.xserver.util.MySQL;
@@ -154,14 +155,14 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     if (!isRunning()) {
       return;
     }
-    stpool.runTask(new Runnable() {
-      public void run() {
-        debugInfo("Reconnecting softly...");
-        Set<XServerObj> temp;
-        try (CloseableLock cs = serversLock.readLock().open()) {
-          temp = new HashSet<>(servers.values());
-        }
-        for (final XServerObj s : temp) {
+    debugInfo("Reconnecting softly...");
+    Set<XServerObj> temp;
+    try (CloseableLock cs = serversLock.readLock().open()) {
+      temp = new HashSet<>(servers.values());
+    }
+    for (final XServerObj s : temp) {
+      stpool.runTask(new Runnable() {
+        public void run() {
           try {
             s.connectSoft();
             notConnectedServers.remove(s);
@@ -169,8 +170,8 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
             notifyNotConnected(s, e);
           }
         }
-      }
-    });
+      });
+    }
   }
 
   @Override
@@ -178,14 +179,14 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
     if (!isRunning()) {
       return;
     }
-    stpool.runTask(new Runnable() {
-      public void run() {
-        debugInfo("Reconnecting forced...");
-        Set<XServerObj> temp;
-        try (CloseableLock cs = serversLock.readLock().open()) {
-          temp = new HashSet<>(servers.values());
-        }
-        for (final XServerObj s : temp) {
+    debugInfo("Reconnecting forced...");
+    Set<XServerObj> temp;
+    try (CloseableLock cs = serversLock.readLock().open()) {
+      temp = new HashSet<>(servers.values());
+    }
+    for (final XServerObj s : temp) {
+      stpool.runTask(new Runnable() {
+        public void run() {
           try {
             s.connect();
             notConnectedServers.remove(s);
@@ -193,8 +194,8 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
             notifyNotConnected(s, e);
           }
         }
-      }
-    });
+      });
+    }
   }
 
   @Override
@@ -288,7 +289,13 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
                 plugin.getLogger().warning("XServer \"" + servername + "\" has an invalid address! (host:port)");
                 continue;
               }
-              XServerObj result = new XServerObj(servername, host, ip, pw, AbstractXServerManagerObj.this);
+              XServerObj result;
+              if (homeServerName.equals(servername)) {
+                result = new XServerObjHome(servername, host, ip, pw, AbstractXServerManagerObj.this);
+              } else {
+                result = new XServerObj(servername, host, ip, pw, AbstractXServerManagerObj.this);
+              }
+
               servers.put(servername, result);
               idMap.put(id, result);
             }
@@ -309,6 +316,7 @@ public abstract class AbstractXServerManagerObj implements AbstractXServerManage
         throw new IllegalStateException("The home server \"" + this.homeServerName + "\" wasn't found!");
       }
       this.debugInfo("Home Server found: " + this.homeServer.getName());
+
 
       // Groups
       this.debugInfo("Loading Groups...");
