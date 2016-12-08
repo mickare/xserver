@@ -56,9 +56,9 @@
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
-			<id>bukkit-repo</id>
-			<name>Bukkit Repository</name>
-			<url>http://repo.bukkit.org/content/groups/public/</url>
+			<id>spigot-public</id>
+			<name>SpigotMC</name>
+			<url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
 		</repository>
 		<repository>
 			<snapshots>
