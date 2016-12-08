@@ -24,5 +24,9 @@ XServer has a Core-Module and a API, so these are released in the future, so not
 
 Installation & Usage
 --------------------
-
 Visit http://dev.bukkit.org/bukkit-plugins/xserver-com/
+
+Statitistics
+------------
+- http://mcstats.org/plugin/XServerProxy
+- http://mcstats.org/plugin/XServer
