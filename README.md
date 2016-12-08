@@ -1,9 +1,9 @@
-xserver
+XServer
 =======
 
 Description
 -----------
-XServer is a helper for other plugins. It closes the communication gap between servers.
+XServer is a library to send messages between minecraft servers. It is designed to be used by other plugins.
 
 With this plugin it's simple to send byte arrays to other servers and receive them.
 It's usefull if you use plugins on multiple servers that you want to communicate via sockets.
