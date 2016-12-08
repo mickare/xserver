@@ -1,5 +1,8 @@
 XServer
 =======
+[![Build Status](https://travis-ci.org/mickare/xserver.svg?branch=master)](https://travis-ci.org/mickare/xserver)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 
 Description
 -----------
