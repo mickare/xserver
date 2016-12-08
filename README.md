@@ -28,5 +28,8 @@ Visit http://dev.bukkit.org/bukkit-plugins/xserver-com/
 
 Statitistics
 ------------
-- http://mcstats.org/plugin/XServerProxy
 - http://mcstats.org/plugin/XServer
+![MCStats XServer](http://i.mcstats.org/XServer/Global+Statistics.png)
+
+- http://mcstats.org/plugin/XServerProxy
+![MCStats XServerProxy](http://i.mcstats.org/XServerProxy/Global+Statistics.png)
